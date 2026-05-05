@@ -2,10 +2,9 @@
 
 ## [0.5.0](https://github.com/sanity-io/agent-context/compare/agent-context-v0.4.0...agent-context-v0.5.0) (2026-05-05)
 
-
 ### Features
 
-* **insights:** add telemetry for classification metrics ([#208](https://github.com/sanity-io/agent-context/issues/208)) ([e6652a4](https://github.com/sanity-io/agent-context/commit/e6652a495e42aaa42b0724f3ad7feaab8057b424))
+- **insights:** add telemetry for classification metrics ([#208](https://github.com/sanity-io/agent-context/issues/208)) ([e6652a4](https://github.com/sanity-io/agent-context/commit/e6652a495e42aaa42b0724f3ad7feaab8057b424))
 
 ## [0.4.0](https://github.com/sanity-io/agent-context/compare/agent-context-v0.3.5...agent-context-v0.4.0) (2026-05-04)
 
