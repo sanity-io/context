@@ -4,13 +4,17 @@ import type {Sentiment} from './classifyConversation'
 
 /** @public */
 export interface TelemetryConfig {
-  /** Enable anonymous telemetry collection (metrics only, no conversation content). */
+  /** Enable metadata-only telemetry (classification metrics, no conversation content). */
   enabled: boolean
-  /** Opt-in to share full conversation traces for research and debugging. */
-  shareTraces?: {
+  /**
+   * Want to help us improve Agent Context? Opt in to share full conversation
+   * traces and provide your contact details — the team will be in touch to
+   * help dial in your agent.
+   */
+  shareConversations?: {
     enabled: boolean
     /**
-     * A way to reach you if we find something interesting in your traces.
+     * A way to reach you so we can collaborate on improving your agent.
      * Examples: "email:you@company.com", "discord:@username", "slack:@handle"
      */
     contactHandle?: string
@@ -23,7 +27,6 @@ export interface ClassificationTelemetry {
     successScore?: number
     sentiment?: 'positive' | 'neutral' | 'negative'
     contentGapCount?: number
-    failureReason?: string
   }
   conversation: {
     messages: Array<{
@@ -53,7 +56,7 @@ export interface ClassificationTelemetry {
   projectId: string
   conversationId: string
   classifiedAt: string
-  shareTraces?: {
+  shareConversations?: {
     contactHandle?: string
   }
 }
@@ -120,14 +123,14 @@ export function buildTelemetryPayload(
     }
   }
 
-  if (telemetry.shareTraces?.enabled) {
+  if (telemetry.shareConversations?.enabled) {
     payload.conversation.messageContents = conversation.messages.map((m) => ({
       role: m.role,
       content: m.content ?? '',
       ...(m.toolName && {toolName: m.toolName}),
     }))
-    if (telemetry.shareTraces.contactHandle) {
-      payload.shareTraces = {contactHandle: telemetry.shareTraces.contactHandle}
+    if (telemetry.shareConversations.contactHandle) {
+      payload.shareConversations = {contactHandle: telemetry.shareConversations.contactHandle}
     }
   }
 

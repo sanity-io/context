@@ -17,7 +17,7 @@ describe('buildTelemetryPayload', () => {
     ],
   }
 
-  it('builds tier B payload with message metadata but no content', () => {
+  it('builds metadata-only payload with message metadata but no content', () => {
     const payload = buildTelemetryPayload(
       'conv-123',
       '2025-01-01T00:00:00Z',
@@ -51,14 +51,14 @@ describe('buildTelemetryPayload', () => {
     expect(payload.classifiedAt).toBe('2025-01-01T00:00:00Z')
   })
 
-  it('builds tier C payload with message contents and discord handle', () => {
+  it('builds full sharing payload with message contents and contact handle', () => {
     const payload = buildTelemetryPayload(
       'conv-123',
       '2025-01-01T00:00:00Z',
       'project-abc',
       baseCoreMetrics,
       baseConversation,
-      {enabled: true, shareTraces: {enabled: true, contactHandle: '@testuser'}},
+      {enabled: true, shareConversations: {enabled: true, contactHandle: '@testuser'}},
     )
 
     expect(payload.conversation.messageContents).toHaveLength(3)
@@ -71,7 +71,7 @@ describe('buildTelemetryPayload', () => {
       content: '{"price": 99}',
       toolName: 'lookup',
     })
-    expect(payload.shareTraces).toEqual({contactHandle: '@testuser'})
+    expect(payload.shareConversations).toEqual({contactHandle: '@testuser'})
   })
 
   it('includes model info when available', () => {

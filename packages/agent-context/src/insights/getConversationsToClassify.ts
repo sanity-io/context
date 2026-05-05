@@ -27,7 +27,10 @@ export interface ConversationToClassify {
   agentId: string
   /** Unique thread identifier. */
   threadId: string
-  /** Conversation messages. */
+  /**
+   * Conversation messages.
+   * @deprecated No longer needed — `classifyConversation` fetches messages internally. Will be removed in a future release.
+   */
   messages: Message[]
 }
 
@@ -57,7 +60,6 @@ export interface ConversationToClassify {
  *     client: sanityClient,
  *     conversationId: conv._id,
  *     model: openai('gpt-4o-mini'),
- *     messages: conv.messages,
  *   })
  * }
  * ```

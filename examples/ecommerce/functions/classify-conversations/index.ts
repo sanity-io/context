@@ -50,8 +50,14 @@ export const handler = scheduledEventHandler(async ({context}) => {
           client,
           conversationId: conv._id,
           model: anthropic('claude-sonnet-4-5'),
-          messages: conv.messages,
           previousContentGaps,
+          telemetry: {
+            enabled: true,
+            // shareConversations: {
+            //   enabled: true,
+            //   contactHandle: 'discord:@yourhandle',
+            // },
+          },
         })
       }),
     )

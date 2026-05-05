@@ -37,11 +37,14 @@ export interface ClassifyConversationOptions {
   conversationId: string
   /** AI SDK model for classification (e.g., `openai('gpt-4o-mini')`). */
   model: LanguageModel
-  /** Optional messages to classify directly (avoids fetching from Sanity). */
+  /**
+   * Messages to classify directly.
+   * @deprecated No longer needed — messages are fetched internally from the conversation document. Will be removed in a future release.
+   */
   messages?: Message[]
   /** Previously observed content gaps to encourage consistent terminology. Use `getPreviousContentGaps` to fetch these. */
   previousContentGaps?: string[]
-  /** Telemetry configuration. When enabled, sends anonymized classification metrics. */
+  /** Telemetry configuration. When enabled, shares metadata-only classification metrics with Sanity. */
   telemetry?: TelemetryConfig
 }
 
@@ -135,37 +138,28 @@ export async function classifyConversation(
   const {client, conversationId, model, messages: providedMessages, telemetry} = options
   const now = new Date().toISOString()
 
-  let messagesToClassify: StoredMessage[]
-  let conversation: ConversationDocument | null = null
+  const conversation = await client.fetch<ConversationDocument | null>(
+    `*[_type == $type && _id == $id][0]{
+      _id,
+      agentId,
+      threadId,
+      messages,
+      modelProvider,
+      modelId,
+      tokenUsage
+    }`,
+    {type: CONVERSATION_SCHEMA_TYPE_NAME, id: conversationId},
+  )
 
-  if (providedMessages !== undefined) {
-    if (providedMessages.length === 0) {
-      throw new Error(`Cannot classify conversation with no messages: ${conversationId}`)
-    }
-    messagesToClassify = providedMessages
-  } else {
-    conversation = await client.fetch<ConversationDocument | null>(
-      `*[_type == $type && _id == $id][0]{
-        _id,
-        agentId,
-        threadId,
-        messages,
-        modelProvider,
-        modelId,
-        tokenUsage
-      }`,
-      {type: CONVERSATION_SCHEMA_TYPE_NAME, id: conversationId},
-    )
+  if (!conversation) {
+    throw new Error(`Conversation not found: ${conversationId}`)
+  }
 
-    if (!conversation) {
-      throw new Error(`Conversation not found: ${conversationId}`)
-    }
+  // Use provided messages (deprecated path) or fetched messages
+  const messagesToClassify = providedMessages ?? conversation.messages
 
-    if (!conversation.messages || conversation.messages.length === 0) {
-      throw new Error(`Conversation has no messages: ${conversationId}`)
-    }
-
-    messagesToClassify = conversation.messages
+  if (!messagesToClassify || messagesToClassify.length === 0) {
+    throw new Error(`Conversation has no messages: ${conversationId}`)
   }
 
   const systemPrompt = buildSystemPrompt(options.previousContentGaps)
@@ -205,9 +199,9 @@ ${formatMessagesForPrompt(messagesToClassify)}
           result.output.coreMetrics,
           {
             messages: messagesToClassify,
-            modelProvider: conversation?.modelProvider,
-            modelId: conversation?.modelId,
-            tokenUsage: conversation?.tokenUsage,
+            modelProvider: conversation.modelProvider,
+            modelId: conversation.modelId,
+            tokenUsage: conversation.tokenUsage,
           },
           telemetry,
         )
