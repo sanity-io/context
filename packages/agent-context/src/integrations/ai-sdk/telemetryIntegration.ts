@@ -39,6 +39,15 @@ interface OnFinishEvent {
   response: {
     messages?: ModelMessage[]
   }
+  model: {
+    provider: string
+    modelId: string
+  }
+  totalUsage: {
+    inputTokens: number | undefined
+    outputTokens: number | undefined
+    totalTokens?: number
+  }
 }
 
 const VALID_ROLES: Record<string, Message['role']> = {
@@ -160,8 +169,31 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): Telemetr
       const agentId = typeof config.agentId === 'function' ? config.agentId() : config.agentId
       const threadId = typeof config.threadId === 'function' ? config.threadId() : config.threadId
 
+      const modelProvider = event.model?.provider
+      const modelId = event.model?.modelId
+      const inputTokens = event.totalUsage?.inputTokens
+      const outputTokens = event.totalUsage?.outputTokens
+      const totalTokens =
+        event.totalUsage?.totalTokens !== undefined
+          ? event.totalUsage.totalTokens
+          : inputTokens !== undefined || outputTokens !== undefined
+            ? (inputTokens ?? 0) + (outputTokens ?? 0)
+            : undefined
+      const tokenUsage =
+        inputTokens !== undefined || outputTokens !== undefined
+          ? {inputTokens, outputTokens, totalTokens}
+          : undefined
+
       try {
-        await saveConversation({client: config.client, agentId, threadId, messages})
+        await saveConversation({
+          client: config.client,
+          agentId,
+          threadId,
+          messages,
+          modelProvider,
+          modelId,
+          tokenUsage,
+        })
       } catch (err) {
         console.error('[sanity-insights] Failed to save conversation:', err)
       }

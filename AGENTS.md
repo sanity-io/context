@@ -25,7 +25,7 @@ This repo contains the Studio plugin, agent skills for building and optimizing i
 ├── sandboxes/
 │   └── dev-studio/           # Development sandbox for testing plugin
 ├── examples/
-│   └── ecommerce/            # Demo Next.js app with AI chat
+│   └── ecommerce/            # Demo Next.js app with AI chat (source of truth for skill references)
 └── package.json              # Root workspace config
 ```
 
@@ -105,3 +105,28 @@ https://api.sanity.io/v2026-03-03/agent-context/:projectId/:dataset/:slug
 ```
 
 Agents connect via HTTP transport with a Bearer token (Sanity API read token).
+
+### Insights
+
+Conversation tracking and classification system. Two parts:
+
+1. **Telemetry integration** (`@sanity/agent-context/ai-sdk`) — saves conversations from chat routes via AI SDK's `experimental_telemetry`
+2. **Classification primitives** (`@sanity/agent-context/insights`) — composable functions for analyzing saved conversations
+
+Key files:
+
+| File                                                | Purpose                                    |
+| --------------------------------------------------- | ------------------------------------------ |
+| `src/insights/saveConversation.ts`                  | Save/upsert conversation documents         |
+| `src/insights/getConversationsToClassify.ts`        | Query conversations needing classification |
+| `src/insights/classifyConversation.ts`              | Classify a conversation with AI            |
+| `src/insights/sendInsightsTelemetry.ts`             | Opt-in telemetry sharing with Sanity       |
+| `src/insights/getPreviousContentGaps.ts`            | Fetch previously identified content gaps   |
+| `src/integrations/ai-sdk/telemetryIntegration.ts`   | AI SDK telemetry integration               |
+| `src/studio/insights/schemas/conversationSchema.ts` | Conversation document schema               |
+
+`getConversationsToClassify` and `classifyConversation` are designed as composable primitives — the former returns all data (messages, model info), the latter accepts it as input with no internal fetches.
+
+### Skill References Syncing
+
+The `skills/create-agent-with-sanity-context/references/ecommerce/` folder is automatically synced from `examples/ecommerce/` via `pnpm sync-skill-example` (runs in CI on merge to main). Do not edit files in the references folder directly — make changes in `examples/ecommerce/` instead.

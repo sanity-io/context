@@ -51,7 +51,15 @@ export const handler = scheduledEventHandler(async ({context}) => {
           conversationId: conv._id,
           model: anthropic('claude-sonnet-4-5'),
           messages: conv.messages,
+          modelProvider: conv.modelProvider,
+          modelId: conv.modelId,
+          tokenUsage: conv.tokenUsage,
           previousContentGaps,
+          telemetry: {
+            shareMetrics: true,
+            // shareConversations: true,
+            // contact: 'you@company.com',
+          },
         })
       }),
     )

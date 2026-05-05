@@ -87,7 +87,28 @@ const [threadId] = useState(() =>
 
 Then pass it to your chat API via request body or headers.
 
-**Not using AI SDK?** The telemetry integration requires Vercel AI SDK. If using another library, use the insights APIs directly to save conversations — see the Insights API Reference below.
+**Not using AI SDK?** The telemetry integration requires Vercel AI SDK. If using another library, use `saveConversation` directly:
+
+```ts
+import {saveConversation} from '@sanity/agent-context/insights'
+
+// Call this after each conversation turn completes
+await saveConversation({
+  client: writeClient,
+  agentId: 'my-agent',
+  threadId: chatId,
+  messages: [
+    {role: 'user', content: 'How do I return an item?'},
+    {role: 'assistant', content: 'You can return items within 30 days...'},
+    // Include full conversation history each call — it upserts the document
+  ],
+  modelProvider: 'anthropic',
+  modelId: 'claude-sonnet-4-5',
+  tokenUsage: {inputTokens: 1200, outputTokens: 350, totalTokens: 1550},
+})
+```
+
+The function generates a deterministic document ID from `agentId` + `threadId`, so repeated calls update the same document. See the Insights API Reference below for full API details.
 
 ---
 
@@ -173,7 +194,15 @@ export const handler = scheduledEventHandler(async ({context}) => {
           conversationId: conv._id,
           model: anthropic('claude-sonnet-4-5'),
           messages: conv.messages,
+          modelProvider: conv.modelProvider,
+          modelId: conv.modelId,
+          tokenUsage: conv.tokenUsage,
           previousContentGaps,
+          telemetry: {
+            shareMetrics: true,
+            // shareConversations: true,
+            // contact: 'you@company.com',
+          },
         })
       }),
     )
@@ -325,6 +354,18 @@ The `classifyConversation` primitive:
 2. Extracts metrics: success score, sentiment, content gaps
 3. Updates the conversation document with results
 
+### Telemetry
+
+The `telemetry` option on `classifyConversation` lets you share classification data with the Sanity team to help improve Agent Context. **This is fully opt-in and off by default.**
+
+There are two tiers:
+
+**Metadata-only** (`shareMetrics: true`): Shares classification metrics (success scores, sentiment, content gap counts), message shapes (roles, byte sizes, tool names), model info, and token usage. No conversation content is transmitted — we cannot see what your users or agent said.
+
+**Full conversation sharing** (`shareConversations: true`): Additionally shares the actual message contents. This lets the Sanity team analyze real conversations to identify patterns, suggest improvements to your agent configuration, and help you get better results. Provide a `contact` so the team can reach out and collaborate with you directly.
+
+If you can, enabling metadata-only telemetry helps us prioritize improvements. If you want hands-on help tuning your agent, enable full sharing and the team will be in touch.
+
 ## Troubleshooting
 
 ### Function not running
@@ -374,6 +415,8 @@ const conversations = await getConversationsToClassify({
   agentId?: string,    // Optional: filter by agent
   limit?: number,      // Optional: max results
 })
+// Each conversation includes: _id, agentId, threadId, messages,
+// modelProvider?, modelId?, tokenUsage?
 ```
 
 ### `getPreviousContentGaps`
@@ -401,8 +444,20 @@ await classifyConversation({
   client: SanityClient,
   conversationId: string,
   model: LanguageModel,             // Any AI SDK compatible model
-  messages: Message[],              // From getConversationsToClassify
+  messages: Message[],              // Conversation messages to classify
+  modelProvider?: string,           // LLM provider (for telemetry)
+  modelId?: string,                 // Model ID (for telemetry)
+  tokenUsage?: {                    // Token usage stats (for telemetry)
+    inputTokens?: number,
+    outputTokens?: number,
+    totalTokens?: number,
+  },
   previousContentGaps?: string[],   // From getPreviousContentGaps
+  telemetry: {
+    shareMetrics: true,             // Share metadata-only metrics with Sanity
+    // shareConversations: true,    // Also share full message contents
+    // contact: 'you@company.com',  // So we can reach you
+  },
 })
 ```
 

@@ -52,6 +52,9 @@ describe('getConversationsToClassify', () => {
         agentId: 'bot',
         threadId: 'thread-1',
         messages: [{role: 'user', content: 'Hello'}],
+        modelProvider: 'anthropic',
+        modelId: 'claude-sonnet-4-5',
+        tokenUsage: {inputTokens: 100, outputTokens: 50, totalTokens: 150},
       },
       {
         _id: 'conv-2',
@@ -104,6 +107,19 @@ describe('getConversationsToClassify', () => {
 
     const [query] = mockClient.fetch.mock.calls[0] as [string]
     expect(query).toContain('order(messagesUpdatedAt asc)')
+  })
+
+  it('query includes model info fields in projection', async () => {
+    const mockClient = createMockClient([])
+
+    await getConversationsToClassify({
+      client: mockClient as never,
+    })
+
+    const [query] = mockClient.fetch.mock.calls[0] as [string]
+    expect(query).toContain('modelProvider')
+    expect(query).toContain('modelId')
+    expect(query).toContain('tokenUsage')
   })
 
   it('passes cooldownCutoff param based on cooldownMinutes', async () => {

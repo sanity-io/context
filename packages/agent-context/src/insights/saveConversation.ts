@@ -3,6 +3,13 @@ import type {SanityClient} from '@sanity/client'
 import {CONVERSATION_SCHEMA_TYPE_NAME} from './constants'
 
 /** @public */
+export interface TokenUsage {
+  inputTokens?: number
+  outputTokens?: number
+  totalTokens?: number
+}
+
+/** @public */
 export type MessageRole = 'user' | 'assistant' | 'system' | 'tool'
 
 /** @public */
@@ -53,6 +60,24 @@ export interface SaveConversationOptions {
    * On upsert, these replace all existing messages.
    */
   messages: Message[]
+
+  /**
+   * The AI model provider (e.g. "openai", "anthropic").
+   * Populated by the AI SDK telemetry integration.
+   */
+  modelProvider?: string
+
+  /**
+   * The AI model identifier (e.g. "gpt-4o").
+   * Populated by the AI SDK telemetry integration.
+   */
+  modelId?: string
+
+  /**
+   * Aggregated token usage for the conversation.
+   * Populated by the AI SDK telemetry integration.
+   */
+  tokenUsage?: TokenUsage
 }
 
 /**
@@ -124,7 +149,7 @@ export function generateConversationId(agentId: string, threadId: string): strin
  * @public
  */
 export async function saveConversation(options: SaveConversationOptions): Promise<string> {
-  const {client, agentId, threadId, messages} = options
+  const {client, agentId, threadId, messages, modelProvider, modelId, tokenUsage} = options
 
   if (!agentId || typeof agentId !== 'string') {
     throw new Error('saveConversation: agentId must be a non-empty string')
@@ -159,6 +184,9 @@ export async function saveConversation(options: SaveConversationOptions): Promis
       p.set({
         messages: formattedMessages,
         messagesUpdatedAt: now,
+        ...(modelProvider !== undefined && {modelProvider}),
+        ...(modelId !== undefined && {modelId}),
+        ...(tokenUsage !== undefined && {tokenUsage}),
       }),
     )
     .commit({autoGenerateArrayKeys: true})

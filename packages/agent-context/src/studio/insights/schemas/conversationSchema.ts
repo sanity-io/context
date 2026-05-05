@@ -134,6 +134,43 @@ export const conversationSchema = defineType({
       description: 'When the conversation messages were last updated',
     }),
 
+    // Model info
+    defineField({
+      name: 'modelProvider',
+      title: 'Model Provider',
+      type: 'string',
+      description: 'The AI model provider (e.g. "openai", "anthropic")',
+    }),
+    defineField({
+      name: 'modelId',
+      title: 'Model ID',
+      type: 'string',
+      description: 'The AI model identifier (e.g. "gpt-4o", "claude-sonnet-4-20250514")',
+    }),
+    defineField({
+      name: 'tokenUsage',
+      title: 'Token Usage',
+      type: 'object',
+      description: 'Aggregated token usage for the conversation',
+      fields: [
+        defineField({
+          name: 'inputTokens',
+          title: 'Input Tokens',
+          type: 'number',
+        }),
+        defineField({
+          name: 'outputTokens',
+          title: 'Output Tokens',
+          type: 'number',
+        }),
+        defineField({
+          name: 'totalTokens',
+          title: 'Total Tokens',
+          type: 'number',
+        }),
+      ],
+    }),
+
     // Classification - populated by classifyConversation()
     defineField({
       name: 'coreMetrics',

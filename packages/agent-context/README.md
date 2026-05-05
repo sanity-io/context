@@ -62,6 +62,23 @@ export default defineConfig({
 
 Track and classify your AI agent conversations automatically. Insights captures every conversation, classifies it with AI (success score, sentiment, content gaps), and provides a Studio dashboard for analytics.
 
+### Telemetry
+
+Classification supports opt-in telemetry sharing with Sanity. There are two levels:
+
+- **Metadata-only** (`shareMetrics: true`) — Shares classification metrics (scores, sentiment, content gap counts, message shapes, model/token info). No conversation content is included.
+- **Full sharing** (`shareConversations: true`) — Also includes message contents. Implies `shareMetrics`. Want to help us improve Agent Context? Opt in and the team will be in touch to help dial in your agent.
+
+```ts
+telemetry: {
+  shareMetrics: true,
+  shareConversations: true,
+  contact: 'you@company.com',
+}
+```
+
+Both levels are off by default.
+
 ### 1. Enable the Plugin
 
 Insights is enabled by default. To disable it:

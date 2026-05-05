@@ -1,7 +1,7 @@
 import type {SanityClient} from '@sanity/client'
 
 import {CONVERSATION_SCHEMA_TYPE_NAME} from './constants'
-import type {Message} from './saveConversation'
+import type {Message, TokenUsage} from './saveConversation'
 
 /** @public */
 export interface GetConversationsToClassifyOptions {
@@ -29,6 +29,12 @@ export interface ConversationToClassify {
   threadId: string
   /** Conversation messages. */
   messages: Message[]
+  /** LLM provider used for this conversation (e.g. `"anthropic"`). */
+  modelProvider?: string
+  /** Model ID used for this conversation (e.g. `"claude-sonnet-4-5"`). */
+  modelId?: string
+  /** Token usage stats for this conversation. */
+  tokenUsage?: TokenUsage
 }
 
 /**
@@ -46,18 +52,17 @@ export interface ConversationToClassify {
  * ```ts
  * import {getConversationsToClassify, classifyConversation} from '@sanity/agent-context/insights'
  *
- * const conversations = await getConversationsToClassify({
- *   client: sanityClient,
- *   limit: 500,
- *   cooldownMinutes: 10,
- * })
+ * const conversations = await getConversationsToClassify({client, limit: 500})
  *
  * for (const conv of conversations) {
  *   await classifyConversation({
- *     client: sanityClient,
+ *     client,
  *     conversationId: conv._id,
  *     model: openai('gpt-4o-mini'),
  *     messages: conv.messages,
+ *     modelProvider: conv.modelProvider,
+ *     modelId: conv.modelId,
+ *     tokenUsage: conv.tokenUsage,
  *   })
  * }
  * ```
@@ -96,7 +101,10 @@ export async function getConversationsToClassify(
       "content": content,
       "toolName": toolName,
       "toolType": toolType
-    }
+    },
+    modelProvider,
+    modelId,
+    tokenUsage
   }`
 
   const conversations = await client.fetch<ConversationToClassify[]>(
