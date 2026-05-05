@@ -114,15 +114,16 @@ export function buildTelemetryPayload(
     }
   }
 
+  if (telemetry.contact) {
+    payload.contact = telemetry.contact
+  }
+
   if (telemetry.shareConversations) {
     payload.conversation.messageContents = conversation.messages.map((m) => ({
       role: m.role,
       content: m.content ?? '',
       ...(m.toolName && {toolName: m.toolName}),
     }))
-    if (telemetry.contact) {
-      payload.contact = telemetry.contact
-    }
   }
 
   return payload

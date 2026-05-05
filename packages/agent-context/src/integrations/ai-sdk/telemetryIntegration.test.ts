@@ -23,7 +23,7 @@ function getHandlers(integration: ReturnType<typeof sanityInsightsIntegration>) 
     onFinish: (event: {
       response: {messages?: Array<{role: string; content: unknown}>}
       model?: {provider: string; modelId: string}
-      totalUsage?: {inputTokens?: number; outputTokens?: number}
+      totalUsage?: {inputTokens?: number; outputTokens?: number; totalTokens?: number}
     }) => Promise<void>
   }
 }
@@ -334,6 +334,28 @@ describe('sanityInsightsIntegration', () => {
           modelProvider: 'anthropic',
           modelId: 'claude-sonnet-4-20250514',
           tokenUsage: {inputTokens: 200, outputTokens: 100, totalTokens: 300},
+        }),
+      )
+    })
+
+    it('prefers totalTokens from event over computed sum', async () => {
+      const integration = sanityInsightsIntegration({
+        client: createMockClient(),
+        agentId: 'test-agent',
+        threadId: 'thread-1',
+      })
+      const {onStart, onFinish} = getHandlers(integration)
+
+      onStart({messages: [{role: 'user', content: 'test'}]})
+      await onFinish({
+        response: {messages: [{role: 'assistant', content: 'reply'}]},
+        model: {provider: 'anthropic', modelId: 'claude-sonnet-4-20250514'},
+        totalUsage: {inputTokens: 200, outputTokens: 100, totalTokens: 500},
+      })
+
+      expect(mockSaveConversation).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tokenUsage: {inputTokens: 200, outputTokens: 100, totalTokens: 500},
         }),
       )
     })

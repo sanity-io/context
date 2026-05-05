@@ -122,6 +122,20 @@ describe('buildTelemetryPayload', () => {
     expect(payload.coreMetrics.contentGapCount).toBe(0)
   })
 
+  it('includes contact with shareMetrics only', () => {
+    const payload = buildTelemetryPayload(
+      'conv-123',
+      '2025-01-01T00:00:00Z',
+      'project-abc',
+      baseCoreMetrics,
+      baseConversation,
+      {shareMetrics: true, contact: 'me@co.com'},
+    )
+
+    expect(payload.contact).toBe('me@co.com')
+    expect(payload.conversation.messageContents).toBeUndefined()
+  })
+
   it('handles messages with no content', () => {
     const payload = buildTelemetryPayload(
       'conv-123',

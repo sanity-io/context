@@ -174,10 +174,11 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): Telemetr
       const inputTokens = event.totalUsage?.inputTokens
       const outputTokens = event.totalUsage?.outputTokens
       const totalTokens =
-        event.totalUsage?.totalTokens ??
-        (inputTokens !== undefined || outputTokens !== undefined
-          ? (inputTokens ?? 0) + (outputTokens ?? 0)
-          : undefined)
+        event.totalUsage?.totalTokens !== undefined
+          ? event.totalUsage.totalTokens
+          : inputTokens !== undefined || outputTokens !== undefined
+            ? (inputTokens ?? 0) + (outputTokens ?? 0)
+            : undefined
       const tokenUsage =
         inputTokens !== undefined || outputTokens !== undefined
           ? {inputTokens, outputTokens, totalTokens}
