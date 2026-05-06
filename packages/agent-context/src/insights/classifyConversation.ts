@@ -101,23 +101,20 @@ Guidelines:
  *
  * If classification fails, an error is stored on the document and the error is re-thrown.
  *
+ * For most use cases, prefer `classifyConversations` (plural) which handles
+ * fetching, batching, and error handling automatically.
+ *
  * @example
  * ```ts
- * import {getConversationsToClassify, classifyConversation} from '@sanity/agent-context/insights'
+ * import {classifyConversation} from '@sanity/agent-context/insights'
  * import {openai} from '@ai-sdk/openai'
  *
- * const conversations = await getConversationsToClassify({client})
- * for (const conv of conversations) {
- *   await classifyConversation({
- *     client,
- *     conversationId: conv._id,
- *     model: openai('gpt-4o-mini'),
- *     messages: conv.messages,
- *     modelProvider: conv.modelProvider,
- *     modelId: conv.modelId,
- *     tokenUsage: conv.tokenUsage,
- *   })
- * }
+ * await classifyConversation({
+ *   client,
+ *   conversationId: 'agentconversation-bot-thread-123',
+ *   model: openai('gpt-4o-mini'),
+ *   messages: [{role: 'user', content: 'Hello'}, {role: 'assistant', content: 'Hi!'}],
+ * })
  * ```
  *
  * @returns The classification result with core metrics.

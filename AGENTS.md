@@ -115,17 +115,18 @@ Conversation tracking and classification system. Two parts:
 
 Key files:
 
-| File                                                | Purpose                                    |
-| --------------------------------------------------- | ------------------------------------------ |
-| `src/insights/saveConversation.ts`                  | Save/upsert conversation documents         |
-| `src/insights/getConversationsToClassify.ts`        | Query conversations needing classification |
-| `src/insights/classifyConversation.ts`              | Classify a conversation with AI            |
-| `src/insights/sendInsightsTelemetry.ts`             | Opt-in telemetry sharing with Sanity       |
-| `src/insights/getPreviousContentGaps.ts`            | Fetch previously identified content gaps   |
-| `src/integrations/ai-sdk/telemetryIntegration.ts`   | AI SDK telemetry integration               |
-| `src/studio/insights/schemas/conversationSchema.ts` | Conversation document schema               |
+| File                                                | Purpose                                              |
+| --------------------------------------------------- | ---------------------------------------------------- |
+| `src/insights/classifyConversations.ts`             | Happy-path wrapper for classifying all conversations |
+| `src/insights/saveConversation.ts`                  | Save/upsert conversation documents                   |
+| `src/insights/getConversationsToClassify.ts`        | Query conversations needing classification           |
+| `src/insights/classifyConversation.ts`              | Classify a single conversation with AI               |
+| `src/insights/sendInsightsTelemetry.ts`             | Opt-in telemetry sharing with Sanity                 |
+| `src/insights/getPreviousContentGaps.ts`            | Fetch previously identified content gaps             |
+| `src/integrations/ai-sdk/telemetryIntegration.ts`   | AI SDK telemetry integration                         |
+| `src/studio/insights/schemas/conversationSchema.ts` | Conversation document schema                         |
 
-`getConversationsToClassify` and `classifyConversation` are designed as composable primitives — the former returns all data (messages, model info), the latter accepts it as input with no internal fetches.
+`classifyConversations` (plural) is the recommended entry point — it orchestrates `getConversationsToClassify`, `getPreviousContentGaps`, and `classifyConversation` with batched concurrency. The lower-level primitives are composable for custom workflows.
 
 ### Skill References Syncing
 

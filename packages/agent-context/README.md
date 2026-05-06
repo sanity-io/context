@@ -174,20 +174,29 @@ Every classified conversation includes these standardized metrics:
 | `sentiment`    | `'positive' \| 'neutral' \| 'negative'` | Overall user sentiment                       |
 | `contentGaps`  | `string[]`                              | Topics where the agent lacked knowledge      |
 
-### Insights Primitives
+### Insights API
 
-For custom workflows outside the AI SDK, use the insights APIs directly:
+The recommended way to classify conversations is with `classifyConversations`, which handles fetching, batching, and error handling in a single call:
+
+```ts
+import {classifyConversations} from '@sanity/agent-context/insights'
+
+await classifyConversations({
+  client,
+  model: anthropic('claude-sonnet-4-5'),
+  telemetry: {shareMetrics: true},
+})
+```
+
+For custom workflows, use the lower-level primitives directly:
 
 | Function                     | Purpose                                           |
 | ---------------------------- | ------------------------------------------------- |
-| `saveConversation`           | Save a conversation without classification        |
-| `classifyConversation`       | Classify an existing conversation                 |
+| `classifyConversation`       | Classify a single conversation                    |
 | `getConversationsToClassify` | Find conversations needing (re)classification     |
+| `getPreviousContentGaps`     | Fetch content gaps ranked by frequency            |
+| `saveConversation`           | Save a conversation without classification        |
 | `generateConversationId`     | Generate deterministic ID from agentId + threadId |
-
-```ts
-import {saveConversation, classifyConversation} from '@sanity/agent-context/insights'
-```
 
 ### Notes
 
