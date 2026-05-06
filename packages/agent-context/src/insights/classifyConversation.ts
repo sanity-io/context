@@ -34,7 +34,7 @@ export interface ClassifyConversationOptions {
   client: SanityClient
   /** Document ID to classify. */
   conversationId: string
-  /** AI SDK model for classification (e.g., `anthropic('claude-sonnet-4-5')`). */
+  /** AI SDK model for classification (e.g., `anthropic('claude-haiku-4-5')`). */
   model: LanguageModel
   /** Messages to classify. */
   messages: Message[]
@@ -112,7 +112,7 @@ Guidelines:
  * await classifyConversation({
  *   client,
  *   conversationId: 'agentconversation-bot-thread-123',
- *   model: anthropic('claude-sonnet-4-5'),
+ *   model: anthropic('claude-haiku-4-5'),
  *   messages: [{role: 'user', content: 'Hello'}, {role: 'assistant', content: 'Hi!'}],
  * })
  * ```
@@ -146,6 +146,7 @@ ${formatMessagesForPrompt(messages)}
       output: Output.object({schema}),
       system: systemPrompt,
       prompt: userPrompt,
+      abortSignal: AbortSignal.timeout(5 * 60 * 1000),
     })
 
     if (!result.output) {

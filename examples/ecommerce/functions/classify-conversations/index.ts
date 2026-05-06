@@ -22,7 +22,7 @@ export const handler = scheduledEventHandler(async ({context}) => {
 
   const result = await classifyConversations({
     client,
-    model: anthropic('claude-sonnet-4-5'),
+    model: anthropic('claude-haiku-4-5'),
     telemetry: {
       shareMetrics: true,
       // shareConversations: true,

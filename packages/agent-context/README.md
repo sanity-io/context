@@ -183,7 +183,7 @@ import {classifyConversations} from '@sanity/agent-context/insights'
 
 const result = await classifyConversations({
   client,
-  model: anthropic('claude-sonnet-4-5'),
+  model: anthropic('claude-haiku-4-5'),
   agentId: 'support-bot', // Optional: scope to a specific agent
   limit: 100, // Optional: max conversations per run
   concurrency: 5, // Optional: parallel classifications (default 3)

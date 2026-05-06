@@ -12,7 +12,7 @@ const DEFAULT_CONCURRENCY = 3
 export interface ClassifyConversationsOptions {
   /** Sanity client with read/write permissions. */
   client: SanityClient
-  /** AI SDK model for classification (e.g., `anthropic('claude-sonnet-4-5')`). */
+  /** AI SDK model for classification (e.g., `anthropic('claude-haiku-4-5')`). */
   model: LanguageModel
   /** Max conversations to classify concurrently. Defaults to `3`. */
   concurrency?: number
@@ -53,7 +53,7 @@ export interface ClassifyConversationsResult {
  *
  * const result = await classifyConversations({
  *   client,
- *   model: anthropic('claude-sonnet-4-5'),
+ *   model: anthropic('claude-haiku-4-5'),
  *   telemetry: {shareMetrics: true},
  * })
  *
@@ -87,34 +87,39 @@ export async function classifyConversations(
 
   let successCount = 0
   let errorCount = 0
+  const active = new Set<Promise<void>>()
 
-  for (let i = 0; i < conversations.length; i += concurrency) {
-    const batch = conversations.slice(i, i + concurrency)
-    const results = await Promise.allSettled(
-      batch.map((conv) =>
-        classifyConversation({
-          client,
-          conversationId: conv._id,
-          model,
-          messages: conv.messages,
-          modelProvider: conv.modelProvider,
-          modelId: conv.modelId,
-          tokenUsage: conv.tokenUsage,
-          previousContentGaps,
-          telemetry,
-        }),
-      ),
-    )
-
-    for (const result of results) {
-      if (result.status === 'fulfilled') {
-        successCount++
-      } else {
-        errorCount++
-        console.error('[classifyConversation] Failed to classify:', result.reason)
-      }
+  for (const conv of conversations) {
+    if (active.size >= concurrency) {
+      await Promise.race(active)
     }
+
+    const task = classifyConversation({
+      client,
+      conversationId: conv._id,
+      model,
+      messages: conv.messages,
+      modelProvider: conv.modelProvider,
+      modelId: conv.modelId,
+      tokenUsage: conv.tokenUsage,
+      previousContentGaps,
+      telemetry,
+    })
+      .then(() => {
+        successCount++
+      })
+      .catch((err) => {
+        errorCount++
+        console.error('[classifyConversation] Failed to classify:', err)
+      })
+      .finally(() => {
+        active.delete(task)
+      })
+
+    active.add(task)
   }
+
+  await Promise.all(active)
 
   return {successCount, errorCount, totalFound: conversations.length}
 }
