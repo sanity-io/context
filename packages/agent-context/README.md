@@ -174,20 +174,38 @@ Every classified conversation includes these standardized metrics:
 | `sentiment`    | `'positive' \| 'neutral' \| 'negative'` | Overall user sentiment                       |
 | `contentGaps`  | `string[]`                              | Topics where the agent lacked knowledge      |
 
-### Insights Primitives
+### Insights API
 
-For custom workflows outside the AI SDK, use the insights APIs directly:
-
-| Function                     | Purpose                                           |
-| ---------------------------- | ------------------------------------------------- |
-| `saveConversation`           | Save a conversation without classification        |
-| `classifyConversation`       | Classify an existing conversation                 |
-| `getConversationsToClassify` | Find conversations needing (re)classification     |
-| `generateConversationId`     | Generate deterministic ID from agentId + threadId |
+The recommended way to classify conversations is with `classifyConversations`, which handles fetching, batching, and error handling in a single call:
 
 ```ts
-import {saveConversation, classifyConversation} from '@sanity/agent-context/insights'
+import {classifyConversations} from '@sanity/agent-context/insights'
+
+const result = await classifyConversations({
+  client,
+  model: anthropic('claude-haiku-4-5'),
+  agentId: 'support-bot', // Optional: scope to a specific agent
+  limit: 100, // Optional: max conversations per run
+  concurrency: 5, // Optional: parallel classifications (default 3)
+  cooldownMinutes: 15, // Optional: idle time before eligible (default 10)
+  telemetry: {shareMetrics: true},
+})
+
+console.log(
+  `${result.successCount} classified, ${result.errorCount} failed out of ${result.totalFound}`,
+)
 ```
+
+For custom workflows, use the lower-level primitives directly:
+
+| Function                     | Purpose                                               |
+| ---------------------------- | ----------------------------------------------------- |
+| `classifyConversations`      | **Recommended** — classify all eligible conversations |
+| `classifyConversation`       | Classify a single conversation                        |
+| `getConversationsToClassify` | Find conversations needing (re)classification         |
+| `getPreviousContentGaps`     | Fetch content gaps ranked by frequency                |
+| `saveConversation`           | Save a conversation without classification            |
+| `generateConversationId`     | Generate deterministic ID from agentId + threadId     |
 
 ### Notes
 

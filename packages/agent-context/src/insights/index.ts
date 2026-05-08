@@ -6,6 +6,11 @@ export type {
 } from './classifyConversation'
 export {classifyConversation} from './classifyConversation'
 export type {
+  ClassifyConversationsOptions,
+  ClassifyConversationsResult,
+} from './classifyConversations'
+export {classifyConversations} from './classifyConversations'
+export type {
   ConversationToClassify,
   GetConversationsToClassifyOptions,
 } from './getConversationsToClassify'

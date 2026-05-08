@@ -38,21 +38,15 @@ export function rankByFrequency(gaps: string[], limit: number): string[] {
  * Fetches previously identified content gaps from classified conversations,
  * deduplicated and ranked by frequency.
  *
- * Pass the result to `classifyConversation` via the `previousContentGaps` option
- * to encourage consistent terminology across classifications.
+ * Used internally by `classifyConversations` (plural). For most use cases,
+ * prefer that function which handles this automatically.
  *
  * @example
  * ```ts
- * import {getPreviousContentGaps, classifyConversation} from '@sanity/agent-context/insights'
+ * import {getPreviousContentGaps} from '@sanity/agent-context/insights'
  *
- * const previousContentGaps = await getPreviousContentGaps({client})
- *
- * await classifyConversation({
- *   client,
- *   conversationId: 'agentconversation-support-bot-thread-123',
- *   model: openai('gpt-4o-mini'),
- *   previousContentGaps,
- * })
+ * const gaps = await getPreviousContentGaps({client, agentId: 'support-bot'})
+ * console.log(`${gaps.length} known content gaps:`, gaps)
  * ```
  *
  * @returns Array of content gap strings, ranked by frequency (most common first).

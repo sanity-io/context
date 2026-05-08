@@ -163,7 +163,29 @@ describe('getConversationsToClassify', () => {
         client: mockClient as never,
         cooldownMinutes: -5,
       }),
-    ).rejects.toThrow('cooldownMinutes must be non-negative')
+    ).rejects.toThrow('cooldownMinutes must be a non-negative number')
+  })
+
+  it('throws if cooldownMinutes is NaN', async () => {
+    const mockClient = createMockClient([])
+
+    await expect(
+      getConversationsToClassify({
+        client: mockClient as never,
+        cooldownMinutes: NaN,
+      }),
+    ).rejects.toThrow('cooldownMinutes must be a non-negative number')
+  })
+
+  it('throws if cooldownMinutes is Infinity', async () => {
+    const mockClient = createMockClient([])
+
+    await expect(
+      getConversationsToClassify({
+        client: mockClient as never,
+        cooldownMinutes: Infinity,
+      }),
+    ).rejects.toThrow('cooldownMinutes must be a non-negative number')
   })
 
   it('throws if limit is not a positive integer', async () => {

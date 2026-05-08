@@ -48,23 +48,15 @@ export interface ConversationToClassify {
  * Results are ordered by `messagesUpdatedAt` ascending (oldest first) to prioritize
  * conversations that have been waiting longest.
  *
+ * For most use cases, prefer `classifyConversations` (plural) which handles
+ * fetching, batching, and error handling automatically.
+ *
  * @example
  * ```ts
- * import {getConversationsToClassify, classifyConversation} from '@sanity/agent-context/insights'
+ * import {getConversationsToClassify} from '@sanity/agent-context/insights'
  *
- * const conversations = await getConversationsToClassify({client, limit: 500})
- *
- * for (const conv of conversations) {
- *   await classifyConversation({
- *     client,
- *     conversationId: conv._id,
- *     model: openai('gpt-4o-mini'),
- *     messages: conv.messages,
- *     modelProvider: conv.modelProvider,
- *     modelId: conv.modelId,
- *     tokenUsage: conv.tokenUsage,
- *   })
- * }
+ * const conversations = await getConversationsToClassify({client, agentId: 'support-bot', limit: 500})
+ * console.log(`${conversations.length} conversations need classification`)
  * ```
  *
  * @returns Array of conversations that need classification.
@@ -79,8 +71,8 @@ export async function getConversationsToClassify(
     throw new Error('getConversationsToClassify: limit must be a positive integer')
   }
 
-  if (cooldownMinutes < 0) {
-    throw new Error('getConversationsToClassify: cooldownMinutes must be non-negative')
+  if (!Number.isFinite(cooldownMinutes) || cooldownMinutes < 0) {
+    throw new Error('getConversationsToClassify: cooldownMinutes must be a non-negative number')
   }
 
   const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString()

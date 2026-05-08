@@ -34,7 +34,7 @@ export interface ClassifyConversationOptions {
   client: SanityClient
   /** Document ID to classify. */
   conversationId: string
-  /** AI SDK model for classification (e.g., `openai('gpt-4o-mini')`). */
+  /** AI SDK model for classification (e.g., `anthropic('claude-haiku-4-5')`). */
   model: LanguageModel
   /** Messages to classify. */
   messages: Message[]
@@ -101,23 +101,20 @@ Guidelines:
  *
  * If classification fails, an error is stored on the document and the error is re-thrown.
  *
+ * For most use cases, prefer `classifyConversations` (plural) which handles
+ * fetching, batching, and error handling automatically.
+ *
  * @example
  * ```ts
- * import {getConversationsToClassify, classifyConversation} from '@sanity/agent-context/insights'
- * import {openai} from '@ai-sdk/openai'
+ * import {classifyConversation} from '@sanity/agent-context/insights'
+ * import {anthropic} from '@ai-sdk/anthropic'
  *
- * const conversations = await getConversationsToClassify({client})
- * for (const conv of conversations) {
- *   await classifyConversation({
- *     client,
- *     conversationId: conv._id,
- *     model: openai('gpt-4o-mini'),
- *     messages: conv.messages,
- *     modelProvider: conv.modelProvider,
- *     modelId: conv.modelId,
- *     tokenUsage: conv.tokenUsage,
- *   })
- * }
+ * await classifyConversation({
+ *   client,
+ *   conversationId: 'agentconversation-bot-thread-123',
+ *   model: anthropic('claude-haiku-4-5'),
+ *   messages: [{role: 'user', content: 'Hello'}, {role: 'assistant', content: 'Hi!'}],
+ * })
  * ```
  *
  * @returns The classification result with core metrics.
@@ -149,6 +146,7 @@ ${formatMessagesForPrompt(messages)}
       output: Output.object({schema}),
       system: systemPrompt,
       prompt: userPrompt,
+      abortSignal: AbortSignal.timeout(5 * 60 * 1000),
     })
 
     if (!result.output) {
