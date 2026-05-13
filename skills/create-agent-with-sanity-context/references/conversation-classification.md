@@ -338,7 +338,7 @@ The `sanityInsightsIntegration` hooks into AI SDK's telemetry system:
 - **On request start**: Captures input messages
 - **On request finish**: Combines with response messages and saves to Sanity
 
-Conversations are saved as `sanity.agentContextConversation` documents (provided by the plugin).
+Conversations are saved as `sanityAgentContextConversation` documents (provided by the plugin).
 
 ### Classification
 
@@ -389,7 +389,7 @@ The robot token isn't configured correctly. Verify:
 ### Classification not finding conversations
 
 - Conversations need at least 10 minutes of idle time before classification
-- Check that telemetry is saving conversations: look for `sanity.agentContextConversation` documents in Studio
+- Check that telemetry is saving conversations: look for `sanityAgentContextConversation` documents in Studio
 
 ## Insights API Reference
 

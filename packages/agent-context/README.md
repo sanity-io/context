@@ -87,7 +87,7 @@ Insights is enabled by default. To disable it:
 agentContextPlugin({insights: {enabled: false}})
 ```
 
-This registers the `sanity.agentContextConversation` schema and adds an "Agent Insights" dashboard to your Studio.
+This registers the `sanityAgentContextConversation` schema and adds an "Agent Insights" dashboard to your Studio.
 
 ### 2. Add Telemetry
 

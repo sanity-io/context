@@ -80,7 +80,7 @@ describe('getConversationsToClassify', () => {
     })
 
     const [, params] = mockClient.fetch.mock.calls[0] as [string, Record<string, unknown>]
-    expect(params['type']).toBe('sanity.agentContextConversation')
+    expect(params['type']).toBe('sanityAgentContextConversation')
   })
 
   it('query filters for unclassified or updated conversations using messagesUpdatedAt', async () => {

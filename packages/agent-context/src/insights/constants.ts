@@ -3,4 +3,4 @@
  *
  * @public
  */
-export const CONVERSATION_SCHEMA_TYPE_NAME = 'sanity.agentContextConversation'
+export const CONVERSATION_SCHEMA_TYPE_NAME = 'sanityAgentContextConversation'

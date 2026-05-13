@@ -101,7 +101,7 @@ describe('saveConversation', () => {
       expect(createIfNotExistsMock).toHaveBeenCalledWith(
         expect.objectContaining({
           _id: result,
-          _type: 'sanity.agentContextConversation',
+          _type: 'sanityAgentContextConversation',
           agentId: 'test-agent',
           threadId: 'test-thread',
         }),
