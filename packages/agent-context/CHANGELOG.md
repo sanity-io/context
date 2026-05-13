@@ -2,10 +2,9 @@
 
 ## [0.6.0](https://github.com/sanity-io/agent-context/compare/agent-context-v0.5.0...agent-context-v0.6.0) (2026-05-13)
 
-
 ### Features
 
-* **insights:** add classifyConversations wrapper around primitives ([#212](https://github.com/sanity-io/agent-context/issues/212)) ([2b3cc05](https://github.com/sanity-io/agent-context/commit/2b3cc05e89f6c1629970f66ee364d5ace87232b1))
+- **insights:** add classifyConversations wrapper around primitives ([#212](https://github.com/sanity-io/agent-context/issues/212)) ([2b3cc05](https://github.com/sanity-io/agent-context/commit/2b3cc05e89f6c1629970f66ee364d5ace87232b1))
 
 ## [0.5.0](https://github.com/sanity-io/agent-context/compare/agent-context-v0.4.0...agent-context-v0.5.0) (2026-05-05)
 
