@@ -96,7 +96,6 @@ export async function POST(req: Request) {
 
   try {
     // Initialize MCP client and fetch system prompt from Sanity document
-    console.log(process.env.SANITY_CONTEXT_MCP_URL)
     const [mcpClientResult, agentConfig] = await Promise.all([
       createMCPClient({
         transport: {
