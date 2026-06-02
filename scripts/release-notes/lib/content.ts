@@ -53,7 +53,7 @@ export async function generateContent(
       messages: [
         {
           role: 'user',
-          content: `You are writing a changelog entry for sanity.io/changelog about the @sanity/agent-context package. The audience is developers using this package in their Sanity Studio.
+          content: `You are writing a changelog entry for sanity.io/changelog about the @sanity/context package. The audience is developers using this package in their Sanity Studio.
 
 Write a title and body based on the release information below.
 

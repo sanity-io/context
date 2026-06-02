@@ -1,11 +1,11 @@
 ---
 name: shape-your-agent
-description: Interactive session to craft a system prompt for an AI agent powered by Sanity Agent Context MCP. Use this skill when users want to define agent personality, set tone/voice, establish boundaries and guardrails, configure refusal behaviors, or control how their agent communicates. Trigger when users mention their agent sounds wrong, needs to refuse certain requests, has the wrong tone, or they want to set communication rules and policies.
+description: Interactive session to craft a system prompt for an AI agent powered by the Sanity Context MCP server. Use this skill when users want to define agent personality, set tone/voice, establish boundaries and guardrails, configure refusal behaviors, or control how their agent communicates. Trigger when users mention their agent sounds wrong, needs to refuse certain requests, has the wrong tone, or they want to set communication rules and policies.
 ---
 
 # Shape Your Agent
 
-An optional, conversational workflow for creating a system prompt for an AI agent that uses the Sanity Agent Context MCP. This is for users who **control the system prompt** in their agent setup.
+An optional, conversational workflow for creating a system prompt for an AI agent that uses the Sanity Context MCP server. This is for users who **control the system prompt** in their agent setup.
 
 > **Don't have access to the system prompt?** Skip this skill entirely. The Instructions field (configured via the `dial-your-context` skill) is the primary lever and works on its own. A minimal system prompt like "You are a helpful agent." combined with good Instructions field content scores 80%+ in our evaluations.
 

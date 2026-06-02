@@ -43,8 +43,8 @@ NEXT_PUBLIC_SANITY_DATASET=production
 # Sanity API token with read access
 SANITY_API_READ_TOKEN=your-read-token
 
-# Agent Context MCP URL
-SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v2026-03-03/agent-context/:projectId/:dataset/:slug
+# Sanity Context MCP URL
+SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset/:slug
 
 # Anthropic API key
 ANTHROPIC_API_KEY=your-anthropic-key
@@ -61,7 +61,7 @@ See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/rou
 
 - **Client tool definitions**: Tools without `execute` function - execution happens client-side
 - **`buildSystemPrompt`**: Combines base prompt from Sanity with implementation-specific parts
-- **MCP client creation**: HTTP transport connection to Sanity Context MCP
+- **MCP client creation**: HTTP transport connection to the Sanity Context MCP server
 - **`streamText` call**: Combining MCP tools with client tools
 
 **MCP Connection Pattern** (`createMCPClient`):
@@ -87,7 +87,7 @@ const result = streamText({
   system: systemPrompt,
   messages: await convertToModelMessages(messages),
   tools: {
-    ...mcpTools, // Agent Context tools (groq_query, initial_context, etc.)
+    ...mcpTools, // Sanity Context tools (groq_query, initial_context, etc.)
     ...clientTools, // Client-side tools (page context, screenshot)
   },
 })
@@ -150,7 +150,7 @@ The agent should:
 Track conversations for analytics and debugging using `sanityInsightsIntegration`:
 
 ```ts
-import {sanityInsightsIntegration} from '@sanity/agent-context/ai-sdk'
+import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 
 const result = streamText({
   model: anthropic('claude-sonnet-4-5'),
@@ -251,13 +251,13 @@ For e-commerce or content-heavy apps, define custom markdown directives to rende
 
 ### MCP endpoint returns 500 or schema errors
 
-Agent Context requires a deployed Studio. See [Deploy Your Studio](studio-setup.md#deploy-your-studio) for instructions.
+Sanity Context requires a deployed Studio. See [Deploy Your Studio](studio-setup.md#deploy-your-studio) for instructions.
 
 ### "SANITY_CONTEXT_MCP_URL is not set"
 
 Ensure you've:
 
-1. Created an Agent Context document in Studio (or use the base URL without a slug)
+1. Created a Sanity Context document in Studio (or use the base URL without a slug)
 2. Given it a slug
 3. Copied the MCP URL from the document
 4. Added it to your `.env.local`
@@ -268,7 +268,7 @@ Your `SANITY_API_READ_TOKEN` is missing or invalid. Generate a new token at [san
 
 ### "No documents found" / Empty results
 
-Check your Agent Context's content filter:
+Check your Sanity Context document's content filter:
 
 - Is the GROQ filter correct?
 - Are the document types spelled correctly?
@@ -278,4 +278,4 @@ Check your Agent Context's content filter:
 
 1. Check that `mcpClient.tools()` returns tools (log it)
 2. Ensure the MCP URL is correct (project ID, dataset, and optionally slug)
-3. If using a slug-based URL, verify the agent context document is published
+3. If using a slug-based URL, verify the Sanity Context document is published

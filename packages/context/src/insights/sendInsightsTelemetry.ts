@@ -10,7 +10,7 @@ export interface TelemetryConfig {
   /**
    * Share full conversation contents with Sanity. Implies `shareMetrics`.
    *
-   * Want to help us improve Agent Context? Opt in to share full conversation
+   * Want to help us improve Sanity Context? Opt in to share full conversation
    * traces — the team will be in touch to help dial in your agent.
    */
   shareConversations?: boolean
@@ -141,7 +141,7 @@ export async function sendInsightsTelemetry(
   if (!token) return
 
   const apiHost = (config.apiHost ?? DEFAULT_API_HOST).replace(/\/$/, '')
-  const url = `${apiHost}/${TELEMETRY_API_VERSION}/agent-context-insights/telemetry`
+  const url = `${apiHost}/${TELEMETRY_API_VERSION}/context/insights/telemetry`
 
   try {
     const response = await fetch(url, {

@@ -16,8 +16,8 @@
   },
   "prettier": "@sanity/prettier-config",
   "dependencies": {
-    "@sanity/agent-context": "workspace:*",
     "@sanity/blueprints": "0.14.0",
+    "@sanity/context": "workspace:*",
     "@sanity/functions": "1.2.1",
     "@sanity/vision": "catalog:",
     "react": "catalog:",

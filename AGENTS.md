@@ -4,9 +4,9 @@ Guidelines for AI coding assistants working in this repository.
 
 ## Overview
 
-This is a monorepo for Sanity Agent Context—tools for building AI agents with structured access to Sanity content. The system has three main parts:
+This is a monorepo for Sanity Context—tools for building AI agents with structured access to Sanity content. The system has three main parts:
 
-1. **Studio Plugin** (`@sanity/agent-context`) - Registers a document type for configuring agent content access
+1. **Studio Plugin** (`@sanity/context`) - Registers a document type for configuring agent content access
 2. **Context MCP** (external service) - Reads agent context documents and exposes tools to AI agents
 3. **Agent Implementation** - Your app that connects to Context MCP and uses the tools
 
@@ -17,10 +17,10 @@ This repo contains the Studio plugin, agent skills for building and optimizing i
 ```
 .
 ├── packages/
-│   └── agent-context/        # @sanity/agent-context npm package
+│   └── context/              # @sanity/context npm package
 ├── skills/
-│   ├── create-agent-with-sanity-context/  # Build an agent with Agent Context
-│   ├── dial-your-context/                 # Tune Instructions field content for your Agent Context MCP
+│   ├── create-agent-with-sanity-context/  # Build an agent with Sanity Context
+│   ├── dial-your-context/                 # Tune Instructions field content for Sanity Context
 │   └── shape-your-agent/                  # Craft a system prompt for your agent (optional)
 ├── sandboxes/
 │   └── dev-studio/           # Development sandbox for testing plugin
@@ -29,7 +29,7 @@ This repo contains the Studio plugin, agent skills for building and optimizing i
 └── package.json              # Root workspace config
 ```
 
-## Package: @sanity/agent-context
+## Package: @sanity/context
 
 The main deliverable. A Sanity Studio plugin that registers the `sanity.agentContext` document type.
 
@@ -47,7 +47,7 @@ The main deliverable. A Sanity Studio plugin that registers the `sanity.agentCon
 
 ```ts
 // Studio plugin and constants
-import {agentContextPlugin, AGENT_CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/agent-context/studio'
+import {agentContextPlugin, AGENT_CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/context/studio'
 ```
 
 ## Development
@@ -73,7 +73,7 @@ pnpm dev
 
 ## Key Concepts
 
-### Agent Context Document
+### Sanity Context Document
 
 Schema type: `sanity.agentContext`
 
@@ -98,10 +98,10 @@ The filter UI provides two modes:
 
 ### MCP URL
 
-Each agent context document generates an MCP URL:
+Each Sanity Context document generates an MCP URL:
 
 ```
-https://api.sanity.io/v2026-03-03/agent-context/:projectId/:dataset/:slug
+https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset/:slug
 ```
 
 Agents connect via HTTP transport with a Bearer token (Sanity API read token).
@@ -110,8 +110,8 @@ Agents connect via HTTP transport with a Bearer token (Sanity API read token).
 
 Conversation tracking and classification system. Two parts:
 
-1. **Telemetry integration** (`@sanity/agent-context/ai-sdk`) — saves conversations from chat routes via AI SDK's `experimental_telemetry`
-2. **Classification primitives** (`@sanity/agent-context/insights`) — composable functions for analyzing saved conversations
+1. **Telemetry integration** (`@sanity/context/ai-sdk`) — saves conversations from chat routes via AI SDK's `experimental_telemetry`
+2. **Classification primitives** (`@sanity/context/insights`) — composable functions for analyzing saved conversations
 
 Key files:
 

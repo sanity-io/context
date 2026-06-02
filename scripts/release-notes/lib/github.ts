@@ -1,5 +1,5 @@
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN
-const GITHUB_REPO = 'sanity-io/agent-context'
+const GITHUB_REPO = 'sanity-io/context'
 
 export interface ReleaseInfo {
   version: string
@@ -42,7 +42,7 @@ export async function getReleaseInfo(
   version: string,
   {retries = 3, delayMs = 5000}: {retries?: number; delayMs?: number} = {},
 ): Promise<ReleaseInfo> {
-  const tag = `agent-context-v${version}`
+  const tag = `context-v${version}`
   const url = `https://api.github.com/repos/${GITHUB_REPO}/releases/tags/${tag}`
 
   for (let attempt = 0; attempt <= retries; attempt++) {

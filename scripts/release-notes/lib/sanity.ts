@@ -23,7 +23,7 @@ export function getClient(): SanityClient {
 
 export function createDocumentIds(version: string) {
   const versionId = Buffer.from(version).toString('base64url')
-  const releaseId = `ragent-context-pkg-${versionId}`
+  const releaseId = `rcontext-pkg-${versionId}`
 
   const createId = (input: string) => {
     const published = createPublishedId(input)
@@ -33,7 +33,7 @@ export function createDocumentIds(version: string) {
     }
   }
 
-  const changelogDocumentId = createId(`agent-context-pkg-${versionId}`)
+  const changelogDocumentId = createId(`context-pkg-${versionId}`)
   const apiVersionDocId = createId(`${changelogDocumentId.published}-api-version`)
 
   return {releaseId, changelogDocumentId, apiVersionDocId}

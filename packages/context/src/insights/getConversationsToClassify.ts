@@ -53,7 +53,7 @@ export interface ConversationToClassify {
  *
  * @example
  * ```ts
- * import {getConversationsToClassify} from '@sanity/agent-context/insights'
+ * import {getConversationsToClassify} from '@sanity/context/insights'
  *
  * const conversations = await getConversationsToClassify({client, agentId: 'support-bot', limit: 500})
  * console.log(`${conversations.length} conversations need classification`)

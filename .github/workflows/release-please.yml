@@ -54,7 +54,7 @@ jobs:
 
       - name: Build
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
-        run: pnpm --filter @sanity/agent-context build
+        run: pnpm --filter @sanity/context build
 
       - name: Set publishing config
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
@@ -66,7 +66,7 @@ jobs:
       # need to publish the new version to npm here
       - name: Publish to npm
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
-        run: pnpm --filter @sanity/agent-context publish
+        run: pnpm --filter @sanity/context publish
         env:
           NPM_CONFIG_PROVENANCE: true
 
@@ -74,7 +74,7 @@ jobs:
       - name: Create changelog release
         id: changelog
         if: ${{ steps.release.outputs.releases_created == 'true' }}
-        run: pnpm release-notes create ${{ steps.release.outputs['packages/agent-context--version'] }} --yes
+        run: pnpm release-notes create ${{ steps.release.outputs['packages/context--version'] }} --yes
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           CHANGELOG_SANITY_PROJECT_ID: ${{ vars.CHANGELOG_SANITY_PROJECT_ID }}
@@ -88,7 +88,7 @@ jobs:
         uses: LoveToKnow/slackify-markdown-action@698a1d4d0ff1794152a93c03ee8ca5e03a310d4e # v1.1.1
         id: changelog-markdown
         with:
-          text: ${{ steps.release.outputs['packages/agent-context--body'] }}
+          text: ${{ steps.release.outputs['packages/context--body'] }}
 
       - name: Notify Slack
         if: ${{ steps.release.outputs.releases_created == 'true' }}
@@ -101,7 +101,7 @@ jobs:
               - type: header
                 text:
                   type: plain_text
-                  text: "@sanity/agent-context v${{ steps.release.outputs['packages/agent-context--version'] }} released"
+                  text: "@sanity/context v${{ steps.release.outputs['packages/context--version'] }} released"
               - type: section
                 text:
                   type: mrkdwn

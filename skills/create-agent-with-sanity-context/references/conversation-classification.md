@@ -1,6 +1,6 @@
 # Conversation Insights
 
-Track and classify agent conversations using `@sanity/agent-context`. This enables analytics, debugging, and understanding how users interact with your agent.
+Track and classify agent conversations using `@sanity/context`. This enables analytics, debugging, and understanding how users interact with your agent.
 
 > **Reference Implementation**: See [ecommerce/\_index.md](ecommerce/_index.md) for file navigation.
 
@@ -74,7 +74,7 @@ These are reference layouts for new blueprints — always adapt to the user's ex
 Add `sanityInsightsIntegration` to your `streamText` call. This saves conversations automatically.
 
 ```ts
-import {sanityInsightsIntegration} from '@sanity/agent-context/ai-sdk'
+import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 import {streamText} from 'ai'
 
 const result = streamText({
@@ -115,7 +115,7 @@ Then pass it to your chat API via request body or headers.
 **Not using AI SDK?** The telemetry integration requires Vercel AI SDK. If using another library, use `saveConversation` directly:
 
 ```ts
-import {saveConversation} from '@sanity/agent-context/insights'
+import {saveConversation} from '@sanity/context/insights'
 
 // Call this after each conversation turn completes
 await saveConversation({
@@ -143,7 +143,7 @@ The function generates a deterministic document ID from `agentId` + `threadId`, 
 
 Ensure these packages are in the `package.json` next to `sanity.blueprint.ts` — merge them into existing dependencies, do not overwrite the file:
 
-**dependencies**: `@ai-sdk/anthropic` (^3), `@sanity/agent-context` (latest), `@sanity/client` (^7), `@sanity/functions` (^1), `ai` (^6.0.175 minimum — required for `experimental_telemetry.integrations`)
+**dependencies**: `@ai-sdk/anthropic` (^3), `@sanity/context` (latest), `@sanity/client` (^7), `@sanity/functions` (^1), `ai` (^6.0.175 minimum — required for `experimental_telemetry.integrations`)
 
 **devDependencies**: `@sanity/blueprints` (latest), `dotenv` (^17)
 
@@ -156,7 +156,7 @@ Create `functions/classify-conversations/index.ts` next to `sanity.blueprint.ts`
 ```ts
 // functions/classify-conversations/index.ts
 import {createClient} from '@sanity/client'
-import {classifyConversations} from '@sanity/agent-context/insights'
+import {classifyConversations} from '@sanity/context/insights'
 import {scheduledEventHandler} from '@sanity/functions'
 import {anthropic} from '@ai-sdk/anthropic'
 
@@ -337,7 +337,7 @@ The `classifyConversation` primitive:
 
 ### Telemetry
 
-The `telemetry` option on `classifyConversation` lets you share classification data with the Sanity team to help improve Agent Context. **This is fully opt-in and off by default.**
+The `telemetry` option on `classifyConversation` lets you share classification data with the Sanity team to help improve Sanity Context. **This is fully opt-in and off by default.**
 
 There are two tiers:
 
@@ -373,7 +373,7 @@ If you can, enabling metadata-only telemetry helps us prioritize improvements. I
 ### `sanityInsightsIntegration`
 
 ```ts
-import {sanityInsightsIntegration} from '@sanity/agent-context/ai-sdk'
+import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 
 sanityInsightsIntegration({
   client: SanityClient, // Write client (Editor permissions)
@@ -387,7 +387,7 @@ sanityInsightsIntegration({
 The recommended way to classify conversations. Handles fetching, batching, and error handling in a single call:
 
 ```ts
-import {classifyConversations} from '@sanity/agent-context/insights'
+import {classifyConversations} from '@sanity/context/insights'
 
 const result = await classifyConversations({
   client: SanityClient,
@@ -410,7 +410,7 @@ For custom workflows, use the individual primitives directly:
 - `classifyConversation({client, conversationId, model, messages, ...})` — Classify a single conversation
 
 ```ts
-import {classifyConversation, getConversationsToClassify, getPreviousContentGaps} from '@sanity/agent-context/insights'
+import {classifyConversation, getConversationsToClassify, getPreviousContentGaps} from '@sanity/context/insights'
 ```
 
 ## Opting Out

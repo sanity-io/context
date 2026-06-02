@@ -1,6 +1,6 @@
 import {anthropic} from '@ai-sdk/anthropic'
 import {createMCPClient, type MCPClient} from '@ai-sdk/mcp'
-import {sanityInsightsIntegration} from '@sanity/agent-context/ai-sdk'
+import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 import {
   convertToModelMessages,
   type Experimental_DownloadFunction,
@@ -96,6 +96,7 @@ export async function POST(req: Request) {
 
   try {
     // Initialize MCP client and fetch system prompt from Sanity document
+    console.log(process.env.SANITY_CONTEXT_MCP_URL)
     const [mcpClientResult, agentConfig] = await Promise.all([
       createMCPClient({
         transport: {

@@ -43,7 +43,7 @@ export function rankByFrequency(gaps: string[], limit: number): string[] {
  *
  * @example
  * ```ts
- * import {getPreviousContentGaps} from '@sanity/agent-context/insights'
+ * import {getPreviousContentGaps} from '@sanity/context/insights'
  *
  * const gaps = await getPreviousContentGaps({client, agentId: 'support-bot'})
  * console.log(`${gaps.length} known content gaps:`, gaps)

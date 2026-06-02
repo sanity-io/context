@@ -1,4 +1,4 @@
-import {agentContextPlugin} from '@sanity/agent-context/studio'
+import {agentContextPlugin} from '@sanity/context/studio'
 import {visionTool} from '@sanity/vision'
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'

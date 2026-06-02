@@ -1,15 +1,15 @@
 ---
 name: dial-your-context
-description: Interactive session to create Instructions field content for a Sanity Agent Context MCP. Use this skill whenever users mention tuning agent context, improving agent responses to Sanity data, configuring MCP instructions, setting up content filters, or when their agent gives wrong results from Sanity queries. Also trigger when users say their agent is confused about schema relationships, needs data-specific guidance, or wants to optimize which content the agent can access.
+description: Interactive session to create Instructions field content for the Sanity Context MCP server. Use this skill whenever users mention tuning agent context, improving agent responses to Sanity data, configuring MCP instructions, setting up content filters, or when their agent gives wrong results from Sanity queries. Also trigger when users say their agent is confused about schema relationships, needs data-specific guidance, or wants to optimize which content the agent can access.
 ---
 
 # Dial Your Context
 
-Help a user create the Instructions field content for their Sanity Agent Context MCP. The goal is a concise set of **pure deltas** — only information the agent can't figure out from the auto-generated schema.
+Help a user create the Instructions field content for the Sanity Context MCP server. The goal is a concise set of **pure deltas** — only information the agent can't figure out from the auto-generated schema.
 
 ## What you're building
 
-The Agent Context MCP already provides the agent with:
+The Sanity Context MCP server already provides the agent with:
 
 - A compressed schema of all document types and fields
 - A GROQ query tutorial (~194 lines)
@@ -52,7 +52,7 @@ Both paths are safe — neither modifies the production agent during the session
 
 **Goal:** Establish MCP access, set up a safe working environment.
 
-Connect to the user's Sanity Agent Context MCP. Get the project ID and dataset from the user if not already known. The slug is only needed if they have an existing Agent Context document.
+Connect to the user's Sanity Context MCP server. Get the project ID and dataset from the user if not already known. The slug is only needed if they have an existing Sanity Context document.
 
 **Set up your working environment:**
 
@@ -279,12 +279,12 @@ Present the final Instructions content and filter to the user for one last revie
 
 1. Provide the final MCP URL with all params baked in:
    ```
-   https://api.sanity.io/vX/agent-context/{project}/{dataset}/{slug}?instructions=<URL-encoded>&groqFilter=<URL-encoded>
+   https://api.sanity.io/vX/context/mcp/{project}/{dataset}/{slug}?instructions=<URL-encoded>&groqFilter=<URL-encoded>
    ```
-2. Also provide the raw content separately for the user to paste into their Agent Context document in Sanity Studio:
+2. Also provide the raw content separately for the user to paste into their Sanity Context document in Sanity Studio:
    - **Instructions field:** [final instructions block]
    - **Filter field:** [GROQ expression]
-   - Location: Sanity Studio → Agent Context document → Instructions / Filter fields
+   - Location: Sanity Studio → Sanity Context document → Instructions / Filter fields
 
 **After deployment, verify:** Query the production MCP endpoint and confirm the instructions and filter are active.
 

@@ -1,5 +1,5 @@
 /**
- * Creates changelog entries on sanity.io/changelog for @sanity/agent-context releases.
+ * Creates changelog entries on sanity.io/changelog for @sanity/context releases.
  *
  * Flow:
  *  1. Fetch the GitHub release created by release-please
@@ -56,8 +56,8 @@ export async function createChangelogDocuments(
   const suggestedContent = markdownToPortableText(body)
 
   console.log(chalk.dim(`4. Creating release ${releaseId}...`))
-  const releaseTitle = `@sanity/agent-context v${version}`
-  const releaseDescription = `Changelog for @sanity/agent-context v${version}`
+  const releaseTitle = `@sanity/context v${version}`
+  const releaseDescription = `Changelog for @sanity/context v${version}`
 
   await client.releases.create({releaseId}).catch((err: unknown) => {
     if (
@@ -86,8 +86,8 @@ export async function createChangelogDocuments(
   transaction.createIfNotExists({
     _id: AGENT_CONTEXT_PLATFORM_ID,
     _type: 'apiPlatform',
-    title: 'Agent Context',
-    npmName: '@sanity/agent-context',
+    title: 'Sanity Context',
+    npmName: '@sanity/context',
   })
 
   transaction.createOrReplace({
@@ -106,7 +106,7 @@ export async function createChangelogDocuments(
     version: {_ref: apiVersionDocId.published, _type: 'reference'},
     releaseAutomation: {
       tentativeVersion: version,
-      source: 'agent-context',
+      source: 'context',
       suggestedContent,
     },
   })
