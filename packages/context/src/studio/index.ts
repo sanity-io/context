@@ -4,7 +4,7 @@ export {
   agentContextSchema,
   CONTEXT_SCHEMA_TYPE_NAME,
   contextSchema,
-} from './context-document/agentContextSchema'
+} from './context-document/contextSchema'
 export {conversationSchema} from './insights/schemas/conversationSchema'
 export type {AgentContextPluginOptions, ContextPluginOptions, InsightsOptions} from './plugin'
 export {agentContextPlugin, contextPlugin} from './plugin'

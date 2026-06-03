@@ -22,7 +22,7 @@ const CopyButton = styled(Button)`
   right: 0;
 `
 
-export function AgentContextDocumentInput(props: InputProps) {
+export function ContextDocumentInput(props: InputProps) {
   const dataset = useDataset()
   const projectId = useProjectId()
   const toast = useToast()

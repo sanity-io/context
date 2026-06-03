@@ -17,7 +17,7 @@ import chalk from 'chalk'
 
 import {generateContent} from './lib/content'
 import {extractPRNumbers, fetchPullRequests, getReleaseInfo} from './lib/github'
-import {AGENT_CONTEXT_PLATFORM_ID, createDocumentIds, getClient} from './lib/sanity'
+import {CONTEXT_PLATFORM_ID, createDocumentIds, getClient} from './lib/sanity'
 
 export async function createChangelogDocuments(
   version: string,
@@ -84,7 +84,7 @@ export async function createChangelogDocuments(
   const transaction = client.transaction()
 
   transaction.createIfNotExists({
-    _id: AGENT_CONTEXT_PLATFORM_ID,
+    _id: CONTEXT_PLATFORM_ID,
     _type: 'apiPlatform',
     title: 'Sanity Context',
     npmName: '@sanity/context',
@@ -95,7 +95,7 @@ export async function createChangelogDocuments(
     _type: 'apiVersion',
     semver: version,
     date: releaseInfo.publishedAt.split('T')[0],
-    platform: {_ref: AGENT_CONTEXT_PLATFORM_ID, _type: 'reference'},
+    platform: {_ref: CONTEXT_PLATFORM_ID, _type: 'reference'},
   })
 
   transaction.createOrReplace({

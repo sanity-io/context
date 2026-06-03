@@ -54,7 +54,7 @@ export default defineConfig({
                   .title('Agents')
                   .items([
                     S.documentTypeListItem('agent.config').title('Agent Configs'),
-                    S.documentTypeListItem(CONTEXT_SCHEMA_TYPE_NAME).title('Agent Contexts'),
+                    S.documentTypeListItem(CONTEXT_SCHEMA_TYPE_NAME).title('Sanity Contexts'),
                     S.documentTypeListItem(CONVERSATION_SCHEMA_TYPE_NAME).title('Conversations'),
                   ]),
               ),

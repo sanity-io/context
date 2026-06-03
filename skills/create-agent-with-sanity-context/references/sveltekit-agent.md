@@ -68,8 +68,8 @@ import {PUBLIC_SANITY_API_VERSION} from '$env/static/public'
 
 // MCP URL — connects to your Sanity Context document
 const SANITY_API_VERSION = PUBLIC_SANITY_API_VERSION || 'vX'
-const AGENT_CONTEXT_SLUG = 'content-qa'
-const MCP_URL = `https://api.sanity.io/${SANITY_API_VERSION}/context/mcp/${SANITY_PROJECT_ID}/${SANITY_DATASET}/${AGENT_CONTEXT_SLUG}`
+const CONTEXT_SLUG = 'content-qa'
+const MCP_URL = `https://api.sanity.io/${SANITY_API_VERSION}/context/mcp/${SANITY_PROJECT_ID}/${SANITY_DATASET}/${CONTEXT_SLUG}`
 
 // System prompt for the agent
 const SYSTEM_PROMPT = `You are a helpful content assistant.
