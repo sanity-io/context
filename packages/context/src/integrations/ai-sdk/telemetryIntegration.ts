@@ -206,7 +206,7 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): Telemetr
  *
  * @example
  * ```ts
- * import {sanityInsightsIntegration} from '@sanity/agent-context/ai-sdk'
+ * import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
  * import {streamText} from 'ai'
  *
  * const result = await streamText({

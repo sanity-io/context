@@ -2,6 +2,6 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "plugins": ["node-workspace"],
   "packages": {
-    "packages/agent-context": {}
+    "packages/context": {}
   }
 }

@@ -18,7 +18,7 @@ describe('getMcpURL', () => {
 
     // Verify the URL structure
     expect(result).toContain('https://api.sanity.io')
-    expect(result).toContain('agent-context/test-project/production/my-agent-context')
+    expect(result).toContain('context/mcp/test-project/production/my-agent-context')
   })
 
   it('should return an empty string if the slug is invalid', () => {
@@ -76,7 +76,7 @@ describe('getMcpURL', () => {
 
     expect(result).toContain('/v2024-03-15/')
     expect(result).toBe(
-      'https://api.sanity.io/v2024-03-15/agent-context/test-project/production/my-agent-context',
+      'https://api.sanity.io/v2024-03-15/context/mcp/test-project/production/my-agent-context',
     )
 
     vi.useRealTimers()

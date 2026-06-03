@@ -48,7 +48,7 @@ export interface ClassifyConversationsResult {
  *
  * @example
  * ```ts
- * import {classifyConversations} from '@sanity/agent-context/insights'
+ * import {classifyConversations} from '@sanity/context/insights'
  * import {anthropic} from '@ai-sdk/anthropic'
  *
  * const result = await classifyConversations({

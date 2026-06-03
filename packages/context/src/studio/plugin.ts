@@ -5,8 +5,8 @@ import {route} from 'sanity/router'
 import {CONVERSATION_SCHEMA_TYPE_NAME} from '../insights/constants'
 import {
   AGENT_CONTEXT_SCHEMA_TITLE,
-  AGENT_CONTEXT_SCHEMA_TYPE_NAME,
-  agentContextSchema,
+  CONTEXT_SCHEMA_TYPE_NAME,
+  contextSchema,
 } from './context-document/agentContextSchema'
 import {InsightsDashboard} from './insights/dashboard/InsightsDashboard'
 import {CONVERSATION_SCHEMA_TITLE, conversationSchema} from './insights/schemas/conversationSchema'
@@ -21,10 +21,10 @@ export interface InsightsOptions {
 }
 
 /**
- * The options for the agent context plugin.
+ * The options for the context plugin.
  * @public
  */
-export interface AgentContextPluginOptions {
+export interface ContextPluginOptions {
   /**
    * Register the `sanity.agentContext` document type.
    * @defaultValue true
@@ -37,16 +37,19 @@ export interface AgentContextPluginOptions {
   insights?: InsightsOptions
 }
 
+/** @public @deprecated Use `ContextPluginOptions` instead. */
+export type AgentContextPluginOptions = ContextPluginOptions
+
 /**
- * The plugin for the agent context.
+ * The Sanity Context plugin.
  * @beta
  */
-export const agentContextPlugin = definePlugin<AgentContextPluginOptions | void>((options = {}) => {
+export const contextPlugin = definePlugin<ContextPluginOptions | void>((options = {}) => {
   const shouldRegisterContextDocument = options?.registerContextDocument !== false
   const insightsEnabled = options?.insights?.enabled !== false
 
   const schemaTypes = [
-    ...(shouldRegisterContextDocument ? [agentContextSchema] : []),
+    ...(shouldRegisterContextDocument ? [contextSchema] : []),
     ...(insightsEnabled ? [conversationSchema] : []),
   ]
 
@@ -54,9 +57,9 @@ export const agentContextPlugin = definePlugin<AgentContextPluginOptions | void>
     ...(shouldRegisterContextDocument
       ? [
           {
-            id: AGENT_CONTEXT_SCHEMA_TYPE_NAME,
+            id: CONTEXT_SCHEMA_TYPE_NAME,
             title: AGENT_CONTEXT_SCHEMA_TITLE,
-            schemaType: AGENT_CONTEXT_SCHEMA_TYPE_NAME,
+            schemaType: CONTEXT_SCHEMA_TYPE_NAME,
             value: {},
           },
         ]
@@ -74,7 +77,7 @@ export const agentContextPlugin = definePlugin<AgentContextPluginOptions | void>
   ]
 
   return {
-    name: 'sanity/agent-context/plugin',
+    name: 'sanity/context/plugin',
     schema: {
       types: schemaTypes,
       templates: (prev) => [...prev, ...schemaTemplates],
@@ -92,3 +95,6 @@ export const agentContextPlugin = definePlugin<AgentContextPluginOptions | void>
       : [],
   }
 })
+
+/** @public @deprecated Use `contextPlugin` instead. */
+export const agentContextPlugin = contextPlugin

@@ -17,5 +17,5 @@ export const getMcpURL = (payload: {
   const currentDate = new Date().toISOString().split('T')[0]
   const apiVersion = `v${currentDate}`
 
-  return `${payload.apiHost}/${apiVersion}/agent-context/${payload.projectId}/${payload.dataset}/${currentSlug}`
+  return `${payload.apiHost}/${apiVersion}/context/mcp/${payload.projectId}/${payload.dataset}/${currentSlug}`
 }

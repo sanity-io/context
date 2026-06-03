@@ -6,14 +6,17 @@ import {GroqFilterInput} from './groq-filter-input/GroqFilterInput'
 import {validateGroqFilter} from './groq-filter-input/groqUtils'
 
 /** @public */
-export const AGENT_CONTEXT_SCHEMA_TYPE_NAME = 'sanity.agentContext'
+export const CONTEXT_SCHEMA_TYPE_NAME = 'sanity.agentContext'
+
+/** @public @deprecated Use `CONTEXT_SCHEMA_TYPE_NAME` instead. */
+export const AGENT_CONTEXT_SCHEMA_TYPE_NAME = CONTEXT_SCHEMA_TYPE_NAME
 
 /** @internal */
 export const AGENT_CONTEXT_SCHEMA_TITLE = 'Agent Context'
 
 /** @public */
-export const agentContextSchema = defineType({
-  name: AGENT_CONTEXT_SCHEMA_TYPE_NAME,
+export const contextSchema = defineType({
+  name: CONTEXT_SCHEMA_TYPE_NAME,
   title: AGENT_CONTEXT_SCHEMA_TITLE,
   type: 'document',
   icon: DatabaseIcon,
@@ -73,3 +76,6 @@ export const agentContextSchema = defineType({
     }),
   ],
 })
+
+/** @public @deprecated Use `contextSchema` instead. */
+export const agentContextSchema = contextSchema

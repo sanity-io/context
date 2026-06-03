@@ -1,5 +1,5 @@
 {
-  "name": "@sanity/agent-context",
+  "name": "@sanity/context",
   "version": "0.6.0",
   "description": "Tools for building AI agents with structured access to Sanity content",
   "keywords": [
@@ -11,8 +11,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/sanity-io/agent-context.git",
-    "directory": "packages/agent-context"
+    "url": "git+ssh://git@github.com/sanity-io/context.git",
+    "directory": "packages/context"
   },
   "license": "MIT",
   "author": "Sanity.io <hello@sanity.io>",

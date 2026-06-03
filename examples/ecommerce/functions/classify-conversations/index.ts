@@ -1,5 +1,5 @@
 import {createClient} from '@sanity/client'
-import {classifyConversations} from '@sanity/agent-context/insights'
+import {classifyConversations} from '@sanity/context/insights'
 import {scheduledEventHandler} from '@sanity/functions'
 import {anthropic} from '@ai-sdk/anthropic'
 

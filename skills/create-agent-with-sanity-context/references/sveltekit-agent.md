@@ -66,10 +66,10 @@ import {
 } from '$env/static/private'
 import {PUBLIC_SANITY_API_VERSION} from '$env/static/public'
 
-// MCP URL — connects to your agent context document
+// MCP URL — connects to your Sanity Context document
 const SANITY_API_VERSION = PUBLIC_SANITY_API_VERSION || 'vX'
 const AGENT_CONTEXT_SLUG = 'content-qa'
-const MCP_URL = `https://api.sanity.io/${SANITY_API_VERSION}/agent-context/${SANITY_PROJECT_ID}/${SANITY_DATASET}/${AGENT_CONTEXT_SLUG}`
+const MCP_URL = `https://api.sanity.io/${SANITY_API_VERSION}/context/mcp/${SANITY_PROJECT_ID}/${SANITY_DATASET}/${AGENT_CONTEXT_SLUG}`
 
 // System prompt for the agent
 const SYSTEM_PROMPT = `You are a helpful content assistant.
@@ -370,7 +370,7 @@ The `Chat` class requires browser APIs. Add a `+page.ts` file alongside your `+p
 
 ### MCP endpoint returns 500 or schema errors
 
-Agent Context requires a deployed Studio. See [Deploy Your Studio](studio-setup.md#deploy-your-studio) for instructions.
+Sanity Context requires a deployed Studio. See [Deploy Your Studio](studio-setup.md#deploy-your-studio) for instructions.
 
 ### "Module not found: @ai-sdk/mcp"
 

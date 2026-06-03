@@ -1,18 +1,18 @@
-# @sanity/agent-context
+# @sanity/context
 
 ## Installation
 
 ```bash
-npm install @sanity/agent-context
+npm install @sanity/context
 ```
 
 ## Exports
 
-| Entry point                      | Purpose                                   |
-| -------------------------------- | ----------------------------------------- |
-| `@sanity/agent-context/studio`   | Studio plugin and schema type constant    |
-| `@sanity/agent-context/ai-sdk`   | AI SDK telemetry integration for Insights |
-| `@sanity/agent-context/insights` | Lower-level APIs for custom workflows     |
+| Entry point                | Purpose                                   |
+| -------------------------- | ----------------------------------------- |
+| `@sanity/context/studio`   | Studio plugin and schema type constant    |
+| `@sanity/context/ai-sdk`   | AI SDK telemetry integration for Insights |
+| `@sanity/context/insights` | Lower-level APIs for custom workflows     |
 
 ## Studio Plugin
 
@@ -21,20 +21,20 @@ Registers a document type for configuring AI agent access to your Sanity content
 ```ts
 // sanity.config.ts
 import {defineConfig} from 'sanity'
-import {agentContextPlugin} from '@sanity/agent-context/studio'
+import {contextPlugin} from '@sanity/context/studio'
 
 export default defineConfig({
   // ...
-  plugins: [agentContextPlugin()],
+  plugins: [contextPlugin()],
 })
 ```
 
-The plugin also exports `AGENT_CONTEXT_SCHEMA_TYPE_NAME` which can be used to configure where the document type appears in the Studio structure:
+The plugin also exports `CONTEXT_SCHEMA_TYPE_NAME` which can be used to configure where the document type appears in the Studio structure:
 
 ```ts
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
-import {agentContextPlugin, AGENT_CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/agent-context/studio'
+import {contextPlugin, CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/context/studio'
 
 export default defineConfig({
   // ...
@@ -44,16 +44,16 @@ export default defineConfig({
         S.list()
           .title('Content')
           .items([
-            // Filter out agent context document from the default list
+            // Filter out the Sanity Context document from the default list
             ...S.documentTypeListItems().filter(
-              (item) => item.getId() !== AGENT_CONTEXT_SCHEMA_TYPE_NAME,
+              (item) => item.getId() !== CONTEXT_SCHEMA_TYPE_NAME,
             ),
             // Add it elsewhere, e.g. after a divider
             S.divider(),
-            S.documentTypeListItem(AGENT_CONTEXT_SCHEMA_TYPE_NAME),
+            S.documentTypeListItem(CONTEXT_SCHEMA_TYPE_NAME),
           ]),
     }),
-    agentContextPlugin(),
+    contextPlugin(),
   ],
 })
 ```
@@ -67,7 +67,7 @@ Track and classify your AI agent conversations automatically. Insights captures 
 Classification supports opt-in telemetry sharing with Sanity. There are two levels:
 
 - **Metadata-only** (`shareMetrics: true`) — Shares classification metrics (scores, sentiment, content gap counts, message shapes, model/token info). No conversation content is included.
-- **Full sharing** (`shareConversations: true`) — Also includes message contents. Implies `shareMetrics`. Want to help us improve Agent Context? Opt in and the team will be in touch to help dial in your agent.
+- **Full sharing** (`shareConversations: true`) — Also includes message contents. Implies `shareMetrics`. Want to help us improve Sanity Context? Opt in and the team will be in touch to help dial in your agent.
 
 ```ts
 telemetry: {
@@ -84,7 +84,7 @@ Both levels are off by default.
 Insights is enabled by default. To disable it:
 
 ```ts
-agentContextPlugin({insights: {enabled: false}})
+contextPlugin({insights: {enabled: false}})
 ```
 
 This registers the `sanity.agentContextConversation` schema and adds an "Agent Insights" dashboard to your Studio.
@@ -94,7 +94,7 @@ This registers the `sanity.agentContextConversation` schema and adds an "Agent I
 Connect your AI agent to save conversations automatically:
 
 ```ts
-import {sanityInsightsIntegration} from '@sanity/agent-context/ai-sdk'
+import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 import {convertToModelMessages, streamText} from 'ai'
 import {openai} from '@ai-sdk/openai'
 import {createClient} from '@sanity/client'
@@ -136,7 +136,7 @@ Classification requires a scheduled Sanity Function that analyzes conversations 
 {
   "dependencies": {
     "@ai-sdk/anthropic": "^3",
-    "@sanity/agent-context": "latest",
+    "@sanity/context": "latest",
     "@sanity/client": "^7",
     "@sanity/functions": "^1",
     "ai": "^6"
@@ -148,9 +148,9 @@ Classification requires a scheduled Sanity Function that analyzes conversations 
 }
 ```
 
-2. Create `functions/classify-conversations/index.ts` — see the [full example](https://github.com/sanity-io/agent-context/tree/main/examples/ecommerce/functions/classify-conversations/index.ts)
+2. Create `functions/classify-conversations/index.ts` — see the [full example](https://github.com/sanity-io/context/tree/main/examples/ecommerce/functions/classify-conversations/index.ts)
 
-3. Create `sanity.blueprint.ts` — see the [full example](https://github.com/sanity-io/agent-context/tree/main/examples/ecommerce/sanity.blueprint.ts)
+3. Create `sanity.blueprint.ts` — see the [full example](https://github.com/sanity-io/context/tree/main/examples/ecommerce/sanity.blueprint.ts)
 
 4. Deploy:
 
@@ -179,7 +179,7 @@ Every classified conversation includes these standardized metrics:
 The recommended way to classify conversations is with `classifyConversations`, which handles fetching, batching, and error handling in a single call:
 
 ```ts
-import {classifyConversations} from '@sanity/agent-context/insights'
+import {classifyConversations} from '@sanity/context/insights'
 
 const result = await classifyConversations({
   client,
