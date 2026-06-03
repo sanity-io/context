@@ -59,7 +59,7 @@ app/src/components/chat/
 
 ```
 studio/
-├── sanity.config.ts              # Plugin setup (includes agentContextPlugin)
+├── sanity.config.ts              # Plugin setup (includes contextPlugin)
 └── schemaTypes/
     ├── index.ts                  # Schema registration
     ├── documents/

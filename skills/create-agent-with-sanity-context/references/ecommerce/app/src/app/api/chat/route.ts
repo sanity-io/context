@@ -1,6 +1,6 @@
 import {anthropic} from '@ai-sdk/anthropic'
 import {createMCPClient, type MCPClient} from '@ai-sdk/mcp'
-import {sanityInsightsIntegration} from '@sanity/agent-context/ai-sdk'
+import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 import {
   convertToModelMessages,
   type Experimental_DownloadFunction,
