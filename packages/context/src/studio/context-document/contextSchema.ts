@@ -4,6 +4,7 @@ import {defineField, defineType} from 'sanity'
 import {ContextDocumentInput} from './context-document-input/ContextDocumentInput'
 import {GroqFilterInput} from './groq-filter-input/GroqFilterInput'
 import {validateGroqFilter} from './groq-filter-input/groqUtils'
+import {KnowledgeBaseInput} from './knowledge-base-input/KnowledgeBaseInput'
 
 /** @public */
 export const CONTEXT_SCHEMA_TYPE_NAME = 'sanity.agentContext'
@@ -23,6 +24,17 @@ export const contextSchema = defineType({
   title: CONTEXT_SCHEMA_TITLE,
   type: 'document',
   icon: DatabaseIcon,
+  // Group the direct-query toggle and its content filter into one bordered,
+  // collapsible section. They stay top-level fields in the document (no nested
+  // object), so consumers read `groqEnabled` / `groqFilter` unchanged.
+  fieldsets: [
+    {
+      name: 'directQuery',
+      title: 'Direct content access',
+      description: 'Let agents query your content directly, and scope what they can reach.',
+      options: {collapsible: true, collapsed: false},
+    },
+  ],
   initialValue: {
     version: '1',
     groqEnabled: true,
@@ -61,6 +73,9 @@ export const contextSchema = defineType({
         'Give agents access to curated knowledge bases so they can find and use that content when answering.',
       type: 'array',
       of: [{type: 'string'}],
+      components: {
+        input: KnowledgeBaseInput,
+      },
     }),
     defineField({
       name: 'groqEnabled',
@@ -68,6 +83,7 @@ export const contextSchema = defineType({
       description:
         'Allow agents to search across all your content directly. Stays on when no knowledge base is attached, so agents always have a way to find content.',
       type: 'boolean',
+      fieldset: 'directQuery',
     }),
     defineField({
       name: 'groqFilter',
@@ -75,8 +91,10 @@ export const contextSchema = defineType({
       description:
         'Control what content AI agents can access. Leave empty for full access, or pick specific document types. Use the GROQ tab for advanced filters.',
       type: 'string',
-      // Only relevant when the GROQ tools are enabled — they're what the filter scopes.
-      hidden: ({parent}) => parent?.groqEnabled === false,
+      fieldset: 'directQuery',
+      // The filter only scopes direct querying, so it's inactive (read-only)
+      // when that's off — kept visible (not hidden) so there's no layout jump.
+      readOnly: ({parent}) => parent?.groqEnabled === false,
       components: {
         input: GroqFilterInput,
       },
