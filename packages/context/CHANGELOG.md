@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/sanity-io/context/compare/context-v0.6.0...context-v0.7.0) (2026-06-03)
+
+
+### Features
+
+* rename `agent-context` -&gt; `context` ([#221](https://github.com/sanity-io/context/issues/221)) ([12f2397](https://github.com/sanity-io/context/commit/12f2397b44575c2ff5b36df3c189d929a1ef2113))
+
 ## [0.6.0](https://github.com/sanity-io/agent-context/compare/agent-context-v0.5.0...agent-context-v0.6.0) (2026-05-13)
 
 ### Features
