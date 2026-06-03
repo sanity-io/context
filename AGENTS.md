@@ -7,7 +7,7 @@ Guidelines for AI coding assistants working in this repository.
 This is a monorepo for Sanity Context—tools for building AI agents with structured access to Sanity content. The system has three main parts:
 
 1. **Studio Plugin** (`@sanity/context`) - Registers a document type for configuring agent content access
-2. **Context MCP** (external service) - Reads agent context documents and exposes tools to AI agents
+2. **Context MCP** (external service) - Reads Sanity Context documents and exposes tools to AI agents
 3. **Agent Implementation** - Your app that connects to Context MCP and uses the tools
 
 This repo contains the Studio plugin, agent skills for building and optimizing integrations, and a demo app.
@@ -31,17 +31,17 @@ This repo contains the Studio plugin, agent skills for building and optimizing i
 
 ## Package: @sanity/context
 
-The main deliverable. A Sanity Studio plugin that registers the `sanity.agentContext` document type.
+The main deliverable. A Sanity Studio plugin that registers the Sanity Context document type (`sanity.agentContext`).
 
 ### Key Files
 
-| File                                                                                     | Purpose                |
-| ---------------------------------------------------------------------------------------- | ---------------------- |
-| `src/studio/plugin.ts`                                                                   | Plugin definition      |
-| `src/studio/context-document/agentContextSchema.ts`                                      | Document type schema   |
-| `src/studio/context-document/agent-context-document-input/AgentContextDocumentInput.tsx` | Custom form component  |
-| `src/studio/context-document/groq-filter-input/GroqFilterInput.tsx`                      | GROQ filter editor     |
-| `src/studio/context-document/groq-filter-input/groqUtils.ts`                             | GROQ parsing utilities |
+| File                                                                          | Purpose                |
+| ----------------------------------------------------------------------------- | ---------------------- |
+| `src/studio/plugin.ts`                                                        | Plugin definition      |
+| `src/studio/context-document/contextSchema.ts`                                | Document type schema   |
+| `src/studio/context-document/context-document-input/ContextDocumentInput.tsx` | Custom form component  |
+| `src/studio/context-document/groq-filter-input/GroqFilterInput.tsx`           | GROQ filter editor     |
+| `src/studio/context-document/groq-filter-input/groqUtils.ts`                  | GROQ parsing utilities |
 
 ### Exports
 

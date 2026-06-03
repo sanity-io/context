@@ -5,7 +5,7 @@ A complete e-commerce demo with AI shopping assistant powered by Sanity Context 
 ## Structure
 
 - `app/` - Next.js frontend with AI chat integration
-- `studio/` - Sanity Studio with product schemas and agent context plugin
+- `studio/` - Sanity Studio with product schemas and Sanity Context plugin
 
 ## Setup
 

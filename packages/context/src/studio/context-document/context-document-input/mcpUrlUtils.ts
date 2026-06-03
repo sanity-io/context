@@ -1,7 +1,7 @@
 import {isSlug} from 'sanity'
 
 /**
- * Construct the MCP URL for an agent context document
+ * Construct the MCP URL for a Sanity Context document
  */
 export const getMcpURL = (payload: {
   apiHost: string

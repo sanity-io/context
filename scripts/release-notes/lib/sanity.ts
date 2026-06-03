@@ -1,7 +1,7 @@
 import {createClient, type SanityClient} from '@sanity/client'
 import {createPublishedId, getVersionId} from '@sanity/id-utils'
 
-export const AGENT_CONTEXT_PLATFORM_ID = '7c2e8da2-c322-41b9-870d-b524d8c187be'
+export const CONTEXT_PLATFORM_ID = '7c2e8da2-c322-41b9-870d-b524d8c187be'
 
 export function getClient(): SanityClient {
   const projectId = process.env.CHANGELOG_SANITY_PROJECT_ID

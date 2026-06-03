@@ -4,10 +4,10 @@ import {route} from 'sanity/router'
 
 import {CONVERSATION_SCHEMA_TYPE_NAME} from '../insights/constants'
 import {
-  AGENT_CONTEXT_SCHEMA_TITLE,
+  CONTEXT_SCHEMA_TITLE,
   CONTEXT_SCHEMA_TYPE_NAME,
   contextSchema,
-} from './context-document/agentContextSchema'
+} from './context-document/contextSchema'
 import {InsightsDashboard} from './insights/dashboard/InsightsDashboard'
 import {CONVERSATION_SCHEMA_TITLE, conversationSchema} from './insights/schemas/conversationSchema'
 
@@ -26,7 +26,7 @@ export interface InsightsOptions {
  */
 export interface ContextPluginOptions {
   /**
-   * Register the `sanity.agentContext` document type.
+   * Register the Sanity Context document type.
    * @defaultValue true
    */
   registerContextDocument?: boolean
@@ -58,7 +58,7 @@ export const contextPlugin = definePlugin<ContextPluginOptions | void>((options 
       ? [
           {
             id: CONTEXT_SCHEMA_TYPE_NAME,
-            title: AGENT_CONTEXT_SCHEMA_TITLE,
+            title: CONTEXT_SCHEMA_TITLE,
             schemaType: CONTEXT_SCHEMA_TYPE_NAME,
             value: {},
           },

@@ -1,7 +1,7 @@
 import {DatabaseIcon} from '@sanity/icons'
 import {defineField, defineType} from 'sanity'
 
-import {AgentContextDocumentInput} from './agent-context-document-input/AgentContextDocumentInput'
+import {ContextDocumentInput} from './context-document-input/ContextDocumentInput'
 import {GroqFilterInput} from './groq-filter-input/GroqFilterInput'
 import {validateGroqFilter} from './groq-filter-input/groqUtils'
 
@@ -12,19 +12,22 @@ export const CONTEXT_SCHEMA_TYPE_NAME = 'sanity.agentContext'
 export const AGENT_CONTEXT_SCHEMA_TYPE_NAME = CONTEXT_SCHEMA_TYPE_NAME
 
 /** @internal */
-export const AGENT_CONTEXT_SCHEMA_TITLE = 'Agent Context'
+export const CONTEXT_SCHEMA_TITLE = 'Sanity Context'
+
+/** @internal @deprecated Use `CONTEXT_SCHEMA_TITLE` instead. */
+export const AGENT_CONTEXT_SCHEMA_TITLE = CONTEXT_SCHEMA_TITLE
 
 /** @public */
 export const contextSchema = defineType({
   name: CONTEXT_SCHEMA_TYPE_NAME,
-  title: AGENT_CONTEXT_SCHEMA_TITLE,
+  title: CONTEXT_SCHEMA_TITLE,
   type: 'document',
   icon: DatabaseIcon,
   initialValue: {
     version: '1',
   },
   components: {
-    input: AgentContextDocumentInput,
+    input: ContextDocumentInput,
   },
   fields: [
     defineField({
@@ -37,16 +40,15 @@ export const contextSchema = defineType({
       name: 'name',
       title: 'Name',
       type: 'string',
-      placeholder: 'My Agent Context',
-      description: 'The name of the agent context',
+      placeholder: 'My Sanity Context',
+      description: 'The name of this Sanity Context',
     }),
     defineField({
       name: 'slug',
       title: 'Slug',
       type: 'slug',
       validation: (Rule) => Rule.required(),
-      description:
-        'The slug of the agent context. This is used to identify the agent context in the MCP URL.',
+      description: 'The slug of this context. This is used to identify it in the MCP URL.',
       options: {
         source: 'name',
       },
