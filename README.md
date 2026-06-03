@@ -4,7 +4,7 @@ Give AI agents structured access to your content. The Sanity Context MCP server 
 
 Instead of vectorizing your content into embeddings and hoping similarity search returns the right answer, Sanity Context lets agents query your actual data model: filter by fields, traverse references between documents, and combine structured queries with semantic search. Embeddings for exploration, structured queries for precision.
 
-[Read the full documentation →](https://www.sanity.io/docs/ai/sanity-context)
+[Read the full documentation →](https://www.sanity.io/docs/ai/agent-context)
 
 > **Sanity Context vs Sanity MCP Server** — Sanity offers two MCP endpoints. The [Sanity MCP Server](https://www.sanity.io/docs/ai/mcp-server) gives AI coding assistants like Cursor, Claude Code, and v0 full access to your Sanity workspace (content, schemas, releases, and more). Sanity Context is different: it's for **production agents that serve your end users** — read-only, scoped access you use to power search, support bots, and other content-driven features in your application.
 
@@ -143,7 +143,7 @@ If this returns a list of tools, you're connected. The full MCP URL is shown in 
 
 ## Learn more
 
-- [Sanity Context documentation](https://www.sanity.io/docs/ai/sanity-context)
+- [Sanity Context documentation](https://www.sanity.io/docs/ai/agent-context)
 - [Dataset embeddings](https://www.sanity.io/docs/content-lake/dataset-embeddings)
 - [How to serve content to agents (field guide)](https://www.sanity.io/blog/how-to-serve-content-to-agents-a-field-guide)
 - [What is GROQ?](https://www.sanity.io/docs/groq)
