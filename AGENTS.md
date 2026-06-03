@@ -35,19 +35,19 @@ The main deliverable. A Sanity Studio plugin that registers the `sanity.agentCon
 
 ### Key Files
 
-| File                                                              | Purpose                |
-| ----------------------------------------------------------------- | ---------------------- |
-| `src/studio/context-plugin/plugin.tsx`                            | Plugin definition      |
-| `src/studio/context-plugin/agentContextSchema.ts`                 | Document type schema   |
-| `src/studio/context-plugin/AgentContextDocumentInput.tsx`         | Custom form component  |
-| `src/studio/context-plugin/groq-filter-input/GroqFilterInput.tsx` | GROQ filter editor     |
-| `src/studio/context-plugin/groq-filter-input/groqUtils.ts`        | GROQ parsing utilities |
+| File                                                                                     | Purpose                |
+| ---------------------------------------------------------------------------------------- | ---------------------- |
+| `src/studio/plugin.ts`                                                                   | Plugin definition      |
+| `src/studio/context-document/agentContextSchema.ts`                                      | Document type schema   |
+| `src/studio/context-document/agent-context-document-input/AgentContextDocumentInput.tsx` | Custom form component  |
+| `src/studio/context-document/groq-filter-input/GroqFilterInput.tsx`                      | GROQ filter editor     |
+| `src/studio/context-document/groq-filter-input/groqUtils.ts`                             | GROQ parsing utilities |
 
 ### Exports
 
 ```ts
 // Studio plugin and constants
-import {agentContextPlugin, AGENT_CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/context/studio'
+import {contextPlugin, CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/context/studio'
 ```
 
 ## Development

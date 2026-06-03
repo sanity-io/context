@@ -13,7 +13,7 @@ The Insights system has two parts that work together:
 
 **Set up both parts.** Telemetry alone just stores raw conversations. Classification is what produces the dashboard with success scores, sentiment, and content gaps.
 
-The `agentContextPlugin()` includes Insights by default (conversation schema and dashboard). No custom schema needed.
+The `contextPlugin()` includes Insights by default (conversation schema and dashboard). No custom schema needed.
 
 ## Prerequisites
 
@@ -418,7 +418,7 @@ import {classifyConversation, getConversationsToClassify, getPreviousContentGaps
 If you don't need Insights, disable it in the plugin:
 
 ```ts
-agentContextPlugin({insights: {enabled: false}})
+contextPlugin({insights: {enabled: false}})
 ```
 
 This removes the conversation schema and dashboard from your Studio.

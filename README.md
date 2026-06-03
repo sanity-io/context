@@ -86,11 +86,11 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
    ```ts
    // sanity.config.ts
    import {defineConfig} from 'sanity'
-   import {agentContextPlugin} from '@sanity/context/studio'
+   import {contextPlugin} from '@sanity/context/studio'
 
    export default defineConfig({
      // ...existing config
-     plugins: [agentContextPlugin()],
+     plugins: [contextPlugin()],
    })
    ```
 

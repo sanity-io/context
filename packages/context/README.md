@@ -21,20 +21,20 @@ Registers a document type for configuring AI agent access to your Sanity content
 ```ts
 // sanity.config.ts
 import {defineConfig} from 'sanity'
-import {agentContextPlugin} from '@sanity/context/studio'
+import {contextPlugin} from '@sanity/context/studio'
 
 export default defineConfig({
   // ...
-  plugins: [agentContextPlugin()],
+  plugins: [contextPlugin()],
 })
 ```
 
-The plugin also exports `AGENT_CONTEXT_SCHEMA_TYPE_NAME` which can be used to configure where the document type appears in the Studio structure:
+The plugin also exports `CONTEXT_SCHEMA_TYPE_NAME` which can be used to configure where the document type appears in the Studio structure:
 
 ```ts
 import {defineConfig} from 'sanity'
 import {structureTool} from 'sanity/structure'
-import {agentContextPlugin, AGENT_CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/context/studio'
+import {contextPlugin, CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/context/studio'
 
 export default defineConfig({
   // ...
@@ -44,16 +44,16 @@ export default defineConfig({
         S.list()
           .title('Content')
           .items([
-            // Filter out agent context document from the default list
+            // Filter out the Sanity Context document from the default list
             ...S.documentTypeListItems().filter(
-              (item) => item.getId() !== AGENT_CONTEXT_SCHEMA_TYPE_NAME,
+              (item) => item.getId() !== CONTEXT_SCHEMA_TYPE_NAME,
             ),
             // Add it elsewhere, e.g. after a divider
             S.divider(),
-            S.documentTypeListItem(AGENT_CONTEXT_SCHEMA_TYPE_NAME),
+            S.documentTypeListItem(CONTEXT_SCHEMA_TYPE_NAME),
           ]),
     }),
-    agentContextPlugin(),
+    contextPlugin(),
   ],
 })
 ```
@@ -84,7 +84,7 @@ Both levels are off by default.
 Insights is enabled by default. To disable it:
 
 ```ts
-agentContextPlugin({insights: {enabled: false}})
+contextPlugin({insights: {enabled: false}})
 ```
 
 This registers the `sanity.agentContextConversation` schema and adds an "Agent Insights" dashboard to your Studio.
