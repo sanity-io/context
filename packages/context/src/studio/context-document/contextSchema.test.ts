@@ -42,6 +42,27 @@ describe('contextSchema', () => {
     })
   })
 
+  describe('groqEnabled field', () => {
+    it('should define groqEnabled as a boolean', () => {
+      const field = contextSchema.fields.find((f) => f.name === 'groqEnabled')
+      expect(field).toBeDefined()
+      expect(field?.type).toBe('boolean')
+    })
+
+    it('should default groqEnabled to true', () => {
+      expect(contextSchema.initialValue).toHaveProperty('groqEnabled', true)
+    })
+  })
+
+  describe('knowledgeBaseIds field', () => {
+    it('should define knowledgeBaseIds as an array of strings', () => {
+      const field = contextSchema.fields.find((f) => f.name === 'knowledgeBaseIds')
+      expect(field).toBeDefined()
+      expect(field?.type).toBe('array')
+      expect((field as {of?: {type: string}[]})?.of).toEqual([{type: 'string'}])
+    })
+  })
+
   describe('other fields', () => {
     it('should include the name field', () => {
       const nameField = contextSchema.fields.find((field) => field.name === 'name')

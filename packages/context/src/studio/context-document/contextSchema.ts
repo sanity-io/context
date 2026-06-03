@@ -25,6 +25,7 @@ export const contextSchema = defineType({
   icon: DatabaseIcon,
   initialValue: {
     version: '1',
+    groqEnabled: true,
   },
   components: {
     input: ContextDocumentInput,
@@ -54,11 +55,28 @@ export const contextSchema = defineType({
       },
     }),
     defineField({
+      name: 'knowledgeBaseIds',
+      title: 'Knowledge bases',
+      description:
+        'Give agents access to curated knowledge bases so they can find and use that content when answering.',
+      type: 'array',
+      of: [{type: 'string'}],
+    }),
+    defineField({
+      name: 'groqEnabled',
+      title: 'Let agents query all content',
+      description:
+        'Allow agents to search across all your content directly. Stays on when no knowledge base is attached, so agents always have a way to find content.',
+      type: 'boolean',
+    }),
+    defineField({
       name: 'groqFilter',
       title: 'Content filter',
       description:
         'Control what content AI agents can access. Leave empty for full access, or pick specific document types. Use the GROQ tab for advanced filters.',
       type: 'string',
+      // Only relevant when the GROQ tools are enabled — they're what the filter scopes.
+      hidden: ({parent}) => parent?.groqEnabled === false,
       components: {
         input: GroqFilterInput,
       },
