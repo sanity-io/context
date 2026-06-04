@@ -1,6 +1,6 @@
 import {DatabaseIcon, ErrorOutlineIcon} from '@sanity/icons'
 import {Box, Button, Card, Checkbox, Flex, Spinner, Stack, Text} from '@sanity/ui'
-import {useCallback} from 'react'
+import {useCallback, useMemo} from 'react'
 import {type ArrayOfPrimitivesInputProps, set, unset} from 'sanity'
 
 import type {KnowledgeBase} from './atlas'
@@ -26,7 +26,7 @@ function isSelectable(kb: KnowledgeBase): boolean {
  */
 export function KnowledgeBaseInput(props: ArrayOfPrimitivesInputProps) {
   const {onChange} = props
-  const selected = (props.value ?? []) as string[]
+  const selected = useMemo(() => (props.value ?? []) as string[], [props.value])
   const {knowledgeBases, loading, error, retry} = useKnowledgeBases()
 
   const toggle = useCallback(
@@ -42,6 +42,7 @@ export function KnowledgeBaseInput(props: ArrayOfPrimitivesInputProps) {
       <Card padding={4} radius={2} border>
         <Flex align="center" gap={3}>
           <Spinner muted />
+
           <Text size={1} muted>
             Loading knowledge bases…
           </Text>
@@ -58,13 +59,16 @@ export function KnowledgeBaseInput(props: ArrayOfPrimitivesInputProps) {
             <Text size={1}>
               <ErrorOutlineIcon />
             </Text>
+
             <Text size={1} weight="medium">
               Couldn’t load knowledge bases
             </Text>
           </Flex>
+
           <Text size={1} muted>
             {error}
           </Text>
+
           <Box>
             <Button fontSize={1} mode="ghost" onClick={retry} padding={2} text="Retry" />
           </Box>
@@ -125,15 +129,18 @@ function KnowledgeBaseRow({
             onChange={(e) => onToggle(kb.id, e.currentTarget.checked)}
           />
         </Box>
+
         <Box flex={1}>
           <Stack space={2}>
             <Flex align="center" gap={2}>
               <Text size={1}>
                 <DatabaseIcon />
               </Text>
+
               <Text size={1} weight="medium">
                 {kb.name}
               </Text>
+
               {kb.state && kb.state !== 'ready' && (
                 <Text size={0} muted>
                   ({kb.state}
@@ -141,6 +148,7 @@ function KnowledgeBaseRow({
                 </Text>
               )}
             </Flex>
+
             {kb.description && (
               <Text size={1} muted>
                 {kb.description}
