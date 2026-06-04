@@ -42,15 +42,15 @@ describe('contextSchema', () => {
     })
   })
 
-  describe('groqEnabled field', () => {
-    it('should define groqEnabled as a boolean', () => {
-      const field = contextSchema.fields.find((f) => f.name === 'groqEnabled')
+  describe('mode field', () => {
+    it('should define mode as a string', () => {
+      const field = contextSchema.fields.find((f) => f.name === 'mode')
       expect(field).toBeDefined()
-      expect(field?.type).toBe('boolean')
+      expect(field?.type).toBe('string')
     })
 
-    it('should default groqEnabled to true', () => {
-      expect(contextSchema.initialValue).toHaveProperty('groqEnabled', true)
+    it('should default mode to groq', () => {
+      expect(contextSchema.initialValue).toHaveProperty('mode', 'groq')
     })
   })
 
