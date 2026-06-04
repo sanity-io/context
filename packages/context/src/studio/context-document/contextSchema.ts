@@ -57,7 +57,8 @@ export const contextSchema = defineType({
     }),
     defineField({
       name: 'mode',
-      title: 'Content access mode',
+      title: 'Content source',
+      description: 'Choose how agents access your content.',
       type: 'string',
       validation: (Rule) => Rule.required(),
       options: {

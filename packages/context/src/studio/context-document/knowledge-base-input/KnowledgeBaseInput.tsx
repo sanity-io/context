@@ -1,4 +1,4 @@
-import {DatabaseIcon, ErrorOutlineIcon} from '@sanity/icons'
+import {ErrorOutlineIcon} from '@sanity/icons'
 import {Box, Button, Card, Checkbox, Flex, Spinner, Stack, Text} from '@sanity/ui'
 import {useCallback, useMemo} from 'react'
 import {type ArrayOfPrimitivesInputProps, set, unset} from 'sanity'
@@ -121,42 +121,32 @@ function KnowledgeBaseRow({
       tone={checked ? 'primary' : 'default'}
       style={{cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1}}
     >
-      <Flex align="flex-start" gap={3}>
-        <Box paddingTop={1}>
+      <Stack space={3}>
+        <Flex align="center" gap={3}>
           <Checkbox
             checked={checked}
             disabled={disabled}
             onChange={(e) => onToggle(kb.id, e.currentTarget.checked)}
           />
-        </Box>
 
-        <Box flex={1}>
-          <Stack space={2}>
-            <Flex align="center" gap={2}>
-              <Text size={1}>
-                <DatabaseIcon />
-              </Text>
+          <Text size={1} weight="medium">
+            {kb.name}
+          </Text>
 
-              <Text size={1} weight="medium">
-                {kb.name}
-              </Text>
+          {kb.state && kb.state !== 'ready' && (
+            <Text size={0} muted>
+              ({kb.state}
+              {disabled ? ' — not built yet' : ''})
+            </Text>
+          )}
+        </Flex>
 
-              {kb.state && kb.state !== 'ready' && (
-                <Text size={0} muted>
-                  ({kb.state}
-                  {disabled ? ' — not built yet' : ''})
-                </Text>
-              )}
-            </Flex>
-
-            {kb.description && (
-              <Text size={1} muted>
-                {kb.description}
-              </Text>
-            )}
-          </Stack>
-        </Box>
-      </Flex>
+        {kb.description && (
+          <Text size={1} muted>
+            {kb.description}
+          </Text>
+        )}
+      </Stack>
     </Card>
   )
 }
