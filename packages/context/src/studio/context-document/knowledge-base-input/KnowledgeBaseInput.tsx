@@ -135,8 +135,7 @@ function KnowledgeBaseRow({
 
           {kb.state && kb.state !== 'ready' && (
             <Text size={0} muted>
-              ({kb.state}
-              {disabled ? ' — not built yet' : ''})
+              {`(${kb.state}${disabled ? ' — not built yet' : ''})`}
             </Text>
           )}
         </Flex>
