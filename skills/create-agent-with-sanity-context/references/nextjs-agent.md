@@ -78,16 +78,38 @@ const mcpClient = await createMCPClient({
 })
 ```
 
+**Initial Context via HTTP:**
+
+Always fetch the schema context at startup and inject it into the system prompt. This gives a significant latency improvement—the agent already knows the schema without a tool call on the first message—and enables better prompt caching.
+
+See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for the full implementation, including caching and URL construction that handles query params correctly.
+
+Add it to the `Promise.all` alongside the MCP client and agent config:
+
+```ts
+const [mcpClientResult, agentConfig, initialContext] = await Promise.all([
+  createMCPClient({ /* ... */ }),
+  client.fetch(/* ... */),
+  fetchInitialContext(),
+])
+```
+
+Include the result in your system prompt—see [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for the `buildSystemPrompt` pattern.
+
 **Tool Combination** (`streamText`):
 
 ```ts
-const mcpTools = await mcpClient.tools()
+const allMcpTools = await mcpClient.tools()
+
+// Exclude initial_context tool — its data is already in the system prompt
+const {initial_context: _, ...mcpTools} = allMcpTools
+
 const result = streamText({
   model: anthropic('claude-opus-4-5'),
   system: systemPrompt,
   messages: await convertToModelMessages(messages),
   tools: {
-    ...mcpTools, // Sanity Context tools (groq_query, initial_context, etc.)
+    ...mcpTools, // Sanity Context tools (groq_query, schema_explorer, etc.)
     ...clientTools, // Client-side tools (page context, screenshot)
   },
 })
@@ -140,8 +162,8 @@ curl -X POST http://localhost:3000/api/chat \
 
 The agent should:
 
-1. Call `initial_context` to understand available content types
-2. Respond with a summary of what it can help with
+1. Already know the available content types (schema context is in the system prompt via `/initial-context`)
+2. Respond with a summary of what it can help with—no tool call needed on the first message
 
 ---
 

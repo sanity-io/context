@@ -16,20 +16,55 @@ import {writeClient} from '@/sanity/lib/write-client'
 const DEFAULT_MODEL = 'claude-sonnet-4-5'
 const MAX_STEPS = 20
 
+let cachedInitialContext: string | null = null
+let cacheTimestamp = 0
+const CACHE_TTL_MS = 5 * 60 * 1000
+
+function initialContextUrl(mcpUrl: string): string {
+  const url = new URL(mcpUrl)
+  url.pathname = `${url.pathname.replace(/\/$/, '')}/initial-context`
+  return url.toString()
+}
+
+// Slow on cold start — subsequent calls return the cached result
+async function fetchInitialContext(): Promise<string | null> {
+  const mcpUrl = process.env.SANITY_CONTEXT_MCP_URL
+  if (!mcpUrl) return null
+
+  const isStale = Date.now() - cacheTimestamp > CACHE_TTL_MS
+  const fetchPromise = isStale
+    ? fetch(initialContextUrl(mcpUrl), {
+        headers: {Authorization: `Bearer ${process.env.SANITY_API_READ_TOKEN}`},
+      })
+        .then(async (res) => {
+          if (res.ok) {
+            cachedInitialContext = await res.text()
+            cacheTimestamp = Date.now()
+          }
+        })
+        .catch(() => {})
+    : null
+
+  if (!cachedInitialContext) await fetchPromise
+
+  return cachedInitialContext
+}
+
 interface BuildSystemPromptParams {
   basePrompt: string
   documentContext: DocumentContext
+  initialContext?: string | null
 }
 
 /**
  * Combines base prompt from Sanity with page context and tool instructions.
  */
 function buildSystemPrompt(props: BuildSystemPromptParams): string {
-  const {basePrompt, documentContext} = props
+  const {basePrompt, documentContext, initialContext} = props
 
   return `
 ${basePrompt}
-
+${initialContext ? `\n# Content context\n\n${initialContext}\n` : ''}
 # Current page
 
 <page-context>
@@ -95,8 +130,7 @@ export async function POST(req: Request) {
   let mcpClient: MCPClient | null = null
 
   try {
-    // Initialize MCP client and fetch system prompt from Sanity document
-    const [mcpClientResult, agentConfig] = await Promise.all([
+    const [mcpClientResult, agentConfig, initialContext] = await Promise.all([
       createMCPClient({
         transport: {
           type: 'http',
@@ -110,6 +144,7 @@ export async function POST(req: Request) {
         `*[_type == "agent.config" && slug.current == $slug][0] { systemPrompt }`,
         {slug: process.env.AGENT_CONFIG_SLUG || 'default'},
       ),
+      fetchInitialContext(),
     ])
 
     mcpClient = mcpClientResult
@@ -125,9 +160,14 @@ export async function POST(req: Request) {
     const systemPrompt = buildSystemPrompt({
       basePrompt: agentConfig.systemPrompt,
       documentContext,
+      initialContext,
     })
 
-    const mcpTools = await mcpClient.tools()
+    const allMcpTools = await mcpClient.tools()
+
+    // Exclude initial_context tool, its data is already in the system prompt
+    const {initial_context: _, ...mcpTools} = allMcpTools
+
     const modelId = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL
 
     const result = streamText({

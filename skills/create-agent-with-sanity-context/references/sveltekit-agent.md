@@ -311,6 +311,23 @@ export const ssr = false
 </style>
 ```
 
+**Initial Context via HTTP:**
+
+Always fetch the schema context at startup and inject it into the system prompt. Append `/initial-context` to the MCP URL path (before any query params) and fetch with the same auth header. Cache the result. See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for a full implementation with caching.
+
+```ts
+const [mcpClient, initialContext] = await Promise.all([
+  createMCPClient({ /* ... */ }),
+  fetchInitialContext(),
+])
+
+const mcpTools = await mcpClient.tools()
+
+const systemPrompt = initialContext
+  ? `${SYSTEM_PROMPT}\n\n# Content context\n\n${initialContext}`
+  : SYSTEM_PROMPT
+```
+
 **Key patterns:**
 
 - **`Chat` class** — Svelte uses a class instantiation (`new Chat({...})`) instead of React's `useChat` hook
@@ -336,8 +353,8 @@ curl -X POST http://localhost:5173/api/chat \
 
 The agent should:
 
-1. Call `groq_query` or `schema_explorer` to understand available content types
-2. Respond with a summary of what it can help with
+1. Already know the available content types (schema context is in the system prompt via `/initial-context`)
+2. Respond with a summary of what it can help with—no tool call needed on the first message
 
 ---
 
