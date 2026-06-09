@@ -2,10 +2,9 @@
 
 ## [0.7.1](https://github.com/sanity-io/context/compare/context-v0.7.0...context-v0.7.1) (2026-06-09)
 
-
 ### Bug Fixes
 
-* auto derive duped envs, register peer deps as required ([#229](https://github.com/sanity-io/context/issues/229)) ([31be1f8](https://github.com/sanity-io/context/commit/31be1f8ab61fb2980205f5bad90bcfd149494f7c))
+- auto derive duped envs, register peer deps as required ([#229](https://github.com/sanity-io/context/issues/229)) ([31be1f8](https://github.com/sanity-io/context/commit/31be1f8ab61fb2980205f5bad90bcfd149494f7c))
 
 ## [0.7.0](https://github.com/sanity-io/context/compare/context-v0.6.0...context-v0.7.0) (2026-06-03)
 
