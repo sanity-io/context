@@ -98,37 +98,7 @@
     "zod": "^3.20 || ^4"
   },
   "peerDependenciesMeta": {
-    "@sanity/client": {
-      "optional": true
-    },
-    "@sanity/color": {
-      "optional": true
-    },
-    "@sanity/icons": {
-      "optional": true
-    },
-    "@sanity/ui": {
-      "optional": true
-    },
     "ai": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
-      "optional": true
-    },
-    "react-rx": {
-      "optional": true
-    },
-    "rxjs": {
-      "optional": true
-    },
-    "sanity": {
-      "optional": true
-    },
-    "styled-components": {
       "optional": true
     },
     "zod": {
