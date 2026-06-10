@@ -64,7 +64,7 @@ function buildSystemPrompt(props: BuildSystemPromptParams): string {
 
   return `
 ${basePrompt}
-${initialContext ? `\n# Content context\n\n${initialContext}\n` : ''}
+${initialContext ? `\n# Data reference\n\nUse this to understand what's available and write better queries.\n\n${initialContext}\n` : ''}
 # Current page
 
 <page-context>
