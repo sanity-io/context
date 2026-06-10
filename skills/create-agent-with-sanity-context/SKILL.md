@@ -37,10 +37,11 @@ Before starting, gather these credentials:
 
 The Sanity Context MCP server gives AI agents structured access to Sanity content. The core integration pattern:
 
-1. **MCP Connection**: HTTP transport to the Sanity Context URL
-2. **Authentication**: Bearer token using Sanity API read token
-3. **Tool Discovery**: Get available tools from MCP client, pass to LLM
-4. **System Prompt**: Tell the production agent its role, tone, and boundaries
+1. **Initial Context**: Fetch schema context via the `/initial-context` HTTP endpoint and inject it into the system prompt
+2. **MCP Connection**: HTTP transport to the Sanity Context URL
+3. **Authentication**: Bearer token using Sanity API read token
+4. **Tool Discovery**: Get available tools from MCP client, pass to LLM
+5. **System Prompt**: Tell the production agent its role, tone, and boundaries
 
 **MCP URL formats:**
 
@@ -64,13 +65,28 @@ This means Studio users can manage agent behavior without touching code — upda
 
 **The integration is simple**: Connect to the MCP URL, get tools, use them. The reference implementation shows one way to do this—adapt to your stack and LLM provider.
 
+**Initial context (recommended):**
+
+Always fetch the schema context via the `/initial-context` HTTP endpoint and inject it into the system prompt. This gives a significant latency improvement on the first message—the agent already knows the schema and available tools without needing a tool call. It also enables better prompt caching since the schema prefix is stable across conversations.
+
+Append `/initial-context` to the MCP URL path (before any query params), using the same auth header:
+
+```bash
+curl https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset/:slug/initial-context \
+  -H "Authorization: Bearer $SANITY_API_READ_TOKEN"
+```
+
+Fetch once, cache the result, and include it in your system prompt. When using this, exclude the `initial_context` tool from the tools passed to the LLM to avoid redundant calls.
+
+If you don't control the system prompt (e.g. using a third-party MCP client), the `initial_context` MCP tool still works — the agent will call it on the first message instead.
+
 ## Available MCP Tools
 
-| Tool              | Purpose                                                         |
-| ----------------- | --------------------------------------------------------------- |
-| `initial_context` | Get compressed schema overview (types, fields, document counts) |
-| `groq_query`      | Execute GROQ queries with optional semantic search              |
-| `schema_explorer` | Get detailed schema for a specific document type                |
+| Tool              | Purpose                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `initial_context` | Get compressed schema overview (types, fields, document counts). Also available via the `/initial-context` HTTP endpoint. |
+| `groq_query`      | Execute GROQ queries with optional semantic search                                                                        |
+| `schema_explorer` | Get detailed schema for a specific document type                                                                          |
 
 **For development and debugging:** The general Sanity MCP provides broader access to your Sanity project (schema deployment, document management, etc.). Useful during development but not intended for customer-facing applications.
 
