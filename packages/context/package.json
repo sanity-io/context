@@ -1,6 +1,6 @@
 {
   "name": "@sanity/context",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Tools for building AI agents with structured access to Sanity content",
   "keywords": [
     "sanity",
