@@ -4,6 +4,7 @@ import {defineField, defineType} from 'sanity'
 import {ContextDocumentInput} from './context-document-input/ContextDocumentInput'
 import {GroqFilterInput} from './groq-filter-input/GroqFilterInput'
 import {validateGroqFilter} from './groq-filter-input/groqUtils'
+import {KnowledgeBaseInput} from './knowledge-base-input/KnowledgeBaseInput'
 
 /** @public */
 export const CONTEXT_SCHEMA_TYPE_NAME = 'sanity.agentContext'
@@ -25,6 +26,7 @@ export const contextSchema = defineType({
   icon: DatabaseIcon,
   initialValue: {
     version: '1',
+    mode: 'groq',
   },
   components: {
     input: ContextDocumentInput,
@@ -54,11 +56,38 @@ export const contextSchema = defineType({
       },
     }),
     defineField({
+      name: 'mode',
+      title: 'Content source',
+      description: 'Choose how agents access your content.',
+      type: 'string',
+      validation: (Rule) => Rule.required(),
+      options: {
+        list: [
+          {title: 'Knowledge base', value: 'knowledge_base'},
+          {title: 'GROQ', value: 'groq'},
+        ],
+        layout: 'radio',
+      },
+    }),
+    defineField({
+      name: 'knowledgeBaseIds',
+      title: 'Knowledge bases',
+      description:
+        'Give agents access to curated knowledge bases so they can find and use that content when answering.',
+      type: 'array',
+      of: [{type: 'string'}],
+      hidden: ({parent}) => parent?.mode !== 'knowledge_base',
+      components: {
+        input: KnowledgeBaseInput,
+      },
+    }),
+    defineField({
       name: 'groqFilter',
       title: 'Content filter',
       description:
         'Control what content AI agents can access. Leave empty for full access, or pick specific document types. Use the GROQ tab for advanced filters.',
       type: 'string',
+      hidden: ({parent}) => parent?.mode !== 'groq',
       components: {
         input: GroqFilterInput,
       },

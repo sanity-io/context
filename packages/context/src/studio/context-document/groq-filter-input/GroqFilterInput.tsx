@@ -55,7 +55,7 @@ const TAB_IDS = {
 const ITEM_HEIGHT = 43
 
 export function GroqFilterInput(props: StringInputProps) {
-  const {value, onChange, elementProps} = props
+  const {value, onChange, elementProps, readOnly} = props
   const {ref: refProp, ...restElementProps} = elementProps || {}
 
   const [open, setOpen] = useState<boolean>(false)
@@ -107,13 +107,14 @@ export function GroqFilterInput(props: StringInputProps) {
   // 3. Transform the updated selected types into a GROQ query and set it as the new value.
   const handleDocumentTypeItemClick = useCallback(
     (item: string) => {
+      if (readOnly) return
       const nextValue = selectedTypes.includes(item)
         ? selectedTypes.filter((t) => t !== item)
         : [...selectedTypes, item]
 
       onChange(nextValue.length > 0 ? set(listToQuery(nextValue)) : unset())
     },
-    [selectedTypes, onChange],
+    [selectedTypes, onChange, readOnly],
   )
 
   const closeList = useCallback(() => {
@@ -289,6 +290,7 @@ export function GroqFilterInput(props: StringInputProps) {
                   {...restElementProps}
                   autoComplete="off"
                   border={false}
+                  disabled={readOnly}
                   onChange={(event) => setSearchQuery(event.currentTarget.value)}
                   onKeyDown={handleTextInputKeyDown}
                   placeholder="Search for document types"
@@ -301,7 +303,7 @@ export function GroqFilterInput(props: StringInputProps) {
               <Flex align="center" justify="center" sizing="border" padding={1} height="fill">
                 <Button
                   aria-label="Open document types list"
-                  disabled={isListOpen}
+                  disabled={isListOpen || readOnly}
                   icon={ChevronDownIcon}
                   mode="bleed"
                   onClick={handleToggleList}
@@ -327,6 +329,7 @@ export function GroqFilterInput(props: StringInputProps) {
 
                     <Button
                       aria-label="Remove {type} from filter"
+                      disabled={readOnly}
                       fontSize={0}
                       icon={CloseIcon}
                       mode="bleed"
@@ -351,6 +354,7 @@ export function GroqFilterInput(props: StringInputProps) {
         <Stack space={3}>
           <GroqFilterTextArea
             {...restElementProps}
+            readOnly={readOnly}
             onChange={(event) =>
               onChange(event.currentTarget.value ? set(event.currentTarget.value) : unset())
             }
