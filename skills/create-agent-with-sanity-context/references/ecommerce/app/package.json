@@ -40,7 +40,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^22.19.15",
     "@types/react": "^19",

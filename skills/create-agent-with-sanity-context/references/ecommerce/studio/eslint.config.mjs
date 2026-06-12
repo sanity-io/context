@@ -1,3 +1,6 @@
-import config from '@repo/eslint-config'
+import tseslint from 'typescript-eslint'
 
-export default config
+export default tseslint.config([
+  ...tseslint.configs.recommended,
+  {ignores: ['dist/', 'build/', '.sanity/']},
+])
