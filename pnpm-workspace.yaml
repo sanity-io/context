@@ -4,7 +4,7 @@ packages:
   - examples/**/*
 
 catalog:
-  '@ai-sdk/anthropic': ^3.0.58
+  '@ai-sdk/anthropic': ^3.0.82
   '@sanity/client': ^7.21.0
   '@sanity/color': ^3
   '@sanity/icons': ^3

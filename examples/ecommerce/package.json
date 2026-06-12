@@ -9,7 +9,7 @@
     "test:functions": "sanity functions test classify-conversations --with-user-token"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.58",
+    "@ai-sdk/anthropic": "^3.0.82",
     "@sanity/client": "^7.21.0",
     "@sanity/context": "workspace:*",
     "@sanity/functions": "^1.2.1",
