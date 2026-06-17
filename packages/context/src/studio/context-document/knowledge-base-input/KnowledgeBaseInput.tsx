@@ -19,10 +19,11 @@ function isSelectable(kb: KnowledgeBase): boolean {
 }
 
 /**
- * Custom input for the `knowledgeBaseIds` field. Instead of typing knowledge
- * base ids by hand, the editor picks from the org's knowledge bases (fetched
- * from Atlas). The field stores the selected ids; everything else (slug, name,
- * description) is resolved at runtime by context-mcp.
+ * Custom input for the `knowledgeBases` field. Instead of typing knowledge
+ * base slugs by hand, the editor picks from the org's knowledge bases (fetched
+ * from Atlas). The field stores the selected slugs; everything else (name,
+ * description) is resolved at runtime by context-mcp, which addresses Atlas by
+ * slug.
  */
 export function KnowledgeBaseInput(props: ArrayOfPrimitivesInputProps) {
   const {onChange} = props
@@ -30,8 +31,8 @@ export function KnowledgeBaseInput(props: ArrayOfPrimitivesInputProps) {
   const {knowledgeBases, loading, error, retry} = useKnowledgeBases()
 
   const toggle = useCallback(
-    (id: string, checked: boolean) => {
-      const next = checked ? [...selected, id] : selected.filter((x) => x !== id)
+    (slug: string, checked: boolean) => {
+      const next = checked ? [...selected, slug] : selected.filter((x) => x !== slug)
       onChange(next.length > 0 ? set(next) : unset())
     },
     [onChange, selected],
@@ -93,7 +94,7 @@ export function KnowledgeBaseInput(props: ArrayOfPrimitivesInputProps) {
         <KnowledgeBaseRow
           key={kb.id}
           knowledgeBase={kb}
-          checked={selected.includes(kb.id)}
+          checked={selected.includes(kb.slug)}
           onToggle={toggle}
         />
       ))}
@@ -108,7 +109,7 @@ function KnowledgeBaseRow({
 }: {
   knowledgeBase: KnowledgeBase
   checked: boolean
-  onToggle: (id: string, checked: boolean) => void
+  onToggle: (slug: string, checked: boolean) => void
 }) {
   const disabled = !isSelectable(kb)
 
@@ -126,7 +127,7 @@ function KnowledgeBaseRow({
           <Checkbox
             checked={checked}
             disabled={disabled}
-            onChange={(e) => onToggle(kb.id, e.currentTarget.checked)}
+            onChange={(e) => onToggle(kb.slug, e.currentTarget.checked)}
           />
 
           <Text size={1} weight="medium">

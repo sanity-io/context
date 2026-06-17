@@ -54,9 +54,9 @@ describe('contextSchema', () => {
     })
   })
 
-  describe('knowledgeBaseIds field', () => {
-    it('should define knowledgeBaseIds as an array of strings', () => {
-      const field = contextSchema.fields.find((f) => f.name === 'knowledgeBaseIds')
+  describe('knowledgeBases field', () => {
+    it('should define knowledgeBases as an array of strings', () => {
+      const field = contextSchema.fields.find((f) => f.name === 'knowledgeBases')
       expect(field).toBeDefined()
       expect(field?.type).toBe('array')
       expect((field as {of?: {type: string}[]})?.of).toEqual([{type: 'string'}])

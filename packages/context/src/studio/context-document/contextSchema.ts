@@ -70,7 +70,7 @@ export const contextSchema = defineType({
       },
     }),
     defineField({
-      name: 'knowledgeBaseIds',
+      name: 'knowledgeBases',
       title: 'Knowledge bases',
       description:
         'Give agents access to curated knowledge bases so they can find and use that content when answering.',
