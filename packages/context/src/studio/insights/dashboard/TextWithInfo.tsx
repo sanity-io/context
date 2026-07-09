@@ -1,4 +1,4 @@
-import {InfoOutlineIcon} from '@sanity/icons'
+import {InfoOutlineIcon} from '@sanity/icons/InfoOutline'
 import {Box, Flex, Text, type TextProps, Tooltip} from '@sanity/ui'
 import type React from 'react'
 
