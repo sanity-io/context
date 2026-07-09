@@ -1,4 +1,4 @@
-import {DatabaseIcon} from '@sanity/icons'
+import {DatabaseIcon} from '@sanity/icons/Database'
 import {defineField, defineType} from 'sanity'
 
 import {ContextDocumentInput} from './context-document-input/ContextDocumentInput'
