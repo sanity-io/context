@@ -1,4 +1,7 @@
-import {ChevronDownIcon, RobotIcon, UserIcon, WrenchIcon} from '@sanity/icons'
+import {ChevronDownIcon} from '@sanity/icons/ChevronDown'
+import {RobotIcon} from '@sanity/icons/Robot'
+import {UserIcon} from '@sanity/icons/User'
+import {WrenchIcon} from '@sanity/icons/Wrench'
 import {Box, Card, type CardTone, Code, Flex, Text} from '@sanity/ui'
 import {useMemo, useState} from 'react'
 
