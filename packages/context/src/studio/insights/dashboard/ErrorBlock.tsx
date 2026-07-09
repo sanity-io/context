@@ -1,4 +1,4 @@
-import {RetryIcon} from '@sanity/icons'
+import {RetryIcon} from '@sanity/icons/Retry'
 import {Button, Card, Container, Flex, Stack, Text} from '@sanity/ui'
 
 interface ErrorBlockProps {
