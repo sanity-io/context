@@ -7,7 +7,7 @@ catalog:
   '@ai-sdk/anthropic': ^3.0.58
   '@sanity/client': ^7.21.0
   '@sanity/color': ^3
-  '@sanity/icons': ^3
+  '@sanity/icons': ^5.0.0
   '@sanity/ui': ^3
   '@sanity/vision': ^5.22.0
   '@types/react': ^19

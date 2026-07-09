@@ -13,8 +13,8 @@ catalogs:
       specifier: ^3
       version: 3.0.6
     '@sanity/icons':
-      specifier: ^3
-      version: 3.7.4
+      specifier: ^5.0.0
+      version: 5.0.0
     '@sanity/ui':
       specifier: ^3
       version: 3.1.14
@@ -348,7 +348,7 @@ importers:
         version: 3.0.6
       '@sanity/icons':
         specifier: 'catalog:'
-        version: 3.7.4(react@19.2.5)
+        version: 5.0.0(react@19.2.5)
       '@sanity/pkg-utils':
         specifier: ^10.4.13
         version: 10.4.18(@types/babel__core@7.20.5)(@types/node@22.19.17)(babel-plugin-react-compiler@1.0.0)(typescript@5.9.3)
@@ -3589,6 +3589,12 @@ packages:
     engines: {node: '>=14.0.0'}
     peerDependencies:
       react: ^18.3 || ^19.0.0-0
+
+  '@sanity/icons@5.0.0':
+    resolution: {integrity: sha512-fINQLovVnCANwQbQ63iO2mUVh2ZX3T4h3hiSEaIStvladI5tmrGAuT+XbUuk3jTmBwOHDGD0EL9lpsghGAS+Sg==}
+    engines: {node: '>=22.12'}
+    peerDependencies:
+      react: ^19
 
   '@sanity/id-utils@1.0.0':
     resolution: {integrity: sha512-2sb7tbdMDuUuVyocJPKG0gZBiOML/ovCe+mJiLrv1j69ODOfa2LfUjDVR+dRw/A/+XuxoJSSP8ebG7NiwTOgIA==}
@@ -12170,6 +12176,10 @@ snapshots:
   '@sanity/generate-help-url@4.0.0': {}
 
   '@sanity/icons@3.7.4(react@19.2.5)':
+    dependencies:
+      react: 19.2.5
+
+  '@sanity/icons@5.0.0(react@19.2.5)':
     dependencies:
       react: 19.2.5
 
