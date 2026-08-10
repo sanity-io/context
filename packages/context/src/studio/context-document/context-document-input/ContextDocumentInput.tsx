@@ -1,4 +1,4 @@
-import {CopyIcon} from '@sanity/icons'
+import {CopyIcon} from '@sanity/icons/Copy'
 import {Box, Button, Card, Flex, Stack, Text, Tooltip, useToast} from '@sanity/ui'
 import {useCallback} from 'react'
 import {

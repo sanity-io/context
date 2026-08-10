@@ -1,4 +1,5 @@
-import {CheckmarkIcon, ChevronDownIcon} from '@sanity/icons'
+import {CheckmarkIcon} from '@sanity/icons/Checkmark'
+import {ChevronDownIcon} from '@sanity/icons/ChevronDown'
 import {Button, Menu, MenuButton, MenuDivider, MenuItem} from '@sanity/ui'
 import {useId} from 'react'
 

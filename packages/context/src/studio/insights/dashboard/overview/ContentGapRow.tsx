@@ -1,4 +1,4 @@
-import {ChevronRightIcon} from '@sanity/icons'
+import {ChevronRightIcon} from '@sanity/icons/ChevronRight'
 import {Box, Card, Flex, Text} from '@sanity/ui'
 
 interface ContentGapRowProps {

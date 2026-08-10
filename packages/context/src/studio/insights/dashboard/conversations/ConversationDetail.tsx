@@ -1,4 +1,4 @@
-import {CloseIcon} from '@sanity/icons'
+import {CloseIcon} from '@sanity/icons/Close'
 import {Badge, Box, Button, Card, Container, Flex, Grid, Label, Stack, Text} from '@sanity/ui'
 import type {ReactNode} from 'react'
 

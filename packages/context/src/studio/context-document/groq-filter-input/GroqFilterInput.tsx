@@ -1,11 +1,9 @@
-import {
-  CheckmarkIcon,
-  ChevronDownIcon,
-  CloseIcon,
-  ErrorOutlineIcon,
-  GroqIcon,
-  ListIcon,
-} from '@sanity/icons'
+import {CheckmarkIcon} from '@sanity/icons/Checkmark'
+import {ChevronDownIcon} from '@sanity/icons/ChevronDown'
+import {CloseIcon} from '@sanity/icons/Close'
+import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
+import {GroqIcon} from '@sanity/icons/Groq'
+import {ListIcon} from '@sanity/icons/List'
 import {
   Box,
   Button,
