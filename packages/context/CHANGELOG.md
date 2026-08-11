@@ -2,14 +2,13 @@
 
 ## [1.0.0](https://github.com/sanity-io/context/compare/context-v0.7.1...context-v1.0.0) (2026-08-11)
 
-
 ### ⚠ BREAKING CHANGES
 
-* **context:** add Studio v6 compatibility ([#243](https://github.com/sanity-io/context/issues/243))
+- **context:** add Studio v6 compatibility ([#243](https://github.com/sanity-io/context/issues/243))
 
 ### Features
 
-* **context:** add Studio v6 compatibility ([#243](https://github.com/sanity-io/context/issues/243)) ([a05e40f](https://github.com/sanity-io/context/commit/a05e40f316018bfd24d17e96c4dfaa923d2dee96))
+- **context:** add Studio v6 compatibility ([#243](https://github.com/sanity-io/context/issues/243)) ([a05e40f](https://github.com/sanity-io/context/commit/a05e40f316018bfd24d17e96c4dfaa923d2dee96))
 
 ## [0.7.1](https://github.com/sanity-io/context/compare/context-v0.7.0...context-v0.7.1) (2026-06-11)
 
