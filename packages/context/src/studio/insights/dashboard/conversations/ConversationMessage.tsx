@@ -87,8 +87,7 @@ export function ConversationMessage(props: ConversationMessageProps) {
             padding={3}
             radius={0}
             tone="inherit"
-            width="fill"
-            style={{cursor: toolCall.args ? 'pointer' : undefined}}
+            style={{cursor: toolCall.args ? 'pointer' : undefined, width: '100%'}}
           >
             <Flex align="center" gap={3}>
               <Box flex={1}>
