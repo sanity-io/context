@@ -1,4 +1,5 @@
-import {ArrowDownIcon, ArrowUpIcon} from '@sanity/icons'
+import {ArrowDownIcon} from '@sanity/icons/ArrowDown'
+import {ArrowUpIcon} from '@sanity/icons/ArrowUp'
 import {Box, Button, Flex, Text} from '@sanity/ui'
 import {styled} from 'styled-components'
 

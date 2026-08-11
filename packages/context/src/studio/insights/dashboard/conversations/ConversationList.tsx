@@ -1,4 +1,5 @@
-import {FilterIcon, SearchIcon} from '@sanity/icons'
+import {FilterIcon} from '@sanity/icons/Filter'
+import {SearchIcon} from '@sanity/icons/Search'
 import {
   Badge,
   Box,

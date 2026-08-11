@@ -1,4 +1,4 @@
-import {ChartUpwardIcon} from '@sanity/icons'
+import {ChartUpwardIcon} from '@sanity/icons/ChartUpward'
 import {definePlugin} from 'sanity'
 import {route} from 'sanity/router'
 

@@ -1,4 +1,7 @@
-import {CheckmarkIcon, ChevronDownIcon, CommentIcon, DashboardIcon} from '@sanity/icons'
+import {CheckmarkIcon} from '@sanity/icons/Checkmark'
+import {ChevronDownIcon} from '@sanity/icons/ChevronDown'
+import {CommentIcon} from '@sanity/icons/Comment'
+import {DashboardIcon} from '@sanity/icons/Dashboard'
 import {Box, Button, Card, Flex, Menu, MenuButton, MenuDivider, MenuItem, Stack} from '@sanity/ui'
 import {Activity, useId, useState} from 'react'
 import {useRouter} from 'sanity/router'
