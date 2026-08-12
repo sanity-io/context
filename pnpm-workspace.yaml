@@ -10,11 +10,11 @@ catalog:
   '@sanity/icons': ^5
   '@sanity/ui': ^3
   '@sanity/vision': ^6
-  '@types/react': ^19
-  '@types/react-dom': ^19
+  '@types/react': ^19.2.18
+  '@types/react-dom': ^19.2.4
   ai: ^6.0.177
-  react: ^19
-  react-dom: ^19
+  react: ^19.2.8
+  react-dom: ^19.2.8
   react-markdown: ^10.1.0
   sanity: ^6
   styled-components: ^6.3.8
