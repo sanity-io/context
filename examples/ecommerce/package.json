@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.58",
-    "@sanity/client": "^7.26.1",
+    "@sanity/client": "^7.26.2",
     "@sanity/context": "workspace:*",
     "@sanity/functions": "^1.2.1",
     "ai": "^6.0.175"
