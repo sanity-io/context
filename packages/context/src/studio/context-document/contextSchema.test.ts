@@ -42,6 +42,27 @@ describe('contextSchema', () => {
     })
   })
 
+  describe('mode field', () => {
+    it('should define mode as a string', () => {
+      const field = contextSchema.fields.find((f) => f.name === 'mode')
+      expect(field).toBeDefined()
+      expect(field?.type).toBe('string')
+    })
+
+    it('should default mode to groq', () => {
+      expect(contextSchema.initialValue).toHaveProperty('mode', 'groq')
+    })
+  })
+
+  describe('knowledgeBases field', () => {
+    it('should define knowledgeBases as an array of strings', () => {
+      const field = contextSchema.fields.find((f) => f.name === 'knowledgeBases')
+      expect(field).toBeDefined()
+      expect(field?.type).toBe('array')
+      expect((field as {of?: {type: string}[]})?.of).toEqual([{type: 'string'}])
+    })
+  })
+
   describe('other fields', () => {
     it('should include the name field', () => {
       const nameField = contextSchema.fields.find((field) => field.name === 'name')
