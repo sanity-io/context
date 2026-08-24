@@ -1,33 +1,30 @@
-import type {SanityClient} from '@sanity/client'
 import type {LanguageModel} from 'ai'
 
 import {classifyConversation} from './classifyConversation'
 import {getConversationsToClassify} from './getConversationsToClassify'
 import {getPreviousContentGaps} from './getPreviousContentGaps'
-import type {TelemetryConfig} from './sendInsightsTelemetry'
+import type {ContextInsightsOptions} from './types'
 
 const DEFAULT_CONCURRENCY = 3
 
 /** @public */
-export interface ClassifyConversationsOptions {
-  /** Sanity client with read/write permissions. */
-  client: SanityClient
+export interface ClassifyConversationsOptions extends ContextInsightsOptions {
   /** AI SDK model for classification (e.g., `anthropic('claude-haiku-4-5')`). */
   model: LanguageModel
   /** Max conversations to classify concurrently. Defaults to `3`. */
   concurrency?: number
-  /** Telemetry configuration. When enabled, shares classification metrics with Sanity. */
-  telemetry?: TelemetryConfig
-  /** Filter by agent ID. Applies to both conversation fetching and content gap fetching. */
-  agentId?: string
-  /** Max conversations to process. No limit by default. */
+  /** Max conversations to process per run. Defaults to `100`. */
   limit?: number
   /**
-   * Minimum idle time (in minutes) before a conversation becomes eligible for classification.
-   * Only conversations where `messagesUpdatedAt` is older than this cooldown period will be returned.
-   * Defaults to `10` minutes.
+   * How long a conversation must have been idle before it is considered
+   * settled and ready to classify. Defaults to `10` minutes.
    */
-  cooldownMinutes?: number
+  settledForMinutes?: number
+  /**
+   * Only classify conversations tagged with this MCP endpoint name
+   * (`metadata.mcpEndpoints`). When omitted, all conversations qualify.
+   */
+  mcpEndpoint?: string
 }
 
 /** @public */
@@ -48,15 +45,17 @@ export interface ClassifyConversationsResult {
  *
  * @example
  * ```ts
+ * import {createClient} from '@sanity/client'
  * import {classifyConversations} from '@sanity/context/insights'
  * import {anthropic} from '@ai-sdk/anthropic'
  *
- * const result = await classifyConversations({
- *   client,
- *   model: anthropic('claude-haiku-4-5'),
- *   telemetry: {shareMetrics: true},
+ * const client = createClient({
+ *   apiVersion: 'v2025-11-27',
+ *   token: process.env.SANITY_API_TOKEN,
+ *   context: {organizationId: 'org-id'},
  * })
  *
+ * const result = await classifyConversations({client, model: anthropic('claude-haiku-4-5')})
  * console.log(`${result.successCount} classified, ${result.errorCount} failed`)
  * ```
  *
@@ -66,19 +65,16 @@ export interface ClassifyConversationsResult {
 export async function classifyConversations(
   options: ClassifyConversationsOptions,
 ): Promise<ClassifyConversationsResult> {
-  const {
-    client,
-    model,
-    concurrency = DEFAULT_CONCURRENCY,
-    telemetry,
-    agentId,
-    limit,
-    cooldownMinutes,
-  } = options
+  const {client, model, concurrency = DEFAULT_CONCURRENCY} = options
 
   const [conversations, previousContentGaps] = await Promise.all([
-    getConversationsToClassify({client, agentId, limit, cooldownMinutes}),
-    getPreviousContentGaps({client, agentId}),
+    getConversationsToClassify({
+      client,
+      limit: options.limit,
+      settledForMinutes: options.settledForMinutes,
+      mcpEndpoint: options.mcpEndpoint,
+    }),
+    getPreviousContentGaps({client}),
   ])
 
   if (conversations.length === 0) {
@@ -96,14 +92,9 @@ export async function classifyConversations(
 
     const task = classifyConversation({
       client,
-      conversationId: conv._id,
+      threadId: conv.threadId,
       model,
-      messages: conv.messages,
-      modelProvider: conv.modelProvider,
-      modelId: conv.modelId,
-      tokenUsage: conv.tokenUsage,
       previousContentGaps,
-      telemetry,
     })
       .then(() => {
         successCount++

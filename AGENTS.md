@@ -111,22 +111,21 @@ Agents connect via HTTP transport with a Bearer token (Sanity API read token).
 Conversation tracking and classification system. Two parts:
 
 1. **Telemetry integration** (`@sanity/context/ai-sdk`) — saves conversations from chat routes via AI SDK's `experimental_telemetry`
-2. **Classification primitives** (`@sanity/context/insights`) — composable functions for analyzing saved conversations
+2. **Insights primitives** (`@sanity/context/insights`) — classification primitives that run the customer's own AI SDK model and record verdicts through `client.context`; transcript saving itself is `client.context.conversations.save` from `@sanity/client`
 
 Key files:
 
 | File                                                | Purpose                                              |
 | --------------------------------------------------- | ---------------------------------------------------- |
 | `src/insights/classifyConversations.ts`             | Happy-path wrapper for classifying all conversations |
-| `src/insights/saveConversation.ts`                  | Save/upsert conversation documents                   |
-| `src/insights/getConversationsToClassify.ts`        | Query conversations needing classification           |
 | `src/insights/classifyConversation.ts`              | Classify a single conversation with AI               |
-| `src/insights/sendInsightsTelemetry.ts`             | Opt-in telemetry sharing with Sanity                 |
-| `src/insights/getPreviousContentGaps.ts`            | Fetch previously identified content gaps             |
+| `src/insights/getConversationsToClassify.ts`        | Query the pending classification queue (GROQ)        |
+| `src/insights/getPreviousContentGaps.ts`            | Query known content gaps ranked by frequency         |
+| `src/insights/types.ts`                             | Shared insights options and message types            |
 | `src/integrations/ai-sdk/telemetryIntegration.ts`   | AI SDK telemetry integration                         |
-| `src/studio/insights/schemas/conversationSchema.ts` | Conversation document schema                         |
+| `src/studio/insights/schemas/conversationSchema.ts` | Conversation document schema (Studio plugin)         |
 
-`classifyConversations` (plural) is the recommended entry point — it orchestrates `getConversationsToClassify`, `getPreviousContentGaps`, and `classifyConversation` with batched concurrency. The lower-level primitives are composable for custom workflows.
+Every insights function takes a `@sanity/client` (v8.4+) configured with `context: {organizationId}` and a server-side token; writes go through `client.context.conversations` and reads are GROQ over the org's Context document store via `client.context.fetch`. The pending queue is a query (no verdict, no recorded failure, non-empty, settled past a caller-owned cooldown, 10 minutes by default). Classification runs customer-side with their model and LLM key. `classifyConversations` (plural) is the recommended entry point — it orchestrates `getConversationsToClassify`, `getPreviousContentGaps`, and `classifyConversation` with bounded concurrency.
 
 ### Skill References Syncing
 

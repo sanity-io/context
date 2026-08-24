@@ -106,7 +106,7 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
        type: 'http',
        url: process.env.SANITY_CONTEXT_MCP_URL,
        headers: {
-         Authorization: `Bearer ${process.env.SANITY_API_READ_TOKEN}`,
+         Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`,
        },
      },
    })
@@ -118,7 +118,7 @@ Track and analyze your agent conversations with built-in telemetry:
 
 - Automatic conversation saving via AI SDK integration
 - AI-powered classification (success score, sentiment, content gaps)
-- Studio dashboard for analytics and conversation browsing
+- Analytics and conversation browsing in the Context dashboard
 
 See the [package documentation](./packages/context#agent-insights) for setup.
 
@@ -128,14 +128,14 @@ See the [package documentation](./packages/context#agent-insights) for setup.
 
 ```bash
 curl -X POST https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset/:slug \
-  -H "Authorization: Bearer $SANITY_API_READ_TOKEN" \
+  -H "Authorization: Bearer $SANITY_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
 If this returns a list of tools, you're connected. The full MCP URL is shown in your Sanity Context document in Studio.
 
-**401 Unauthorized** — Your `SANITY_API_READ_TOKEN` is missing or invalid. Generate a new token at [sanity.io/manage](https://sanity.io/manage) → Project → API → Tokens.
+**401 Unauthorized** — Your `SANITY_API_TOKEN` is missing or invalid. Generate a new token at [sanity.io/manage](https://sanity.io/manage) → Project → API → Tokens.
 
 **No schema or empty results** — Sanity Context requires a deployed Studio. Run `npx sanity deploy`. If you've set a content filter, ensure it matches published documents.
 

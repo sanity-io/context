@@ -73,7 +73,7 @@ Append `/initial-context` to the MCP URL path (before any query params), using t
 
 ```bash
 curl https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset/:slug/initial-context \
-  -H "Authorization: Bearer $SANITY_API_READ_TOKEN"
+  -H "Authorization: Bearer $SANITY_API_TOKEN"
 ```
 
 Fetch once, cache the result, and include it in your system prompt. When using this, exclude the `initial_context` tool from the tools passed to the LLM to avoid redundant calls.
@@ -142,7 +142,7 @@ Then test the endpoint:
 
 ```bash
 curl -X POST https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset \
-  -H "Authorization: Bearer $SANITY_API_READ_TOKEN" \
+  -H "Authorization: Bearer $SANITY_API_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
@@ -188,8 +188,8 @@ See [references/studio-setup.md](references/studio-setup.md)
 
 **Setup is two parts — do both:**
 
-1. **Telemetry** — Add one integration to your existing `streamText` call (saves conversations)
-2. **Classification** — Deploy a scheduled function that analyzes conversations with AI
+1. **Telemetry** — Add one integration to your existing `streamText` call (stores conversation transcripts in the organization's Context store, next to the rest of their Context documents)
+2. **Classification** — Deploy a scheduled function that analyzes conversations with the user's own AI SDK model and records verdicts back through the Context API
 
 Telemetry without classification just stores raw conversations. Classification is what extracts success scores, sentiment, and content gaps — the actual insights. Always set up both.
 
@@ -277,7 +277,7 @@ Sanity Context requires a deployed Studio. See [Deploy Your Studio](references/s
 
 ### "401 Unauthorized" from MCP
 
-The `SANITY_API_READ_TOKEN` is missing or invalid. Generate a new token from the terminal:
+The `SANITY_API_TOKEN` is missing or invalid. Generate a new token from the terminal:
 
 ```bash
 npx sanity tokens add "Sanity Context" --role=viewer --yes --json

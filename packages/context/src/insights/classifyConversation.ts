@@ -1,13 +1,7 @@
-import type {SanityClient} from '@sanity/client'
 import {generateText, type LanguageModel, Output} from 'ai'
 import {z} from 'zod'
 
-import type {Message, TokenUsage} from './saveConversation'
-import {
-  buildTelemetryPayload,
-  sendInsightsTelemetry,
-  type TelemetryConfig,
-} from './sendInsightsTelemetry'
+import {type ContextInsightsOptions, requireClient} from './types'
 
 /** @public */
 export type Sentiment = 'positive' | 'neutral' | 'negative'
@@ -29,26 +23,21 @@ export interface ClassificationResult {
 }
 
 /** @public */
-export interface ClassifyConversationOptions {
-  /** Sanity client with read/write permissions. */
-  client: SanityClient
-  /** Document ID to classify. */
-  conversationId: string
+export interface ClassifyConversationOptions extends ContextInsightsOptions {
+  /** Thread ID of the conversation to classify. */
+  threadId: string
   /** AI SDK model for classification (e.g., `anthropic('claude-haiku-4-5')`). */
   model: LanguageModel
-  /** Messages to classify. */
-  messages: Message[]
   /** Previously observed content gaps to encourage consistent terminology. Use `getPreviousContentGaps` to fetch these. */
   previousContentGaps?: string[]
-  /** Telemetry configuration. When enabled, shares metadata-only classification metrics with Sanity. */
-  telemetry?: TelemetryConfig
-  /** LLM provider used for this conversation (e.g. `"anthropic"`). Stored on the conversation document. */
-  modelProvider?: string
-  /** Model ID used for this conversation (e.g. `"claude-sonnet-4-5"`). Stored on the conversation document. */
-  modelId?: string
-  /** Token usage stats for this conversation. Stored on the conversation document. */
-  tokenUsage?: TokenUsage
+  /**
+   * Messages to classify. When omitted, the full transcript is fetched
+   * from the Context document store before classification.
+   */
+  messages?: {role: string; content?: string | null}[]
 }
+
+const MAX_ERROR_LENGTH = 500
 
 const coreMetricsSchema = z.object({
   successScore: z
@@ -66,8 +55,7 @@ const coreMetricsSchema = z.object({
     ),
 })
 
-/** @internal Exported for testing */
-export function formatMessagesForPrompt(messages: {role: string; content?: string}[]): string {
+function formatMessagesForPrompt(messages: {role: string; content?: string | null}[]): string {
   return messages
     .map((m) => {
       const role = m.role.charAt(0).toUpperCase() + m.role.slice(1)
@@ -76,8 +64,7 @@ export function formatMessagesForPrompt(messages: {role: string; content?: strin
     .join('\n\n')
 }
 
-/** @internal Exported for testing */
-export function buildSystemPrompt(previousContentGaps?: string[]): string {
+function buildSystemPrompt(previousContentGaps?: string[]): string {
   let prompt = `You are analyzing a conversation between a user and an AI assistant.
 Classify the conversation according to the schema provided.
 
@@ -96,10 +83,12 @@ Guidelines:
 /**
  * Classifies a conversation using AI to extract metrics.
  *
- * Sends the provided messages to an AI model for analysis and stores the
- * classification results back on the document.
+ * Sends the messages to an AI model for analysis and records the
+ * classification verdict on the conversation through the Context API.
+ * When `messages` is omitted, the transcript is fetched first.
  *
- * If classification fails, an error is stored on the document and the error is re-thrown.
+ * If classification fails, the error is recorded on the conversation
+ * (which removes it from the pending queue) and the error is re-thrown.
  *
  * For most use cases, prefer `classifyConversations` (plural) which handles
  * fetching, batching, and error handling automatically.
@@ -111,9 +100,8 @@ Guidelines:
  *
  * await classifyConversation({
  *   client,
- *   conversationId: 'agentconversation-bot-thread-123',
+ *   threadId: 'thread-123',
  *   model: anthropic('claude-haiku-4-5'),
- *   messages: [{role: 'user', content: 'Hello'}, {role: 'assistant', content: 'Hi!'}],
  * })
  * ```
  *
@@ -124,11 +112,18 @@ Guidelines:
 export async function classifyConversation(
   options: ClassifyConversationOptions,
 ): Promise<ClassificationResult> {
-  const {client, conversationId, model, messages, telemetry} = options
-  const now = new Date().toISOString()
+  const {threadId, model} = options
+  const client = requireClient('classifyConversation', options)
+
+  if (!threadId || typeof threadId !== 'string') {
+    throw new Error('classifyConversation: threadId must be a non-empty string')
+  }
+
+  const messages =
+    options.messages ?? (await client.context.conversations.get({threadId}))?.messages
 
   if (!messages || messages.length === 0) {
-    throw new Error(`Conversation has no messages: ${conversationId}`)
+    throw new Error(`Conversation has no messages: ${threadId}`)
   }
 
   const systemPrompt = buildSystemPrompt(options.previousContentGaps)
@@ -153,49 +148,27 @@ ${formatMessagesForPrompt(messages)}
       throw new Error('Model returned no output')
     }
 
-    await client
-      .patch(conversationId)
-      .set({
-        coreMetrics: result.output.coreMetrics,
-        classifiedAt: now,
-        ...(options.modelProvider && {modelProvider: options.modelProvider}),
-        ...(options.modelId && {modelId: options.modelId}),
-        ...(options.tokenUsage && {tokenUsage: options.tokenUsage}),
-      })
-      .unset(['classificationError'])
-      .commit()
+    const updated = await client.context.conversations.classify({
+      threadId,
+      coreMetrics: result.output.coreMetrics,
+    })
 
-    if (telemetry?.shareMetrics || telemetry?.shareConversations) {
-      const projectId = client.config().projectId
-      if (projectId) {
-        const payload = buildTelemetryPayload(
-          conversationId,
-          now,
-          projectId,
-          result.output.coreMetrics,
-          {
-            messages,
-            modelProvider: options.modelProvider,
-            modelId: options.modelId,
-            tokenUsage: options.tokenUsage,
-          },
-          telemetry,
-        )
-        await sendInsightsTelemetry(client, payload)
-      }
+    return {
+      coreMetrics: result.output.coreMetrics,
+      classifiedAt: updated.classifiedAt ?? new Date().toISOString(),
     }
-
-    return {coreMetrics: result.output.coreMetrics, classifiedAt: now}
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
 
-    // Store the error but don't set classifiedAt — this allows the conversation
-    // to be picked up again by getConversationsToClassify on the next run.
-    // Transient errors (API rate limits, network issues) will resolve themselves.
+    // Record the failure so the conversation leaves the pending queue instead
+    // of being retried forever against a transcript the model cannot classify.
     try {
-      await client.patch(conversationId).set({classificationError: errorMessage}).commit()
+      await client.context.conversations.classify({
+        threadId,
+        classificationError: errorMessage.slice(0, MAX_ERROR_LENGTH),
+      })
     } catch (storageError) {
-      console.error('[classifyConversation] Failed to store error on document:', storageError)
+      console.error('[classifyConversation] Failed to record classification error:', storageError)
     }
 
     throw error

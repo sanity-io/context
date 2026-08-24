@@ -1,113 +1,100 @@
-import type {SanityClient} from '@sanity/client'
-
-import {CONVERSATION_SCHEMA_TYPE_NAME} from './constants'
-import type {Message, TokenUsage} from './saveConversation'
+import {type ContextInsightsOptions, requireClient} from './types'
 
 /** @public */
-export interface GetConversationsToClassifyOptions {
-  /** Sanity client with read permissions. */
-  client: SanityClient
-  /** Optional filter by agent ID. */
-  agentId?: string
-  /** Optional maximum number of conversations to return. By default, all matching conversations are returned. */
+export interface GetConversationsToClassifyOptions extends ContextInsightsOptions {
+  /** Maximum number of conversations to return. Defaults to `100`. */
   limit?: number
   /**
-   * Minimum idle time (in minutes) before a conversation becomes eligible for classification.
-   * Only conversations where `messagesUpdatedAt` is older than this cooldown period will be returned.
-   * Defaults to `10` minutes.
+   * How long a conversation must have been idle before it is considered
+   * settled and ready to classify, so a thread still being written is never
+   * scored mid-write. Defaults to `10` minutes.
    */
-  cooldownMinutes?: number
+  settledForMinutes?: number
+  /**
+   * Only conversations tagged with this MCP endpoint name
+   * (`metadata.mcpEndpoints`). When omitted, all conversations qualify.
+   */
+  mcpEndpoint?: string
 }
 
 /** @public */
-export interface ConversationToClassify {
-  /** Document ID. */
-  _id: string
-  /** Agent that handled this conversation. */
-  agentId: string
+export interface ConversationSummary {
   /** Unique thread identifier. */
   threadId: string
-  /** Conversation messages. */
-  messages: Message[]
-  /** LLM provider used for this conversation (e.g. `"anthropic"`). */
-  modelProvider?: string
-  /** Model ID used for this conversation (e.g. `"claude-sonnet-4-5"`). */
-  modelId?: string
-  /** Token usage stats for this conversation. */
-  tokenUsage?: TokenUsage
+  /** When the transcript was last updated. */
+  messagesUpdatedAt: string
+  /** Number of messages in the transcript. */
+  messageCount: number
+  /** The first message of the conversation, for display purposes. */
+  firstMessage: string | null
 }
 
+const DEFAULT_LIMIT = 100
+const DEFAULT_SETTLED_FOR_MINUTES = 10
+
 /**
- * Finds conversations that need classification or re-classification.
+ * Finds conversations that need classification: threads with messages, no
+ * verdict, no recorded failure, and a transcript that has settled. Ordered
+ * oldest first, so the longest-waiting conversations come up before a live
+ * thread that may still receive messages.
  *
- * A conversation needs classification if:
- * - It has never been classified (`classifiedAt` is not set)
- * - It has been updated since last classification (`classifiedAt <= messagesUpdatedAt`)
- * - The conversation has been idle for at least `cooldownMinutes` (default 10)
- *
- * Results are ordered by `messagesUpdatedAt` ascending (oldest first) to prioritize
- * conversations that have been waiting longest.
+ * Returns summaries only — use `classifyConversation` to fetch the full
+ * transcript and classify it.
  *
  * For most use cases, prefer `classifyConversations` (plural) which handles
  * fetching, batching, and error handling automatically.
  *
  * @example
  * ```ts
+ * import {createClient} from '@sanity/client'
  * import {getConversationsToClassify} from '@sanity/context/insights'
  *
- * const conversations = await getConversationsToClassify({client, agentId: 'support-bot', limit: 500})
+ * const client = createClient({
+ *   apiVersion: 'v2025-11-27',
+ *   token: process.env.SANITY_API_TOKEN,
+ *   context: {organizationId: 'org-id'},
+ * })
+ *
+ * const conversations = await getConversationsToClassify({client, limit: 500})
  * console.log(`${conversations.length} conversations need classification`)
  * ```
  *
- * @returns Array of conversations that need classification.
+ * @returns Array of conversation summaries that need classification.
  * @public
  */
 export async function getConversationsToClassify(
   options: GetConversationsToClassifyOptions,
-): Promise<ConversationToClassify[]> {
-  const {client, agentId, limit, cooldownMinutes = 10} = options
+): Promise<ConversationSummary[]> {
+  const {
+    limit = DEFAULT_LIMIT,
+    settledForMinutes = DEFAULT_SETTLED_FOR_MINUTES,
+    mcpEndpoint,
+  } = options
+  const client = requireClient('getConversationsToClassify', options)
 
-  if (limit !== undefined && (!Number.isInteger(limit) || limit < 1)) {
+  if (!Number.isInteger(limit) || limit < 1) {
     throw new Error('getConversationsToClassify: limit must be a positive integer')
   }
-
-  if (!Number.isFinite(cooldownMinutes) || cooldownMinutes < 0) {
-    throw new Error('getConversationsToClassify: cooldownMinutes must be a non-negative number')
+  if (!Number.isFinite(settledForMinutes) || settledForMinutes < 0) {
+    throw new Error('getConversationsToClassify: settledForMinutes must be a non-negative number')
   }
 
-  const cooldownCutoff = new Date(Date.now() - cooldownMinutes * 60 * 1000).toISOString()
-  const sliceClause = limit !== undefined ? `[0...${limit}]` : ''
+  const settledBefore = new Date(Date.now() - settledForMinutes * 60_000).toISOString()
 
-  const query = `*[
-    _type == $type
-    && defined(messagesUpdatedAt)
-    && (!defined(classifiedAt) || classifiedAt <= messagesUpdatedAt)
-    && messagesUpdatedAt <= $cooldownCutoff
-    && ($agentId == null || agentId == $agentId)
-  ] | order(messagesUpdatedAt asc)${sliceClause} {
-    _id,
-    agentId,
-    threadId,
-    "messages": messages[] {
-      "role": role,
-      "content": content,
-      "toolName": toolName,
-      "toolType": toolType
-    },
-    modelProvider,
-    modelId,
-    tokenUsage
-  }`
+  const organizationId = client.config().context?.organizationId
+  const params = {
+    organizationId,
+    settledBefore,
+    ...(mcpEndpoint === undefined ? {} : {mcpEndpoint}),
+  }
 
-  const conversations = await client.fetch<ConversationToClassify[]>(
-    query,
-    {
-      type: CONVERSATION_SCHEMA_TYPE_NAME,
-      agentId: agentId ?? null,
-      cooldownCutoff,
-    },
-    {perspective: 'published'},
+  return client.context.fetch<ConversationSummary[]>(
+    `*[_type == "sanity.context.conversation" && organizationId == $organizationId
+      && !defined(classifiedAt) && !defined(classificationError)
+      && count(messages) > 0 && messagesUpdatedAt < $settledBefore
+      ${mcpEndpoint === undefined ? '' : '&& $mcpEndpoint in metadata.mcpEndpoints'}]
+      | order(messagesUpdatedAt asc) [0...${limit}]
+      {threadId, messagesUpdatedAt, "messageCount": count(messages), "firstMessage": messages[0].content}`,
+    params,
   )
-
-  return conversations
 }

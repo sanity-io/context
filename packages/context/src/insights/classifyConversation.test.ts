@@ -1,71 +1,127 @@
-import {describe, expect, it} from 'vitest'
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
-import {buildSystemPrompt, formatMessagesForPrompt} from './classifyConversation'
+vi.mock('ai', () => ({
+  generateText: vi.fn(),
+  Output: {object: vi.fn(() => ({}))},
+}))
 
-describe('formatMessagesForPrompt', () => {
-  it('formats messages with capitalized roles', () => {
-    const messages = [
-      {role: 'user', content: 'Hello'},
-      {role: 'assistant', content: 'Hi there'},
-    ]
+import {generateText} from 'ai'
 
-    const result = formatMessagesForPrompt(messages)
+import {classifyConversation} from './classifyConversation'
+import {makeClientStub} from './clientStub'
 
-    expect(result).toBe('[User]: Hello\n\n[Assistant]: Hi there')
+const mockGenerateText = vi.mocked(generateText)
+
+const coreMetrics = {
+  successScore: 8,
+  sentiment: 'positive' as const,
+  contentGaps: ['return policy'],
+}
+
+const defaultMessages = [
+  {role: 'user', content: 'Hello'},
+  {role: 'assistant', content: 'Hi there!'},
+]
+
+const model = 'mock-model' as never
+
+describe('classifyConversation', () => {
+  beforeEach(() => {
+    mockGenerateText.mockResolvedValue({output: {coreMetrics}} as never)
   })
 
-  it('handles empty content', () => {
-    const messages = [{role: 'user', content: ''}]
-
-    const result = formatMessagesForPrompt(messages)
-
-    expect(result).toBe('[User]: (no content)')
+  afterEach(() => {
+    mockGenerateText.mockReset()
   })
 
-  it('handles all role types', () => {
-    const messages = [
-      {role: 'system', content: 'You are helpful'},
-      {role: 'user', content: 'Hi'},
-      {role: 'assistant', content: 'Hello'},
-      {role: 'tool', content: 'Tool result'},
-    ]
+  it('records the verdict and returns the result', async () => {
+    const {client, classify} = makeClientStub()
+    classify.mockResolvedValue({threadId: 't1', classifiedAt: '2026-08-24T10:00:00Z'})
 
-    const result = formatMessagesForPrompt(messages)
+    const result = await classifyConversation({
+      client,
+      threadId: 't1',
+      model,
+      messages: defaultMessages,
+    })
 
-    expect(result).toContain('[System]:')
-    expect(result).toContain('[User]:')
-    expect(result).toContain('[Assistant]:')
-    expect(result).toContain('[Tool]:')
+    expect(result).toEqual({coreMetrics, classifiedAt: '2026-08-24T10:00:00Z'})
+    expect(classify).toHaveBeenCalledExactlyOnceWith({threadId: 't1', coreMetrics})
   })
 
-  it('returns empty string for empty array', () => {
-    const result = formatMessagesForPrompt([])
-    expect(result).toBe('')
-  })
-})
+  it('falls back to now when the classify response has no classifiedAt', async () => {
+    const {client, classify} = makeClientStub()
+    classify.mockResolvedValue({threadId: 't1'})
 
-describe('buildSystemPrompt', () => {
-  it('returns base prompt when no previous gaps provided', () => {
-    const prompt = buildSystemPrompt()
-    expect(prompt).toContain('You are analyzing a conversation')
-    expect(prompt).not.toContain('Previously identified content gaps')
-  })
+    const result = await classifyConversation({
+      client,
+      threadId: 't1',
+      model,
+      messages: defaultMessages,
+    })
 
-  it('returns base prompt when previous gaps is empty array', () => {
-    const prompt = buildSystemPrompt([])
-    expect(prompt).not.toContain('Previously identified content gaps')
+    expect(Number.isNaN(Date.parse(result.classifiedAt))).toBe(false)
   })
 
-  it('includes previous gaps as bulleted list when provided', () => {
-    const prompt = buildSystemPrompt(['billing info', 'return policy'])
-    expect(prompt).toContain('Previously identified content gaps')
-    expect(prompt).toContain('- billing info')
-    expect(prompt).toContain('- return policy')
+  it('fetches the transcript when messages are not provided and prompts with it', async () => {
+    const {client, classify, get} = makeClientStub()
+    get.mockResolvedValue({threadId: 't1', messages: defaultMessages})
+    classify.mockResolvedValue({classifiedAt: '2026-08-24T10:00:00Z'})
+
+    await classifyConversation({client, threadId: 't1', model, previousContentGaps: ['billing']})
+
+    expect(get).toHaveBeenCalledWith({threadId: 't1'})
+    const args = mockGenerateText.mock.calls[0]![0] as {prompt: string; system: string}
+    expect(args.prompt).toContain('[User]: Hello')
+    expect(args.prompt).toContain('[Assistant]: Hi there!')
+    expect(args.system).toContain('Previously identified content gaps')
+    expect(args.system).toContain('- billing')
   })
 
-  it('instructs the model to reuse existing terms', () => {
-    const prompt = buildSystemPrompt(['billing info'])
-    expect(prompt).toContain('reuse these exact terms when they match')
-    expect(prompt).toContain('only create new terms for genuinely new topics')
+  it('throws without classifying when the transcript is missing or empty', async () => {
+    const {client, classify, get} = makeClientStub()
+    get.mockResolvedValue(null)
+
+    await expect(classifyConversation({client, threadId: 't1', model})).rejects.toThrow(
+      'Conversation has no messages: t1',
+    )
+    await expect(
+      classifyConversation({client, threadId: 't1', model, messages: []}),
+    ).rejects.toThrow('Conversation has no messages: t1')
+    expect(classify).not.toHaveBeenCalled()
+  })
+
+  it('records a truncated classificationError and rethrows on model failure', async () => {
+    const {client, classify} = makeClientStub()
+    classify.mockResolvedValue({})
+    mockGenerateText.mockRejectedValue(new Error('boom '.repeat(200)))
+
+    await expect(
+      classifyConversation({client, threadId: 't1', model, messages: defaultMessages}),
+    ).rejects.toThrow('boom')
+
+    const call = classify.mock.calls[0]![0] as {classificationError: string}
+    expect(call.classificationError).toHaveLength(500)
+  })
+
+  it('rethrows the original error even when recording the failure fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const {client, classify} = makeClientStub()
+    classify.mockRejectedValue(new Error('storage down'))
+    mockGenerateText.mockRejectedValue(new Error('model exploded'))
+
+    await expect(
+      classifyConversation({client, threadId: 't1', model, messages: defaultMessages}),
+    ).rejects.toThrow('model exploded')
+    expect(consoleSpy).toHaveBeenCalled()
+    consoleSpy.mockRestore()
+  })
+
+  it('throws if threadId is empty', async () => {
+    const {client} = makeClientStub()
+
+    await expect(
+      classifyConversation({client, threadId: '', model, messages: defaultMessages}),
+    ).rejects.toThrow('threadId must be a non-empty string')
   })
 })

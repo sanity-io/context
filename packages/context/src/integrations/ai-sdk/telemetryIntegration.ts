@@ -1,7 +1,7 @@
-import type {SanityClient} from '@sanity/client'
+import type {Context, SanityClient} from '@sanity/client'
 import {bindTelemetryIntegration, type TelemetryIntegration} from 'ai'
 
-import {type Message, saveConversation} from '../../insights/saveConversation'
+import type {ConversationSharing, Message} from '../../insights/types'
 
 /**
  * Configuration for the Sanity Insights telemetry integration.
@@ -9,21 +9,30 @@ import {type Message, saveConversation} from '../../insights/saveConversation'
  */
 export interface SanityInsightsConfig {
   /**
-   * A Sanity client with write permissions.
+   * A Sanity client configured with `context: {organizationId}` and a
+   * server-side token.
    */
   client: SanityClient
-
-  /**
-   * Identifier for the agent. Used to group conversations in the dashboard.
-   * Can be a string or a function that returns a string.
-   */
-  agentId: string | (() => string)
 
   /**
    * Unique identifier for the conversation thread.
    * Can be a string or a function that returns a string.
    */
   threadId: string | (() => string)
+
+  /**
+   * Dimensions recorded on the conversation. The well-known `mcpEndpoints`
+   * key groups conversations by MCP endpoint name in the Context dashboard;
+   * your own keys ride along for querying.
+   */
+  metadata?: Context.SaveConversationParams['metadata']
+
+  /**
+   * Opt-in to share telemetry with Sanity. Want to help improve Sanity
+   * Context? Share metrics or full conversation traces and the team will be
+   * in touch to help dial in your agent.
+   */
+  sharing?: ConversationSharing
 }
 
 interface ModelMessage {
@@ -166,7 +175,6 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): Telemetr
       const messages = collectMessages(allRaw)
       if (messages.length === 0) return
 
-      const agentId = typeof config.agentId === 'function' ? config.agentId() : config.agentId
       const threadId = typeof config.threadId === 'function' ? config.threadId() : config.threadId
 
       const modelProvider = event.model?.provider
@@ -185,14 +193,14 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): Telemetr
           : undefined
 
       try {
-        await saveConversation({
-          client: config.client,
-          agentId,
+        await config.client.context.conversations.save({
           threadId,
           messages,
-          modelProvider,
-          modelId,
-          tokenUsage,
+          ...(config.metadata !== undefined && {metadata: config.metadata}),
+          ...(config.sharing !== undefined && {sharing: config.sharing}),
+          ...(modelProvider !== undefined && {modelProvider}),
+          ...(modelId !== undefined && {modelId}),
+          ...(tokenUsage !== undefined && {tokenUsage}),
         })
       } catch (err) {
         console.error('[sanity-insights] Failed to save conversation:', err)
@@ -202,12 +210,19 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): Telemetr
 }
 
 /**
- * Creates a telemetry integration that saves conversations to Sanity.
+ * Creates a telemetry integration that saves conversations to Sanity Context.
  *
  * @example
  * ```ts
+ * import {createClient} from '@sanity/client'
  * import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
  * import {streamText} from 'ai'
+ *
+ * const client = createClient({
+ *   apiVersion: 'v2025-11-27',
+ *   token: process.env.SANITY_API_TOKEN,
+ *   context: {organizationId: 'org-id'},
+ * })
  *
  * const result = await streamText({
  *   model: openai('gpt-4o'),
@@ -216,11 +231,11 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): Telemetr
  *     isEnabled: true,
  *     integrations: [
  *       sanityInsightsIntegration({
- *         client: sanityClient,
- *         agentId: 'my-support-agent',
- *         threadId: threadId,
- *       })
- *     ]
+ *         client,
+ *         threadId,
+ *         metadata: {mcpEndpoints: 'my-support-agent'},
+ *       }),
+ *     ],
  *   }
  * })
  * ```

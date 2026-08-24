@@ -60,36 +60,23 @@ export default defineConfig({
 
 ## Agent Insights
 
-Track and classify your AI agent conversations automatically. Insights captures every conversation, classifies it with AI (success score, sentiment, content gaps), and provides a Studio dashboard for analytics.
+Track and classify your AI agent conversations automatically. Insights saves every conversation transcript to your organization's Context store, and a classification step you run with your own AI SDK model extracts success scores, sentiment, and content gaps. Results are surfaced in the Context dashboard.
 
-### Telemetry
-
-Classification supports opt-in telemetry sharing with Sanity. There are two levels:
-
-- **Metadata-only** (`shareMetrics: true`) — Shares classification metrics (scores, sentiment, content gap counts, message shapes, model/token info). No conversation content is included.
-- **Full sharing** (`shareConversations: true`) — Also includes message contents. Implies `shareMetrics`. Want to help us improve Sanity Context? Opt in and the team will be in touch to help dial in your agent.
+Everything rides on `@sanity/client` (^8.4.0) and its `client.context` namespace. Create one org-scoped client and pass it to the telemetry integration and the insights functions:
 
 ```ts
-telemetry: {
-  shareMetrics: true,
-  shareConversations: true,
-  contact: 'you@company.com',
-}
+import {createClient} from '@sanity/client'
+
+const client = createClient({
+  apiVersion: 'v2025-11-27',
+  token: process.env.SANITY_API_TOKEN, // Keep server-side only
+  context: {organizationId: process.env.SANITY_ORGANIZATION_ID},
+  useCdn: false,
+  useProjectHostname: false,
+})
 ```
 
-Both levels are off by default.
-
-### 1. Enable the Plugin
-
-Insights is enabled by default. To disable it:
-
-```ts
-contextPlugin({insights: {enabled: false}})
-```
-
-This registers the `sanity.agentContextConversation` schema and adds an "Agent Insights" dashboard to your Studio.
-
-### 2. Add Telemetry
+### Add Telemetry
 
 Connect your AI agent to save conversations automatically:
 
@@ -97,15 +84,6 @@ Connect your AI agent to save conversations automatically:
 import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 import {convertToModelMessages, streamText} from 'ai'
 import {openai} from '@ai-sdk/openai'
-import {createClient} from '@sanity/client'
-
-const client = createClient({
-  projectId: 'your-project-id',
-  dataset: 'production',
-  token: process.env.SANITY_WRITE_TOKEN, // Needs write access
-  useCdn: false,
-  apiVersion: '2026-01-01',
-})
 
 const result = await streamText({
   model: openai('gpt-4o'),
@@ -116,43 +94,31 @@ const result = await streamText({
     integrations: [
       sanityInsightsIntegration({
         client,
-        agentId: 'support-agent',
         threadId: conversationId, // Any unique string (session ID, UUID, etc.)
+        // The well-known mcpEndpoints key tags the conversation with an MCP endpoint name
+        metadata: {mcpEndpoints: process.env.SANITY_CONTEXT_ENDPOINT_NAME ?? []},
+        // Optional: share telemetry with Sanity to help improve Context.
+        // {metrics: true} shares metadata-only metrics; {conversations: true}
+        // shares full transcripts (implies metrics); add a contact so the
+        // team can reach you.
+        sharing: {metrics: true},
       }),
     ],
   },
 })
 ```
 
-The integration requires a Sanity client with write permissions. Keep the token server-side only.
+Each save is an idempotent upsert per thread: the messages replace the stored transcript wholesale, so repeated saves with the same `threadId` keep the transcript current.
 
-### 3. Set Up Classification
+### Set Up Classification
 
-Classification requires a scheduled Sanity Function that analyzes conversations with AI. Create the function and blueprint at your **project root** (not in `studio/`):
+Classification runs on your side, with your model and your LLM API key. The pending queue is a query over your org's Context document store: conversations with messages, no verdict, no recorded failure, and idle long enough to be considered settled. Run `classifyConversations` on a schedule, for example as a scheduled Sanity Function:
 
-1. Add dependencies to your root `package.json`:
+1. Create `functions/classify-conversations/index.ts`, see the [full example](https://github.com/sanity-io/context/tree/main/examples/ecommerce/functions/classify-conversations/index.ts)
 
-```json
-{
-  "dependencies": {
-    "@ai-sdk/anthropic": "^3",
-    "@sanity/context": "latest",
-    "@sanity/client": "^7",
-    "@sanity/functions": "^1",
-    "ai": "^6"
-  },
-  "devDependencies": {
-    "@sanity/blueprints": "^0.15.0",
-    "dotenv": "^17"
-  }
-}
-```
+2. Create `sanity.blueprint.ts`, see the [full example](https://github.com/sanity-io/context/tree/main/examples/ecommerce/sanity.blueprint.ts)
 
-2. Create `functions/classify-conversations/index.ts` — see the [full example](https://github.com/sanity-io/context/tree/main/examples/ecommerce/functions/classify-conversations/index.ts)
-
-3. Create `sanity.blueprint.ts` — see the [full example](https://github.com/sanity-io/context/tree/main/examples/ecommerce/sanity.blueprint.ts)
-
-4. Deploy:
+3. Deploy:
 
 ```bash
 pnpm install
@@ -180,15 +146,15 @@ The recommended way to classify conversations is with `classifyConversations`, w
 
 ```ts
 import {classifyConversations} from '@sanity/context/insights'
+import {anthropic} from '@ai-sdk/anthropic'
 
 const result = await classifyConversations({
   client,
   model: anthropic('claude-haiku-4-5'),
-  agentId: 'support-bot', // Optional: scope to a specific agent
-  limit: 100, // Optional: max conversations per run
+  mcpEndpoint: process.env.SANITY_CONTEXT_ENDPOINT_NAME, // Optional: only this endpoint's conversations
+  limit: 100, // Optional: max conversations per run (default 100)
   concurrency: 5, // Optional: parallel classifications (default 3)
-  cooldownMinutes: 15, // Optional: idle time before eligible (default 10)
-  telemetry: {shareMetrics: true},
+  settledForMinutes: 10, // Optional: idle time before a thread is classified (default 10)
 })
 
 console.log(
@@ -198,17 +164,38 @@ console.log(
 
 For custom workflows, use the lower-level primitives directly:
 
-| Function                     | Purpose                                               |
-| ---------------------------- | ----------------------------------------------------- |
-| `classifyConversations`      | **Recommended** — classify all eligible conversations |
-| `classifyConversation`       | Classify a single conversation                        |
-| `getConversationsToClassify` | Find conversations needing (re)classification         |
-| `getPreviousContentGaps`     | Fetch content gaps ranked by frequency                |
-| `saveConversation`           | Save a conversation without classification            |
-| `generateConversationId`     | Generate deterministic ID from agentId + threadId     |
+| Function                     | Purpose                                             |
+| ---------------------------- | --------------------------------------------------- |
+| `classifyConversations`      | **Recommended**: classify all pending conversations |
+| `classifyConversation`       | Classify a single conversation by thread ID         |
+| `getConversationsToClassify` | Query the pending classification queue (GROQ)       |
+| `getPreviousContentGaps`     | Query known content gaps ranked by frequency        |
+
+All take the same `{client}` option. Saving a transcript without the AI SDK integration is `client.context.conversations.save` from `@sanity/client` directly:
+
+```ts
+await client.context.conversations.save({
+  threadId: 'thread-123',
+  messages: [
+    {role: 'user', content: 'Hello!'},
+    {role: 'assistant', content: 'Hi there! How can I help?'},
+  ],
+  metadata: {mcpEndpoints: 'support-agent'},
+})
+```
+
+Reading conversations back for dashboards or reports is plain GROQ over the org's Context document store:
+
+```ts
+const recent = await client.context.fetch(
+  '*[_type == "sanity.context.conversation"] | order(messagesUpdatedAt desc) [0...50]',
+)
+```
 
 ### Notes
 
-- **Error handling** — Non-blocking by design. Save/classification failures are logged but don't break the user experience. Check logs for `[sanity-insights]` messages.
-- **Concurrency** — Create a fresh `sanityInsightsIntegration()` instance per request. Do not share instances across concurrent requests.
-- **Costs** — Classification runs in scheduled batches (every 10 minutes by default) to minimize token usage. Adjust schedule and batch size in your function handler.
+- **Error handling**: Non-blocking by design. Save and classification failures are logged but don't break the user experience. Check logs for `[sanity-insights]` messages. A failed classification records the error on the conversation, which removes it from the pending queue.
+- **Concurrency**: Create a fresh `sanityInsightsIntegration()` instance per request. Do not share instances across concurrent requests.
+- **Cooldown**: Conversations become eligible for classification only after they have been idle for `settledForMinutes` (default 10). You own this setting; tune it to how long your threads stay active.
+- **Costs**: Classification runs in scheduled batches (every 10 minutes in the example) with your own LLM key. Adjust the schedule and `limit` to control token usage.
+- **Staging**: Configure the client with `apiHost: 'https://api.sanity.work'` to target the staging API. Defaults to `https://api.sanity.io`.
