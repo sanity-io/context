@@ -1,7 +1,8 @@
-import {LaunchIcon} from '@sanity/icons/Launch'
 import {Button, Card, Flex, Heading, Stack, Text} from '@sanity/ui'
 import {useEffect, useState} from 'react'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS, useClient, useProjectId} from 'sanity'
+
+import {LaunchIcon} from './icons'
 
 const FALLBACK_URL = 'https://www.sanity.io'
 

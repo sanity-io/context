@@ -1,7 +1,7 @@
-import {ChartUpwardIcon} from '@sanity/icons/ChartUpward'
 import {definePlugin} from 'sanity'
 import {route} from 'sanity/router'
 
+import {ChartUpwardIcon} from './icons'
 import {InsightsMovedNotice} from './MovedNotice'
 
 /**
