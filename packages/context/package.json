@@ -72,7 +72,6 @@
     "react": "catalog:",
     "react-dom": "catalog:",
     "sanity": "catalog:",
-    "styled-components": "catalog:",
     "typescript": "catalog:",
     "vitest": "^4.0.18",
     "zod": "catalog:"
@@ -80,12 +79,11 @@
   "peerDependencies": {
     "@sanity/client": "^7",
     "@sanity/icons": "^5",
-    "@sanity/ui": "^3",
+    "@sanity/ui": "^3 || ^4",
     "ai": "^6.0.175",
     "react": "^19",
     "react-dom": "^19",
     "sanity": "^6",
-    "styled-components": "^6",
     "zod": "^3.20 || ^4"
   },
   "peerDependenciesMeta": {

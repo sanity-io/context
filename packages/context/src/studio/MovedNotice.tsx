@@ -2,7 +2,6 @@ import {LaunchIcon} from '@sanity/icons/Launch'
 import {Button, Card, Flex, Heading, Stack, Text} from '@sanity/ui'
 import {useEffect, useState} from 'react'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS, useClient, useProjectId} from 'sanity'
-import {styled} from 'styled-components'
 
 const FALLBACK_URL = 'https://www.sanity.io'
 
@@ -40,17 +39,6 @@ function useContextAppUrl(path: string): string {
   return `${apiHost.replace('https://api.', 'https://www.')}/@${organizationId}${path}`
 }
 
-const IconSpan = styled.span`
-  display: flex;
-  font-size: 45px;
-  line-height: 1;
-`
-
-const TextStack = styled(Stack)`
-  max-width: 320px;
-  text-align: center;
-`
-
 export function InsightsMovedNotice() {
   const href = useContextAppUrl('/context')
 
@@ -60,12 +48,12 @@ export function InsightsMovedNotice() {
         <Flex align="center" flex={1} justify="center">
           <Flex direction="column" align="center" gap={5} paddingY={5}>
             <Text muted>
-              <IconSpan aria-hidden="true">
+              <span aria-hidden="true" style={{display: 'flex', fontSize: 45, lineHeight: 1}}>
                 <LaunchIcon />
-              </IconSpan>
+              </span>
             </Text>
 
-            <TextStack gap={4}>
+            <Stack gap={4} style={{maxWidth: 320, textAlign: 'center'}}>
               <Heading as="h2" size={3}>
                 Context has moved
               </Heading>
@@ -74,7 +62,7 @@ export function InsightsMovedNotice() {
                 Context MCP configuration and Insights now live in the Context app in the Sanity
                 Dashboard.
               </Text>
-            </TextStack>
+            </Stack>
 
             <Button
               as="a"
