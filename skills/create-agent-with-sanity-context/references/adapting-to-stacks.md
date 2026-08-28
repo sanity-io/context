@@ -59,7 +59,7 @@ app.post('/api/chat', async (req, res) => {
       transport: {
         type: 'http',
         url: process.env.SANITY_CONTEXT_MCP_URL,
-        headers: {Authorization: `Bearer ${process.env.SANITY_API_READ_TOKEN}`},
+        headers: {Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`},
       },
     }),
     fetchInitialContext(), // See "Initial Context via HTTP" above
@@ -77,7 +77,7 @@ export async function action({request}: ActionFunctionArgs) {
     transport: {
       type: 'http',
       url: process.env.SANITY_CONTEXT_MCP_URL,
-      headers: {Authorization: `Bearer ${process.env.SANITY_API_READ_TOKEN}`},
+      headers: {Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`},
     },
   })
   const tools = await mcpClient.tools()
@@ -99,14 +99,14 @@ async def fetch_initial_context() -> str:
     async with httpx.AsyncClient() as http:
         resp = await http.get(
             url,
-            headers={"Authorization": f"Bearer {os.environ['SANITY_API_READ_TOKEN']}"},
+            headers={"Authorization": f"Bearer {os.environ['SANITY_API_TOKEN']}"},
         )
         return resp.text
 
 client = Client(
     transport=HttpTransport(
         url=os.environ["SANITY_CONTEXT_MCP_URL"],
-        headers={"Authorization": f"Bearer {os.environ['SANITY_API_READ_TOKEN']}"}
+        headers={"Authorization": f"Bearer {os.environ['SANITY_API_TOKEN']}"}
     )
 )
 initial_context, tools = await fetch_initial_context(), await client.get_tools()

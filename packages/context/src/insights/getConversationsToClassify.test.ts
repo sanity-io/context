@@ -1,215 +1,84 @@
-import {describe, expect, it, vi} from 'vitest'
+import type {SanityClient} from '@sanity/client'
+import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
-import {getConversationsToClassify} from './getConversationsToClassify'
+import {makeClientStub} from './clientStub'
+import {type ConversationSummary, getConversationsToClassify} from './getConversationsToClassify'
 
-const createMockClient = (fetchResult: unknown = []) => ({
-  fetch: vi.fn().mockResolvedValue(fetchResult),
-})
+const summary: ConversationSummary = {
+  threadId: 't1',
+  messagesUpdatedAt: '2026-08-24T10:00:00Z',
+  messageCount: 4,
+  firstMessage: 'Hello',
+}
 
 describe('getConversationsToClassify', () => {
-  it('fetches all conversations by default (no limit)', async () => {
-    const mockClient = createMockClient([])
-
-    await getConversationsToClassify({
-      client: mockClient as never,
-    })
-
-    expect(mockClient.fetch).toHaveBeenCalledTimes(1)
-    const [query, params] = mockClient.fetch.mock.calls[0] as [string, Record<string, unknown>]
-    // No slice clause when no limit
-    expect(query).not.toMatch(/\[0\.\.\.\d+\]/)
-    expect(params['agentId']).toBeNull()
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-24T10:00:00Z'))
   })
 
-  it('applies limit when provided', async () => {
-    const mockClient = createMockClient([])
-
-    await getConversationsToClassify({
-      client: mockClient as never,
-      limit: 50,
-    })
-
-    const [query] = mockClient.fetch.mock.calls[0] as [string]
-    expect(query).toContain('[0...50]')
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
-  it('passes agentId filter to query', async () => {
-    const mockClient = createMockClient([])
+  it('runs one pending-queue GROQ query with defaults and returns the rows', async () => {
+    const {client, fetch} = makeClientStub()
+    fetch.mockResolvedValue([summary])
 
-    await getConversationsToClassify({
-      client: mockClient as never,
-      agentId: 'support-bot',
-    })
+    const result = await getConversationsToClassify({client})
 
-    const [, params] = mockClient.fetch.mock.calls[0] as [string, Record<string, unknown>]
-    expect(params['agentId']).toBe('support-bot')
-  })
-
-  it('returns conversations from fetch result', async () => {
-    const mockConversations = [
-      {
-        _id: 'conv-1',
-        agentId: 'bot',
-        threadId: 'thread-1',
-        messages: [{role: 'user', content: 'Hello'}],
-        modelProvider: 'anthropic',
-        modelId: 'claude-sonnet-4-5',
-        tokenUsage: {inputTokens: 100, outputTokens: 50, totalTokens: 150},
-      },
-      {
-        _id: 'conv-2',
-        agentId: 'bot',
-        threadId: 'thread-2',
-        messages: [{role: 'user', content: 'Hi'}],
-      },
-    ]
-    const mockClient = createMockClient(mockConversations)
-
-    const result = await getConversationsToClassify({
-      client: mockClient as never,
-    })
-
-    expect(result).toEqual(mockConversations)
-  })
-
-  it('includes correct type in query params', async () => {
-    const mockClient = createMockClient([])
-
-    await getConversationsToClassify({
-      client: mockClient as never,
-    })
-
-    const [, params] = mockClient.fetch.mock.calls[0] as [string, Record<string, unknown>]
-    expect(params['type']).toBe('sanity.agentContextConversation')
-  })
-
-  it('query filters for unclassified or updated conversations using messagesUpdatedAt', async () => {
-    const mockClient = createMockClient([])
-
-    await getConversationsToClassify({
-      client: mockClient as never,
-    })
-
-    const [query] = mockClient.fetch.mock.calls[0] as [string]
-    // Check that query includes the classification conditions
+    expect(result).toEqual([summary])
+    expect(fetch).toHaveBeenCalledTimes(1)
+    const [query, params] = fetch.mock.calls[0]!
     expect(query).toContain('!defined(classifiedAt)')
-    expect(query).toContain('classifiedAt <= messagesUpdatedAt')
-    expect(query).toContain('defined(messagesUpdatedAt)')
-    expect(query).toContain('messagesUpdatedAt <= $cooldownCutoff')
+    expect(query).toContain('!defined(classificationError)')
+    expect(query).toContain('count(messages) > 0')
+    expect(query).toContain('[0...100]')
+    expect(query).not.toContain('metadata.mcpEndpoints')
+    expect(params).toEqual({organizationId: 'org-123', settledBefore: '2026-08-24T09:50:00.000Z'})
   })
 
-  it('query orders by messagesUpdatedAt ascending', async () => {
-    const mockClient = createMockClient([])
+  it('options shape the query: limit, settledForMinutes, and mcpEndpoint', async () => {
+    const {client, fetch} = makeClientStub()
+    fetch.mockResolvedValue([])
 
     await getConversationsToClassify({
-      client: mockClient as never,
+      client,
+      limit: 5,
+      settledForMinutes: 30,
+      mcpEndpoint: 'support-agent',
     })
 
-    const [query] = mockClient.fetch.mock.calls[0] as [string]
-    expect(query).toContain('order(messagesUpdatedAt asc)')
-  })
-
-  it('query includes model info fields in projection', async () => {
-    const mockClient = createMockClient([])
-
-    await getConversationsToClassify({
-      client: mockClient as never,
+    const [query, params] = fetch.mock.calls[0]!
+    expect(query).toContain('[0...5]')
+    expect(query).toContain('$mcpEndpoint in metadata.mcpEndpoints')
+    expect(params).toEqual({
+      organizationId: 'org-123',
+      settledBefore: '2026-08-24T09:30:00.000Z',
+      mcpEndpoint: 'support-agent',
     })
-
-    const [query] = mockClient.fetch.mock.calls[0] as [string]
-    expect(query).toContain('modelProvider')
-    expect(query).toContain('modelId')
-    expect(query).toContain('tokenUsage')
   })
 
-  it('passes cooldownCutoff param based on cooldownMinutes', async () => {
-    const mockClient = createMockClient([])
-    const before = Date.now()
+  it('rejects invalid options before querying', async () => {
+    const {client, fetch} = makeClientStub()
 
-    await getConversationsToClassify({
-      client: mockClient as never,
-      cooldownMinutes: 30,
-    })
-
-    const after = Date.now()
-    const [, params] = mockClient.fetch.mock.calls[0] as [string, Record<string, unknown>]
-    const cutoff = new Date(params['cooldownCutoff'] as string).getTime()
-    // cutoff should be ~30 minutes before now
-    expect(cutoff).toBeGreaterThanOrEqual(before - 30 * 60 * 1000 - 100)
-    expect(cutoff).toBeLessThanOrEqual(after - 30 * 60 * 1000 + 100)
+    await expect(getConversationsToClassify({client, limit: 3.5})).rejects.toThrow(
+      'limit must be a positive integer',
+    )
+    await expect(getConversationsToClassify({client, settledForMinutes: -1})).rejects.toThrow(
+      'settledForMinutes must be a non-negative number',
+    )
+    expect(fetch).not.toHaveBeenCalled()
   })
 
-  it('defaults cooldownMinutes to 10', async () => {
-    const mockClient = createMockClient([])
-    const before = Date.now()
+  it('rejects a client that is missing or unconfigured', async () => {
+    const {client} = makeClientStub({organizationId: undefined})
 
-    await getConversationsToClassify({
-      client: mockClient as never,
-    })
-
-    const after = Date.now()
-    const [, params] = mockClient.fetch.mock.calls[0] as [string, Record<string, unknown>]
-    const cutoff = new Date(params['cooldownCutoff'] as string).getTime()
-    // cutoff should be ~10 minutes before now
-    expect(cutoff).toBeGreaterThanOrEqual(before - 10 * 60 * 1000 - 100)
-    expect(cutoff).toBeLessThanOrEqual(after - 10 * 60 * 1000 + 100)
-  })
-
-  it('throws if cooldownMinutes is negative', async () => {
-    const mockClient = createMockClient([])
-
+    await expect(getConversationsToClassify({client})).rejects.toThrow(
+      'the client must be configured with context.organizationId',
+    )
     await expect(
-      getConversationsToClassify({
-        client: mockClient as never,
-        cooldownMinutes: -5,
-      }),
-    ).rejects.toThrow('cooldownMinutes must be a non-negative number')
-  })
-
-  it('throws if cooldownMinutes is NaN', async () => {
-    const mockClient = createMockClient([])
-
-    await expect(
-      getConversationsToClassify({
-        client: mockClient as never,
-        cooldownMinutes: NaN,
-      }),
-    ).rejects.toThrow('cooldownMinutes must be a non-negative number')
-  })
-
-  it('throws if cooldownMinutes is Infinity', async () => {
-    const mockClient = createMockClient([])
-
-    await expect(
-      getConversationsToClassify({
-        client: mockClient as never,
-        cooldownMinutes: Infinity,
-      }),
-    ).rejects.toThrow('cooldownMinutes must be a non-negative number')
-  })
-
-  it('throws if limit is not a positive integer', async () => {
-    const mockClient = createMockClient([])
-
-    await expect(
-      getConversationsToClassify({
-        client: mockClient as never,
-        limit: 0,
-      }),
-    ).rejects.toThrow('limit must be a positive integer')
-
-    await expect(
-      getConversationsToClassify({
-        client: mockClient as never,
-        limit: -5,
-      }),
-    ).rejects.toThrow('limit must be a positive integer')
-
-    await expect(
-      getConversationsToClassify({
-        client: mockClient as never,
-        limit: 3.5,
-      }),
-    ).rejects.toThrow('limit must be a positive integer')
+      getConversationsToClassify({client: {} as unknown as SanityClient}),
+    ).rejects.toThrow('options.client must be a configured Sanity client')
   })
 })

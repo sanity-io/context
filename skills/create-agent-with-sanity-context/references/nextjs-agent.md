@@ -1,6 +1,6 @@
 # Reference: Next.js + Vercel AI SDK Agent
 
-This is a reference implementation using Next.js and Vercel AI SDK. Use it as a pattern guide—adapt the concepts to whatever framework and AI library the user is working with.
+This is a reference implementation using Next.js and Vercel AI SDK. Use it as a pattern guide and adapt the concepts to whatever framework and AI library the user is working with.
 
 > **Reference Implementation**: See [ecommerce/\_index.md](ecommerce/_index.md) for file navigation, then explore [ecommerce/app/](ecommerce/app/).
 
@@ -27,7 +27,7 @@ pnpm add @ai-sdk/anthropic @ai-sdk/mcp @ai-sdk/react ai
 
 **IMPORTANT: Always check [ecommerce/app/package.json](ecommerce/app/package.json) for current working versions.**
 
-Do NOT guess versions—check the reference `package.json` or use `npm info <package> version` to get the latest. AI SDK packages update frequently.
+Do NOT guess versions: check the reference `package.json` or use `npm info <package> version` to get the latest. AI SDK packages update frequently.
 
 ## Environment Variables
 
@@ -40,8 +40,9 @@ Required variables:
 NEXT_PUBLIC_SANITY_PROJECT_ID=your-project-id
 NEXT_PUBLIC_SANITY_DATASET=production
 
-# Sanity API token with read access
-SANITY_API_READ_TOKEN=your-read-token
+# Sanity API token: read access covers the MCP queries; adding conversation
+# insights also writes transcripts with it
+SANITY_API_TOKEN=your-token
 
 # Sanity Context MCP URL
 SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset/:slug
@@ -72,7 +73,7 @@ const mcpClient = await createMCPClient({
     type: 'http',
     url: process.env.SANITY_CONTEXT_MCP_URL,
     headers: {
-      Authorization: `Bearer ${process.env.SANITY_API_READ_TOKEN}`,
+      Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`,
     },
   },
 })
@@ -80,7 +81,7 @@ const mcpClient = await createMCPClient({
 
 **Initial Context via HTTP:**
 
-Always fetch the schema context at startup and inject it into the system prompt. This gives a significant latency improvement—the agent already knows the schema without a tool call on the first message—and enables better prompt caching.
+Always fetch the schema context at startup and inject it into the system prompt. This gives a significant latency improvement (the agent already knows the schema without a tool call on the first message) and enables better prompt caching.
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for the full implementation, including caching and URL construction that handles query params correctly.
 
@@ -94,14 +95,14 @@ const [mcpClientResult, agentConfig, initialContext] = await Promise.all([
 ])
 ```
 
-Include the result in your system prompt—see [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for the `buildSystemPrompt` pattern.
+Include the result in your system prompt; see [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for the `buildSystemPrompt` pattern.
 
 **Tool Combination** (`streamText`):
 
 ```ts
 const allMcpTools = await mcpClient.tools()
 
-// Exclude initial_context tool — its data is already in the system prompt
+// Exclude initial_context tool: its data is already in the system prompt
 const {initial_context: _, ...mcpTools} = allMcpTools
 
 const result = streamText({
@@ -141,7 +142,7 @@ See [ecommerce/app/src/components/chat/chat.tsx](ecommerce/app/src/components/ch
 
 ### Markdown Rendering
 
-LLM responses are markdown — without a renderer, users see raw syntax.
+LLM responses are markdown; without a renderer, users see raw syntax.
 
 ```bash
 npm install react-markdown
@@ -163,7 +164,7 @@ curl -X POST http://localhost:3000/api/chat \
 The agent should:
 
 1. Already know the available content types (schema context is in the system prompt via `/initial-context`)
-2. Respond with a summary of what it can help with—no tool call needed on the first message
+2. Respond with a summary of what it can help with, no tool call needed on the first message
 
 ---
 
@@ -172,7 +173,17 @@ The agent should:
 Track conversations for analytics and debugging using `sanityInsightsIntegration`:
 
 ```ts
+import {createClient} from '@sanity/client'
 import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
+
+// Server-side only: the token must never reach the browser
+const client = createClient({
+  apiVersion: 'v2025-11-27',
+  token: process.env.SANITY_API_TOKEN,
+  context: {organizationId: process.env.SANITY_ORGANIZATION_ID},
+  useCdn: false,
+  useProjectHostname: false,
+})
 
 const result = streamText({
   model: anthropic('claude-sonnet-4-5'),
@@ -181,16 +192,17 @@ const result = streamText({
     isEnabled: true,
     integrations: [
       sanityInsightsIntegration({
-        client: writeClient, // Sanity client with write permissions
-        agentId: 'my-agent',
+        client,
         threadId: chatId,
+        // Tags the conversation with the MCP endpoint's name for grouping
+        metadata: {mcpEndpoints: process.env.SANITY_CONTEXT_ENDPOINT_NAME ?? []},
       }),
     ],
   },
 })
 ```
 
-This automatically saves conversations to Sanity. Set up a scheduled function to classify them. See [conversation-classification.md](conversation-classification.md) for details.
+This automatically saves conversation transcripts to your organization's Context store. Set up a scheduled function to classify them with your own model. See [conversation-classification.md](conversation-classification.md) for details.
 
 ---
 
@@ -286,7 +298,7 @@ Ensure you've:
 
 ### "401 Unauthorized" from MCP
 
-Your `SANITY_API_READ_TOKEN` is missing or invalid. Generate a new token at [sanity.io/manage](https://sanity.io/manage) with Viewer permissions.
+Your `SANITY_API_TOKEN` is missing or invalid. Generate a new token at [sanity.io/manage](https://sanity.io/manage). Viewer covers the MCP queries; conversation insights also needs write access.
 
 ### "No documents found" / Empty results
 

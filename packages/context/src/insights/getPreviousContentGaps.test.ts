@@ -1,39 +1,33 @@
 import {describe, expect, it} from 'vitest'
 
-import {rankByFrequency} from './getPreviousContentGaps'
+import {makeClientStub} from './clientStub'
+import {getPreviousContentGaps} from './getPreviousContentGaps'
 
-describe('rankByFrequency', () => {
-  it('deduplicates case-insensitively and preserves first-seen casing', () => {
-    const gaps = ['billing info', 'Billing Info', 'billing info']
-    const result = rankByFrequency(gaps, 50)
-    expect(result).toEqual(['billing info'])
+describe('getPreviousContentGaps', () => {
+  it('queries classified conversations and ranks gaps by frequency', async () => {
+    const {client, fetch} = makeClientStub()
+    fetch.mockResolvedValue([
+      ['billing info', 'return policy'],
+      ['return policy'],
+      ['return policy', 'shipping rates'],
+    ])
+
+    const result = await getPreviousContentGaps({client})
+
+    expect(result).toEqual(['return policy', 'billing info', 'shipping rates'])
+    const [query, params] = fetch.mock.calls[0]!
+    expect(query).toContain('coreMetrics.contentGaps')
+    expect(params).toEqual({organizationId: 'org-123'})
   })
 
-  it('ranks by frequency descending', () => {
-    const gaps = [
-      'return policy',
-      'billing info',
-      'billing info',
-      'billing info',
-      'return policy',
-      'shipping rates',
-    ]
-    const result = rankByFrequency(gaps, 50)
-    expect(result).toEqual(['billing info', 'return policy', 'shipping rates'])
-  })
+  it('caps the result at the top 50 gaps', async () => {
+    const {client, fetch} = makeClientStub()
+    const gaps = Array.from({length: 60}, (_, i) => `gap-${i}`)
+    fetch.mockResolvedValue([gaps, ['gap-59']])
 
-  it('respects the limit parameter', () => {
-    const gaps = ['a', 'a', 'b', 'b', 'c', 'd', 'e']
-    const result = rankByFrequency(gaps, 2)
-    expect(result).toHaveLength(2)
-    expect(result).toEqual(['a', 'b'])
-  })
+    const result = await getPreviousContentGaps({client})
 
-  it('returns empty array for empty input', () => {
-    expect(rankByFrequency([], 50)).toEqual([])
-  })
-
-  it('handles single gap', () => {
-    expect(rankByFrequency(['only one'], 50)).toEqual(['only one'])
+    expect(result).toHaveLength(50)
+    expect(result[0]).toBe('gap-59')
   })
 })

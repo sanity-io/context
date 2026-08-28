@@ -11,12 +11,17 @@ export type {
 } from './classifyConversations'
 export {classifyConversations} from './classifyConversations'
 export type {
-  ConversationToClassify,
+  ConversationSummary,
   GetConversationsToClassifyOptions,
 } from './getConversationsToClassify'
 export {getConversationsToClassify} from './getConversationsToClassify'
 export type {GetPreviousContentGapsOptions} from './getPreviousContentGaps'
 export {getPreviousContentGaps} from './getPreviousContentGaps'
-export type {Message, MessageRole, SaveConversationOptions} from './saveConversation'
-export {generateConversationId, saveConversation} from './saveConversation'
-export type {TelemetryConfig} from './sendInsightsTelemetry'
+export type {
+  ContextInsightsOptions,
+  ConversationMessage,
+  ConversationSharing,
+  Message,
+  MessageRole,
+  TokenUsage,
+} from './types'

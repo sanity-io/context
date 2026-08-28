@@ -40,7 +40,7 @@ Required variables in your `.env` file:
 # Sanity Configuration (private — server only)
 SANITY_PROJECT_ID=your-project-id
 SANITY_DATASET=production
-SANITY_API_READ_TOKEN=your-read-token
+SANITY_API_TOKEN=your-token
 
 # Public (available in client bundles, prefixed with PUBLIC_)
 PUBLIC_SANITY_API_VERSION=vX
@@ -59,7 +59,7 @@ import {createAnthropic} from '@ai-sdk/anthropic'
 import {createMCPClient} from '@ai-sdk/mcp'
 import type {RequestHandler} from './$types'
 import {
-  SANITY_API_READ_TOKEN,
+  SANITY_API_TOKEN,
   ANTHROPIC_API_KEY,
   SANITY_PROJECT_ID,
   SANITY_DATASET,
@@ -91,7 +91,7 @@ export const POST: RequestHandler = async ({request}) => {
       type: 'http',
       url: MCP_URL,
       headers: {
-        Authorization: `Bearer ${SANITY_API_READ_TOKEN}`,
+        Authorization: `Bearer ${SANITY_API_TOKEN}`,
       },
     },
   })

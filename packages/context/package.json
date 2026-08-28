@@ -76,7 +76,7 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@sanity/client": "^7",
+    "@sanity/client": "^8.4.0",
     "@sanity/ui": "^3 || ^4",
     "ai": "^6.0.175",
     "react": "^19",

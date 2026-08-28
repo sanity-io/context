@@ -1,42 +1,16 @@
-import type {SanityClient} from '@sanity/client'
-
-import {CONVERSATION_SCHEMA_TYPE_NAME} from './constants'
+import {type ContextInsightsOptions, requireClient} from './types'
 
 /** @public */
-export interface GetPreviousContentGapsOptions {
-  /** Sanity client with read permissions. */
-  client: SanityClient
-  /** Only include gaps from conversations classified within this many days. Defaults to `30`. */
-  maxAgeDays?: number
-  /** Maximum number of gaps to return, ranked by frequency. Defaults to `50`. */
-  limit?: number
-  /** Optional filter by agent ID. */
-  agentId?: string
-}
+export type GetPreviousContentGapsOptions = ContextInsightsOptions
 
-/** @internal Exported for testing */
-export function rankByFrequency(gaps: string[], limit: number): string[] {
-  const freq = new Map<string, {canonical: string; count: number}>()
-
-  for (const gap of gaps) {
-    const key = gap.toLowerCase()
-    const entry = freq.get(key)
-    if (entry) {
-      entry.count++
-    } else {
-      freq.set(key, {canonical: gap, count: 1})
-    }
-  }
-
-  return Array.from(freq.values())
-    .sort((a, b) => b.count - a.count)
-    .slice(0, limit)
-    .map((e) => e.canonical)
-}
+const TOP_GAPS = 50
 
 /**
  * Fetches previously identified content gaps from classified conversations,
- * deduplicated and ranked by frequency.
+ * deduplicated and ranked by frequency (top 50).
+ *
+ * Pass these to `classifyConversation` as `previousContentGaps` to encourage
+ * consistent gap terminology across classification runs.
  *
  * Used internally by `classifyConversations` (plural). For most use cases,
  * prefer that function which handles this automatically.
@@ -45,7 +19,7 @@ export function rankByFrequency(gaps: string[], limit: number): string[] {
  * ```ts
  * import {getPreviousContentGaps} from '@sanity/context/insights'
  *
- * const gaps = await getPreviousContentGaps({client, agentId: 'support-bot'})
+ * const gaps = await getPreviousContentGaps({client})
  * console.log(`${gaps.length} known content gaps:`, gaps)
  * ```
  *
@@ -55,27 +29,22 @@ export function rankByFrequency(gaps: string[], limit: number): string[] {
 export async function getPreviousContentGaps(
   options: GetPreviousContentGapsOptions,
 ): Promise<string[]> {
-  const {client, maxAgeDays = 30, limit = 50, agentId} = options
+  const client = requireClient('getPreviousContentGaps', options)
+  const organizationId = client.config().context?.organizationId
 
-  const since = new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000).toISOString()
-
-  const query = `*[
-    _type == $type
-    && defined(coreMetrics.contentGaps)
-    && defined(classifiedAt)
-    && classifiedAt > $since
-    && ($agentId == null || agentId == $agentId)
-  ].coreMetrics.contentGaps[]`
-
-  const allGaps = await client.fetch<string[]>(
-    query,
-    {
-      type: CONVERSATION_SCHEMA_TYPE_NAME,
-      since,
-      agentId: agentId ?? null,
-    },
-    {perspective: 'published'},
+  const gapLists = await client.context.fetch<string[][]>(
+    `*[_type == "sanity.context.conversation" && organizationId == $organizationId
+      && count(coreMetrics.contentGaps) > 0].coreMetrics.contentGaps`,
+    {organizationId},
   )
 
-  return rankByFrequency(allGaps, limit)
+  const counts = new Map<string, number>()
+  for (const gap of gapLists.flat()) {
+    counts.set(gap, (counts.get(gap) ?? 0) + 1)
+  }
+
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, TOP_GAPS)
+    .map(([gap]) => gap)
 }

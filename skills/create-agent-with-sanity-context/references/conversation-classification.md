@@ -8,29 +8,27 @@ Track and classify agent conversations using `@sanity/context`. This enables ana
 
 The Insights system has two parts that work together:
 
-1. **Telemetry Integration** — Saves conversations from your chat route
-2. **Scheduled Classification** — Analyzes conversations with AI to extract insights
+1. **Telemetry Integration**: Saves conversation transcripts from your chat route to your organization's Context store
+2. **Scheduled Classification**: Analyzes conversations with your own AI SDK model and records verdicts through the Context API
 
 **Set up both parts.** Telemetry alone just stores raw conversations. Classification is what produces the dashboard with success scores, sentiment, and content gaps.
 
-The `contextPlugin()` includes Insights by default (conversation schema and dashboard). No custom schema needed.
+Both parts ride on `@sanity/client` (^8.4.0) and its `client.context` namespace. The pending queue is a GROQ query over the org's Context document store: conversations that were never classified, have no recorded failure, are non-empty, and have been idle for `settledForMinutes` (default 10, and you own the setting). Classification itself runs on your side, with your model and your LLM API key.
 
 ## Prerequisites
 
 Before setting up insights, gather:
 
-| Requirement           | Where used              | Notes                                                                                                                                    |
-| --------------------- | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sanity Project ID** | Both                    | From `sanity.config.ts` or [sanity.io/manage](https://sanity.io/manage)                                                                  |
-| **Dataset name**      | Both                    | Usually `production`                                                                                                                     |
-| **Write token**       | Telemetry (Step 1)      | For saving `sanity.agentContextConversation` documents. Use an existing write token if the project has one, or create one at [sanity.io/manage](https://sanity.io/manage) → Project → API → Tokens with **Editor** role |
-| **LLM API key**       | Classification (Step 3) | For the scheduled function that classifies conversations (Anthropic, OpenAI, etc.)                                                       |
-
-**Note**: The classification function uses a **robot token** (created automatically by the blueprint) — you don't need to create a separate token for it.
+| Requirement                | Where used              | Notes                                                                                                                      |
+| -------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Sanity organization ID** | Both                    | From [sanity.io/manage](https://sanity.io/manage), the organization that owns the Context endpoint                          |
+| **MCP endpoint name**      | Both                    | The last path segment of the MCP URL (from the Sanity Context plugin in Studio)                                            |
+| **Sanity API token**       | Both                    | Authenticates the Sanity client. Keep it server-side only                                                                  |
+| **LLM API key**            | Classification (Step 3) | For the scheduled function that classifies conversations (Anthropic, OpenAI, etc.)                                         |
 
 ## Project Structure
 
-**First, check if the project already has a `sanity.blueprint.ts`** — search the full repo. If one exists with deployed functions, add the classification function there. Do not create a second blueprint.
+**First, check if the project already has a `sanity.blueprint.ts`**: search the full repo. If one exists with deployed functions, add the classification function there. Do not create a second blueprint.
 
 If no blueprint exists, create one following the [placement rules in SKILL.md](../SKILL.md#sanity-blueprints--functions). The default placement is next to the project's lockfile.
 
@@ -50,7 +48,7 @@ my-monorepo/
     └── web/
 ```
 
-In a **flat project**, the layout is the same — everything at the root:
+In a **flat project**, the layout is the same, with everything at the root:
 
 ```
 my-project/
@@ -65,17 +63,27 @@ my-project/
 └── app/
 ```
 
-These are reference layouts for new blueprints — always adapt to the user's existing directory structure. If a blueprint already exists elsewhere, use that location instead. If the project has multiple blueprint stacks in a subdirectory pattern (e.g. `apps/blueprints/studio/`, `apps/blueprints/web/`), create a new stack following the same convention.
+These are reference layouts for new blueprints, so always adapt to the user's existing directory structure. If a blueprint already exists elsewhere, use that location instead. If the project has multiple blueprint stacks in a subdirectory pattern (e.g. `apps/blueprints/studio/`, `apps/blueprints/web/`), create a new stack following the same convention.
 
 ## Setup
 
 ### Step 1: Enable Telemetry in Your Chat Route
 
-Add `sanityInsightsIntegration` to your `streamText` call. This saves conversations automatically.
+Add `sanityInsightsIntegration` to your `streamText` call. It takes an org-scoped Sanity client and saves conversation transcripts automatically.
 
 ```ts
+import {createClient} from '@sanity/client'
 import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 import {streamText} from 'ai'
+
+// Server-side only: the token must never reach the browser
+const client = createClient({
+  apiVersion: 'v2025-11-27',
+  token: process.env.SANITY_API_TOKEN,
+  context: {organizationId: process.env.SANITY_ORGANIZATION_ID},
+  useCdn: false,
+  useProjectHostname: false,
+})
 
 const result = streamText({
   model: anthropic('claude-sonnet-4-5'),
@@ -84,21 +92,22 @@ const result = streamText({
     isEnabled: true,
     integrations: [
       sanityInsightsIntegration({
-        client: writeClient, // Sanity client with Editor permissions
-        agentId: 'my-agent', // Name/ID for grouping conversations
+        client,
         threadId: chatId, // Unique conversation thread ID
+        // Tags the conversation with the MCP endpoint's name for grouping
+        metadata: {mcpEndpoints: process.env.SANITY_CONTEXT_ENDPOINT_NAME ?? []},
       }),
     ],
   },
 })
 ```
 
-**Write client**: Requires a Sanity client with a token that has Editor permissions. Ask the user if they already have a write token in their environment — many projects do (e.g. `ADMIN_STUDIO_WRITE_TOKEN`, `SANITY_API_WRITE_TOKEN`). If not, create one at [sanity.io/manage](https://sanity.io/manage) → Project → API → Tokens with Editor role.
+**Token**: The client authenticates with a Sanity API token that can write to the organization's Context store (a read-only Viewer token covers MCP queries but not conversation writes). Ask the user if they already have one in their environment; many projects do (e.g. `SANITY_API_TOKEN`). Keep it server-side only.
 
 **Thread ID**: Each conversation needs a unique `threadId`. Generate one when a new chat starts and persist it across messages in that conversation. How it reaches the server depends on the setup:
 
 - **AI SDK `useChat`**: The hook sends `id` (the chat ID) in the request body automatically. Extract it in your route handler and use it as `threadId`.
-- **Custom transport**: Pass the thread ID via request body, headers, or cookies — whatever fits the app's architecture.
+- **Custom transport**: Pass the thread ID via request body, headers, or cookies, whatever fits the app's architecture.
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for how this is handled with cookies.
 
@@ -112,38 +121,35 @@ const [threadId] = useState(() =>
 
 Then pass it to your chat API via request body or headers.
 
-**Not using AI SDK?** The telemetry integration requires Vercel AI SDK. If using another library, use `saveConversation` directly:
+**Not using AI SDK?** The telemetry integration requires Vercel AI SDK. If using another library, save transcripts with `client.context.conversations.save` from `@sanity/client` directly:
 
 ```ts
-import {saveConversation} from '@sanity/context/insights'
-
 // Call this after each conversation turn completes
-await saveConversation({
-  client: writeClient,
-  agentId: 'my-agent',
+await client.context.conversations.save({
   threadId: chatId,
   messages: [
     {role: 'user', content: 'How do I return an item?'},
     {role: 'assistant', content: 'You can return items within 30 days...'},
-    // Include full conversation history each call — it upserts the document
+    // Include full conversation history each call: it upserts the transcript
   ],
+  metadata: {mcpEndpoints: process.env.SANITY_CONTEXT_ENDPOINT_NAME ?? []},
   modelProvider: 'anthropic',
   modelId: 'claude-sonnet-4-5',
   tokenUsage: {inputTokens: 1200, outputTokens: 350, totalTokens: 1550},
 })
 ```
 
-The function generates a deterministic document ID from `agentId` + `threadId`, so repeated calls update the same document. See the Insights API Reference below for full API details.
+Each save is an idempotent upsert per thread: the messages replace the stored transcript wholesale, and the last write wins. See the Insights API Reference below for full API details.
 
 ---
 
-**Steps 2-7 below set up the classification function** — a separate scheduled job that analyzes saved conversations. This runs outside your app using Sanity Functions.
+**Steps 2-7 below set up the classification function**, a separate scheduled job that analyzes saved conversations. This runs outside your app using Sanity Functions.
 
 ### Step 2: Add Dependencies
 
-Ensure these packages are in the `package.json` next to `sanity.blueprint.ts` — merge them into existing dependencies, do not overwrite the file:
+Ensure these packages are in the `package.json` next to `sanity.blueprint.ts`, merged into existing dependencies (do not overwrite the file):
 
-**dependencies**: `@ai-sdk/anthropic` (^3), `@sanity/context` (latest), `@sanity/client` (^7), `@sanity/functions` (^1), `ai` (^6.0.175 minimum — required for `experimental_telemetry.integrations`)
+**dependencies**: `@ai-sdk/anthropic` (^3), `@sanity/client` (^8.4.0), `@sanity/context` (latest), `@sanity/functions` (^1), `ai` (^6.0.175 minimum, required for `experimental_telemetry.integrations`)
 
 **devDependencies**: `@sanity/blueprints` (latest), `dotenv` (^17)
 
@@ -155,35 +161,35 @@ Create `functions/classify-conversations/index.ts` next to `sanity.blueprint.ts`
 
 ```ts
 // functions/classify-conversations/index.ts
+import {anthropic} from '@ai-sdk/anthropic'
 import {createClient} from '@sanity/client'
 import {classifyConversations} from '@sanity/context/insights'
 import {scheduledEventHandler} from '@sanity/functions'
-import {anthropic} from '@ai-sdk/anthropic'
 
-export const handler = scheduledEventHandler(async ({context}) => {
-  if (!context.clientOptions?.token) {
-    console.error('[classify-conversations] No client token available')
+export const handler = scheduledEventHandler(async () => {
+  // These are injected by the blueprint's env block. The names are examples,
+  // so adapt to match the user's env var conventions.
+  const {SANITY_ORGANIZATION_ID, SANITY_CONTEXT_ENDPOINT_NAME, SANITY_API_TOKEN} = process.env
+
+  if (!SANITY_ORGANIZATION_ID || !SANITY_CONTEXT_ENDPOINT_NAME || !SANITY_API_TOKEN) {
+    console.error(
+      '[classify-conversations] Missing SANITY_ORGANIZATION_ID, SANITY_CONTEXT_ENDPOINT_NAME, or SANITY_API_TOKEN',
+    )
     return
   }
 
-  // SANITY_PROJECT_ID and SANITY_DATASET are injected by the blueprint's env block.
-  // These are example names — adapt to match the user's env var conventions.
   const client = createClient({
-    projectId: process.env.SANITY_PROJECT_ID,
-    dataset: process.env.SANITY_DATASET,
-    apiVersion: '2026-01-01',
-    token: context.clientOptions.token,
+    apiVersion: 'v2025-11-27',
+    token: SANITY_API_TOKEN,
+    context: {organizationId: SANITY_ORGANIZATION_ID},
     useCdn: false,
+    useProjectHostname: false,
   })
 
   const result = await classifyConversations({
     client,
-    model: anthropic('claude-sonnet-4-5'),
-    telemetry: {
-      shareMetrics: true,
-      // shareConversations: true,
-      // contact: 'you@company.com',
-    },
+    mcpEndpoint: SANITY_CONTEXT_ENDPOINT_NAME,
+    model: anthropic('claude-haiku-4-5'),
   })
 
   console.log(
@@ -194,11 +200,11 @@ export const handler = scheduledEventHandler(async ({context}) => {
 
 ### Step 4: Configure the Blueprint
 
-If `sanity.blueprint.ts` already exists, add the scheduled function and robot token resources to it. Otherwise, create it:
+If `sanity.blueprint.ts` already exists, add the scheduled function resource to it. Otherwise, create it:
 
 ```ts
 // sanity.blueprint.ts
-import {defineBlueprint, defineRobotToken, defineScheduledFunction} from '@sanity/blueprints'
+import {defineBlueprint, defineScheduledFunction} from '@sanity/blueprints'
 import 'dotenv/config'
 
 export default defineBlueprint({
@@ -206,65 +212,52 @@ export default defineBlueprint({
     defineScheduledFunction({
       name: 'classify-conversations',
       timeout: 600,
-      robotToken: '$.resources.classify-conversations-robot.token',
       env: {
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-        SANITY_PROJECT_ID: process.env.SANITY_STUDIO_PROJECT_ID,
-        SANITY_DATASET: process.env.SANITY_STUDIO_DATASET,
+        SANITY_ORGANIZATION_ID: process.env.SANITY_ORGANIZATION_ID,
+        SANITY_CONTEXT_ENDPOINT_NAME: process.env.SANITY_CONTEXT_ENDPOINT_NAME,
+        SANITY_API_TOKEN: process.env.SANITY_API_TOKEN,
       },
       event: {
         expression: '*/10 * * * *', // Every 10 minutes
       },
     }),
-    defineRobotToken({
-      name: 'classify-conversations-robot',
-      label: 'Classify Conversations Robot',
-      memberships: [
-        {
-          resourceType: 'project',
-          resourceId: process.env.SANITY_STUDIO_PROJECT_ID!,
-          roleNames: ['editor'],
-        },
-      ],
-    }),
   ],
 })
 ```
 
-**How this works**: The `env` block reads from your local `.env` at deploy time and injects the values into the function's `process.env` at runtime. The robot token provides only the auth token — scheduled functions need projectId and dataset via env vars. The env var names on the left (`SANITY_PROJECT_ID`) are what the function reads; the names on the right (`SANITY_STUDIO_PROJECT_ID`) are what your `.env` file uses. Ask the user for the correct `.env` var names in their project.
-
-**Robot token role**: The robot token must have `editor` role — classification writes results back to conversation documents. Using `viewer` will cause silent write failures.
+**How this works**: The `env` block reads from your local `.env` at deploy time and injects the values into the function's `process.env` at runtime. The env var names on the left are what the function reads; the names on the right are what your `.env` file uses. Ask the user for the correct `.env` var names in their project.
 
 ### Step 5: Configure Environment Variables
 
-The function needs three values at runtime: project ID, dataset, and an LLM API key.
+The function needs four values at runtime: organization ID, endpoint name, a Sanity API token, and an LLM API key.
 
-**Project ID and dataset** are passed via the blueprint's `env` block (Step 4). The blueprint reads from your `.env` at deploy time. Create or update `.env` next to `sanity.blueprint.ts` — ask the user what env var names their project uses:
+All four are passed via the blueprint's `env` block (Step 4). The blueprint reads from your `.env` at deploy time. Create or update `.env` next to `sanity.blueprint.ts` and ask the user what env var names their project uses:
 
 ```bash
-# Example — use the env var names from the project's existing .env
-SANITY_STUDIO_PROJECT_ID=your-project-id
-SANITY_STUDIO_DATASET=production
+# Example: use the env var names from the project's existing .env
+SANITY_ORGANIZATION_ID=your-org-id
+SANITY_CONTEXT_ENDPOINT_NAME=my-agent
+SANITY_API_TOKEN=sk...
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-**LLM API key** is also in the `env` block, so it's read from `.env` at deploy time. You can alternatively set it after deploying (Step 7) via `npx sanity functions env add` — useful if you don't want secrets in `.env` or are deploying from CI.
+**LLM API key**: You can alternatively set it after deploying (Step 7) via `npx sanity functions env add`, useful if you don't want secrets in `.env` or are deploying from CI.
 
 ### Step 6: Test Locally
 
 Before deploying, verify the full pipeline works:
 
-1. **Conversations are saved**: Check Studio for `sanity.agentContextConversation` documents (send a few messages to your agent first)
-2. **Insights tool is visible**: Open Studio and confirm the Agent Insights tool appears in the topbar
-3. **Classification runs**: Execute the function locally:
+1. **Conversations are saved**: Check the Context dashboard for conversations (send a few messages to your agent first)
+2. **Classification runs**: Execute the function locally:
 
 ```bash
 npx sanity functions test classify-conversations --with-user-token
 ```
 
-The `--with-user-token` flag injects your personal token into `context.clientOptions` — this is the same path the robot token uses in production. The function reads `ANTHROPIC_API_KEY` from the `.env` file next to `sanity.blueprint.ts`.
+The function reads its env vars from the `.env` file next to `sanity.blueprint.ts`.
 
-**Note**: Local testing runs against your real dataset — conversations will actually be classified. Only conversations that have been idle for at least 10 minutes are eligible for classification (to avoid classifying active conversations).
+**Note**: Local testing runs against your real data, so conversations will actually be classified. Only conversations idle for `settledForMinutes` (default 10) are eligible, so active conversations are never classified mid-flight.
 
 ### Step 7: Deploy
 
@@ -296,7 +289,7 @@ npx sanity functions env add classify-conversations ANTHROPIC_API_KEY <your-api-
 
 - **`blueprints init`**: Links your project to a Sanity blueprint stack. Run once per project.
 - **`blueprints promote`**: Elevates the stack to organization scope, which is required for scheduled functions. You need organization member permissions to run this.
-- **`blueprints doctor`**: Checks blueprint health — flags dependency issues, version mismatches, and directory structure problems.
+- **`blueprints doctor`**: Checks blueprint health; flags dependency issues, version mismatches, and directory structure problems.
 - **`blueprints deploy`**: Deploys the function and schedules it to run.
 - **`functions env add`**: Sets an environment variable for a deployed function. Must be run after deploy. Replace `<your-api-key>` with your actual API key.
 
@@ -317,35 +310,30 @@ npx sanity functions test classify-conversations --with-user-token
 The `sanityInsightsIntegration` hooks into AI SDK's telemetry system:
 
 - **On request start**: Captures input messages
-- **On request finish**: Combines with response messages and saves to Sanity
+- **On request finish**: Combines with response messages and saves the transcript via `client.context.conversations.save`
 
-Conversations are saved as `sanity.agentContextConversation` documents (provided by the plugin).
+Each save is an idempotent upsert per thread, scoped to the client's organization.
 
 ### Classification
 
-The `getConversationsToClassify` primitive finds conversations that:
+The `getConversationsToClassify` primitive queries the pending queue with GROQ via `client.context.fetch`. A conversation is pending when it:
 
-- Have never been classified (`classifiedAt` not set)
-- Have been updated since last classification (`_updatedAt > classifiedAt`)
-- Have been idle for at least 10 minutes to avoid classifying active conversations
+- Has never been classified
+- Has no recorded classification failure
+- Is non-empty
+- Has been idle for `settledForMinutes` (default 10, caller-owned)
+
+Results are ordered oldest first and returned as summaries (no transcript). Pass `mcpEndpoint` to narrow to conversations tagged with that endpoint name.
 
 The `classifyConversation` primitive:
 
-1. Sends messages to an LLM with a classification prompt
-2. Extracts metrics: success score, sentiment, content gaps
-3. Updates the conversation document with results
+1. Fetches the full transcript via the client (unless messages are provided)
+2. Sends the messages to your LLM with a classification prompt
+3. Records the verdict (success score, sentiment, content gaps) through `client.context.conversations.classify`
 
-### Telemetry
+If classification fails, the error is recorded on the conversation as `classificationError`, which removes it from the pending queue, and the error is re-thrown.
 
-The `telemetry` option on `classifyConversation` lets you share classification data with the Sanity team to help improve Sanity Context. **This is fully opt-in and off by default.**
-
-There are two tiers:
-
-**Metadata-only** (`shareMetrics: true`): Shares classification metrics (success scores, sentiment, content gap counts), message shapes (roles, byte sizes, tool names), model info, and token usage. No conversation content is transmitted — we cannot see what your users or agent said.
-
-**Full conversation sharing** (`shareConversations: true`): Additionally shares the actual message contents. This lets the Sanity team analyze real conversations to identify patterns, suggest improvements to your agent configuration, and help you get better results. Provide a `contact` so the team can reach out and collaborate with you directly.
-
-If you can, enabling metadata-only telemetry helps us prioritize improvements. If you want hands-on help tuning your agent, enable full sharing and the team will be in touch.
+Previously identified content gaps are fed back into the prompt so the model reuses consistent gap terminology across runs.
 
 ## Troubleshooting
 
@@ -354,21 +342,24 @@ If you can, enabling metadata-only telemetry helps us prioritize improvements. I
 - Did you run `npx sanity blueprints promote`? Scheduled functions require org-level scope.
 - Check logs: `npx sanity functions logs classify-conversations`
 
-### "No client token available"
+### 401 errors from the Context API
 
-**In production**: The robot token isn't configured correctly. Verify:
+The Sanity API token is missing or invalid. Verify `SANITY_API_TOKEN` is set in the function's env (check the blueprint's `env` block and your `.env`).
 
-- `robotToken` in the blueprint matches the robot token resource name (e.g. `$.resources.classify-conversations-robot.token`)
-- The `resourceId` in `defineRobotToken` is your actual project ID
+### 404 errors from the Context API
 
-**During local testing**: Run with `--with-user-token` to inject your personal token into `context.clientOptions`.
+The organization ID or thread ID doesn't resolve. Verify `SANITY_ORGANIZATION_ID` matches the organization that owns the Context endpoint, and that the client is created with `context: {organizationId}`.
 
 ### Classification not finding conversations
 
-- Conversations need at least 10 minutes of idle time before classification
-- Check that telemetry is saving conversations: look for `sanity.agentContextConversation` documents in Studio
+- Conversations need to sit idle for `settledForMinutes` (default 10) before they enter the pending queue
+- If you pass `mcpEndpoint`, only conversations tagged with that name via `metadata.mcpEndpoints` qualify
+- Conversations with a recorded classification failure are not retried; check the dashboard for errors
+- Check that telemetry is saving conversations: look for them in the Context dashboard
 
 ## Insights API Reference
+
+Every function takes `{client}`: a `@sanity/client` (^8.4.0) created with `createClient({apiVersion: 'v2025-11-27', token, context: {organizationId}, useCdn: false, useProjectHostname: false})`. For staging, add `apiHost: 'https://api.sanity.work'` to the client config.
 
 ### `sanityInsightsIntegration`
 
@@ -376,9 +367,10 @@ If you can, enabling metadata-only telemetry helps us prioritize improvements. I
 import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 
 sanityInsightsIntegration({
-  client: SanityClient, // Write client (Editor permissions)
-  agentId: string | (() => string), // Agent identifier
+  client: SanityClient, // Org-scoped client with a server-side token
   threadId: string | (() => string), // Thread identifier
+  metadata?: Record<string, string | string[]>, // Dimensions recorded on the conversation;
+  // the well-known mcpEndpoints key tags it with an MCP endpoint name
 })
 ```
 
@@ -392,11 +384,10 @@ import {classifyConversations} from '@sanity/context/insights'
 const result = await classifyConversations({
   client: SanityClient,
   model: LanguageModel,             // Any AI SDK compatible model
-  telemetry?: TelemetryConfig,      // Optional: share metrics with Sanity
-  agentId?: string,                 // Optional: filter by agent
-  limit?: number,                   // Optional: max conversations to process
-  cooldownMinutes?: number,         // Optional: idle time before eligibility (default 10)
-  concurrency?: number,             // Optional: parallel classifications (default 5)
+  concurrency?: number,             // Optional: parallel classifications (default 3)
+  limit?: number,                   // Optional: max conversations per run (default 100)
+  settledForMinutes?: number,       // Optional: idle time before a thread is classified (default 10)
+  mcpEndpoint?: string,             // Optional: only conversations tagged with this endpoint name
 })
 // Returns: { successCount, errorCount, totalFound }
 ```
@@ -405,20 +396,18 @@ const result = await classifyConversations({
 
 For custom workflows, use the individual primitives directly:
 
-- `getConversationsToClassify({client, agentId?, limit?, cooldownMinutes?})` — Find conversations needing classification
-- `getPreviousContentGaps({client, agentId?, maxAgeDays?, limit?})` — Fetch content gaps ranked by frequency
-- `classifyConversation({client, conversationId, model, messages, ...})` — Classify a single conversation
+- `getConversationsToClassify({client, limit?, settledForMinutes?, mcpEndpoint?})`: GROQ query for the pending classification queue (summaries only)
+- `getPreviousContentGaps({client})`: GROQ query for known content gaps ranked by frequency
+- `classifyConversation({client, threadId, model, previousContentGaps?, messages?})`: Classify a single conversation; fetches the transcript via the client when `messages` is omitted, and records the verdict or a `classificationError` through `client.context.conversations.classify`
 
 ```ts
 import {classifyConversation, getConversationsToClassify, getPreviousContentGaps} from '@sanity/context/insights'
 ```
 
-## Opting Out
-
-If you don't need Insights, disable it in the plugin:
+Saving a transcript is `client.context.conversations.save({threadId, messages, metadata?, modelProvider?, modelId?, tokenUsage?})` from `@sanity/client` directly. Reading conversations back for dashboards or reports is plain GROQ:
 
 ```ts
-contextPlugin({insights: {enabled: false}})
+await client.context.fetch(
+  '*[_type == "sanity.context.conversation"] | order(messagesUpdatedAt desc) [0...50]',
+)
 ```
-
-This removes the conversation schema and dashboard from your Studio.
