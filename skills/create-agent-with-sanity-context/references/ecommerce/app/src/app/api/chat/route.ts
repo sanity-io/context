@@ -11,7 +11,7 @@ import {
 
 import {clientTools, type DocumentContext} from '@/lib/client-tools'
 import {client} from '@/sanity/lib/client'
-import {writeClient} from '@/sanity/lib/write-client'
+import {insightsClient} from '@/sanity/lib/insights-client'
 
 const DEFAULT_MODEL = 'claude-sonnet-4-5'
 const MAX_STEPS = 20
@@ -34,7 +34,7 @@ async function fetchInitialContext(): Promise<string | null> {
   const isStale = Date.now() - cacheTimestamp > CACHE_TTL_MS
   const fetchPromise = isStale
     ? fetch(initialContextUrl(mcpUrl), {
-        headers: {Authorization: `Bearer ${process.env.SANITY_API_READ_TOKEN}`},
+        headers: {Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`},
       })
         .then(async (res) => {
           if (res.ok) {
@@ -123,8 +123,16 @@ export async function POST(req: Request) {
     throw new Error('ANTHROPIC_API_KEY is not set')
   }
 
-  if (!process.env.SANITY_API_READ_TOKEN) {
-    throw new Error('SANITY_API_READ_TOKEN is not set')
+  if (!process.env.SANITY_API_TOKEN) {
+    throw new Error('SANITY_API_TOKEN is not set')
+  }
+
+  if (!process.env.SANITY_ORGANIZATION_ID) {
+    throw new Error('SANITY_ORGANIZATION_ID is not set')
+  }
+
+  if (!process.env.SANITY_CONTEXT_ENDPOINT_NAME) {
+    throw new Error('SANITY_CONTEXT_ENDPOINT_NAME is not set')
   }
 
   let mcpClient: MCPClient | null = null
@@ -136,7 +144,7 @@ export async function POST(req: Request) {
           type: 'http',
           url: process.env.SANITY_CONTEXT_MCP_URL,
           headers: {
-            Authorization: `Bearer ${process.env.SANITY_API_READ_TOKEN}`,
+            Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`,
           },
         },
       }),
@@ -184,9 +192,9 @@ export async function POST(req: Request) {
         isEnabled: true,
         integrations: [
           sanityInsightsIntegration({
-            client: writeClient,
-            agentId: 'shopping-assistant',
+            client: insightsClient,
             threadId: chatId,
+            metadata: {mcpEndpoints: process.env.SANITY_CONTEXT_ENDPOINT_NAME ?? []},
           }),
         ],
       },
