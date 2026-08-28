@@ -59,13 +59,8 @@
     "test:unit:coverage": "vitest run --coverage"
   },
   "browserslist": "extends @sanity/browserslist-config",
-  "dependencies": {
-    "groq-js": "^1.29.0"
-  },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
-    "@sanity/color": "catalog:",
-    "@sanity/icons": "catalog:",
     "@sanity/pkg-utils": "^10.4.13",
     "@sanity/tsconfig": "^2.1.0",
     "@sanity/ui": "catalog:",
@@ -75,26 +70,18 @@
     "ai": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-rx": "^5",
-    "rxjs": "^7.8.2",
     "sanity": "catalog:",
-    "styled-components": "catalog:",
     "typescript": "catalog:",
     "vitest": "^4.0.18",
     "zod": "catalog:"
   },
   "peerDependencies": {
     "@sanity/client": "^7",
-    "@sanity/color": "^3",
-    "@sanity/icons": "^5",
-    "@sanity/ui": "^3",
+    "@sanity/ui": "^3 || ^4",
     "ai": "^6.0.175",
     "react": "^19",
     "react-dom": "^19",
-    "react-rx": "^5",
-    "rxjs": "^7",
     "sanity": "^6",
-    "styled-components": "^6",
     "zod": "^3.20 || ^4"
   },
   "peerDependenciesMeta": {

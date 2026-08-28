@@ -9,12 +9,6 @@ catalogs:
     '@sanity/client':
       specifier: ^7.26.1
       version: 7.26.2
-    '@sanity/color':
-      specifier: ^3
-      version: 3.0.8
-    '@sanity/icons':
-      specifier: ^5
-      version: 5.2.1
     '@sanity/ui':
       specifier: ^3
       version: 3.5.2
@@ -336,19 +330,10 @@ importers:
       '@sanity/client':
         specifier: ^7
         version: 7.26.2
-      groq-js:
-        specifier: ^1.29.0
-        version: 1.30.3
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:*
         version: link:../@repo/eslint-config
-      '@sanity/color':
-        specifier: 'catalog:'
-        version: 3.0.8
-      '@sanity/icons':
-        specifier: 'catalog:'
-        version: 5.2.1(react@19.2.8)
       '@sanity/pkg-utils':
         specifier: ^10.4.13
         version: 10.4.18(@types/babel__core@7.20.5)(@types/node@22.19.17)(babel-plugin-react-compiler@1.0.0)(typescript@5.9.3)
@@ -376,18 +361,9 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 19.2.8(react@19.2.8)
-      react-rx:
-        specifier: ^5
-        version: 5.1.1(react@19.2.8)(rxjs@7.8.2)
-      rxjs:
-        specifier: ^7.8.2
-        version: 7.8.2
       sanity:
         specifier: 'catalog:'
         version: 6.9.1(@babel/core@7.29.7)(@babel/runtime@7.29.2)(@emotion/is-prop-valid@1.4.0)(@noble/hashes@2.2.0)(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/runtime@7.29.2)(rolldown@1.2.3)(vite@8.2.1(@types/node@22.19.17)(esbuild@0.28.0)(jiti@2.7.0)(terser@5.46.2)(tsx@4.23.12)(yaml@2.9.0)))(@sanity/sdk@2.19.0(@types/react@19.2.14)(react@19.2.8)(use-sync-external-store@1.6.0(react@19.2.8))(xstate@5.32.5))(@types/node@22.19.17)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.0)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(rolldown@1.2.3)(styled-components@6.4.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(terser@5.46.2)(typescript@5.9.3)
-      styled-components:
-        specifier: 'catalog:'
-        version: 6.4.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
