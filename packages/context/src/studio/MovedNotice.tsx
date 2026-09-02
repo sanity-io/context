@@ -5,6 +5,7 @@ import {DEFAULT_STUDIO_CLIENT_OPTIONS, useClient, useProjectId} from 'sanity'
 import {LaunchIcon} from './icons'
 
 const FALLBACK_URL = 'https://www.sanity.io'
+const MIGRATION_GUIDE_URL = 'https://www.sanity.io/docs/ai/context-migration-guide'
 
 function useContextAppUrl(path: string): string {
   const projectId = useProjectId()
@@ -62,6 +63,12 @@ export function InsightsMovedNotice() {
               <Text size={2} muted>
                 Context MCP configuration and Insights now live in the Context app in the Sanity
                 Dashboard.
+              </Text>
+
+              <Text size={1}>
+                <a href={MIGRATION_GUIDE_URL} target="_blank" rel="noopener noreferrer">
+                  Read the migration guide &rarr;
+                </a>
               </Text>
             </Stack>
 

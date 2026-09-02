@@ -16,6 +16,8 @@ npm install @sanity/context
 
 ## Studio Plugin
 
+> **Deprecated:** Context configuration has moved to the Context app in the Sanity Dashboard. The plugin still registers the document type so existing MCP context documents can be edited, but new setups should use the Context app. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
+
 Registers a document type for configuring AI agent access to your Sanity content. Each document defines a content filter that scopes what an agent can query.
 
 ```ts
