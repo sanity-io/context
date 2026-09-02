@@ -1,5 +1,3 @@
-import {CheckmarkIcon} from '@sanity/icons/Checkmark'
-import {CopyIcon} from '@sanity/icons/Copy'
 import {Box, Button, Card, Flex, Stack, Text} from '@sanity/ui'
 import {useCallback, useEffect, useRef, useState} from 'react'
 import {
@@ -10,20 +8,11 @@ import {
   useDataset,
   useProjectId,
 } from 'sanity'
-import {styled} from 'styled-components'
 
+import {CheckmarkIcon, CopyIcon} from '../../icons'
 import {getMcpURL} from './mcpUrlUtils'
 
 const MIGRATION_GUIDE_URL = 'https://www.sanity.io/docs/ai/context-migration-guide'
-
-const TitleFlex = styled(Flex)`
-  position: relative;
-`
-
-const CopyButton = styled(Button)`
-  position: absolute;
-  right: 0;
-`
 
 export function ContextDocumentInput(props: InputProps) {
   const dataset = useDataset()
@@ -72,7 +61,7 @@ export function ContextDocumentInput(props: InputProps) {
 
         <Card shadow={1} padding={4} radius={3} tone="primary">
           <Stack space={2}>
-            <TitleFlex align="center" gap={1}>
+            <Flex align="center" gap={1} style={{position: 'relative'}}>
               <Box flex={1} marginBottom={1}>
                 <Text size={1} muted weight="medium">
                   MCP URL
@@ -80,16 +69,17 @@ export function ContextDocumentInput(props: InputProps) {
               </Box>
 
               {mcpURL ? (
-                <CopyButton
+                <Button
                   aria-label={copied ? 'Copied' : 'Copy MCP URL'}
                   fontSize={1}
                   icon={copied ? CheckmarkIcon : CopyIcon}
                   mode="bleed"
                   onClick={handleCopy}
                   padding={2}
+                  style={{position: 'absolute', right: 0}}
                 />
               ) : null}
-            </TitleFlex>
+            </Flex>
 
             <Text size={1} muted>
               {mcpURL

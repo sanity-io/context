@@ -1,9 +1,3 @@
-import {CheckmarkIcon} from '@sanity/icons/Checkmark'
-import {ChevronDownIcon} from '@sanity/icons/ChevronDown'
-import {CloseIcon} from '@sanity/icons/Close'
-import {ErrorOutlineIcon} from '@sanity/icons/ErrorOutline'
-import {GroqIcon} from '@sanity/icons/Groq'
-import {ListIcon} from '@sanity/icons/List'
 import {
   Box,
   Button,
@@ -27,31 +21,17 @@ import {
   unset,
   useSchema,
 } from 'sanity'
-import {styled} from 'styled-components'
 
+import {
+  CheckmarkIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  ErrorOutlineIcon,
+  GroqIcon,
+  ListIcon,
+} from '../../icons'
 import {isSimpleTypeQuery, listToQuery, queryToList, validateGroqFilter} from './groqUtils'
 import {useComposedRefs} from './useComposedRefs'
-
-const GroqFilterTextArea = styled(TextArea)`
-  font-family: monospace;
-
-  &[data-as='textarea'] {
-    resize: vertical;
-    min-height: 100px;
-  }
-`
-
-const ComboboxWrapper = styled.div`
-  position: relative;
-`
-
-const TypeListCard = styled(Card)`
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  z-index: 1000;
-`
 
 const TAB_IDS = {
   TYPES_TAB: 'types-tab',
@@ -208,7 +188,7 @@ export function GroqFilterInput(props: StringInputProps) {
         tabIndex={-1}
       >
         <Stack space={3}>
-          <ComboboxWrapper ref={containerRef}>
+          <div ref={containerRef} style={{position: 'relative'}}>
             <Card display="flex" border radius={2} overflow="hidden">
               <Card flex={1} borderRight>
                 <TextInput
@@ -238,7 +218,17 @@ export function GroqFilterInput(props: StringInputProps) {
             </Card>
 
             {isListOpen && (
-              <TypeListCard radius={2} shadow={3}>
+              <Card
+                radius={2}
+                shadow={3}
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 4px)',
+                  left: 0,
+                  right: 0,
+                  zIndex: 1000,
+                }}
+              >
                 {filteredTypeNames.length === 0 && (
                   <Flex direction="column" overflow="hidden" padding={5}>
                     <Text align="center" size={1}>
@@ -307,9 +297,9 @@ export function GroqFilterInput(props: StringInputProps) {
                     />
                   </Flex>
                 )}
-              </TypeListCard>
+              </Card>
             )}
-          </ComboboxWrapper>
+          </div>
 
           <Flex wrap="wrap" gap={2}>
             {selectedTypes.map((type) => {
@@ -348,12 +338,13 @@ export function GroqFilterInput(props: StringInputProps) {
         tabIndex={-1}
       >
         <Stack space={3}>
-          <GroqFilterTextArea
+          <TextArea
             {...restElementProps}
             onChange={(event) =>
               onChange(event.currentTarget.value ? set(event.currentTarget.value) : unset())
             }
             placeholder='_type in ["author", "post"]'
+            style={{fontFamily: 'monospace', resize: 'vertical', minHeight: 100}}
             value={value || ''}
             padding={4}
           />

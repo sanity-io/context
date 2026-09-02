@@ -1,6 +1,6 @@
-import {DatabaseIcon} from '@sanity/icons/Database'
 import {defineField, defineType} from 'sanity'
 
+import {DatabaseIcon} from '../icons'
 import {ContextDocumentInput} from './context-document-input/ContextDocumentInput'
 import {GroqFilterInput} from './groq-filter-input/GroqFilterInput'
 import {validateGroqFilter} from './groq-filter-input/groqUtils'
