@@ -9,12 +9,13 @@ import {
 import {ChartUpwardIcon} from './icons'
 import {InsightsMovedNotice} from './MovedNotice'
 
-/**
- * @public
- * @deprecated Insights has moved to the Context app; these options are ignored.
- */
+/** @public */
 export interface InsightsOptions {
-  /** @deprecated Ignored. */
+  /**
+   * Whether to show the Agent Insights tool. Insights has moved to the Context app;
+   * the tool only shows a notice pointing there.
+   * @defaultValue true
+   */
   enabled?: boolean
 }
 
@@ -28,7 +29,10 @@ export interface ContextPluginOptions {
    * @defaultValue true
    */
   registerContextDocument?: boolean
-  /** @deprecated Insights has moved to the Context app; this option is ignored. */
+  /**
+   * Configuration for the Agent Insights tool.
+   * Omit to use defaults; set `enabled` to `false` to disable.
+   */
   insights?: InsightsOptions
 }
 
@@ -43,6 +47,7 @@ export type AgentContextPluginOptions = ContextPluginOptions
  */
 export const contextPlugin = definePlugin<ContextPluginOptions | void>((options = {}) => {
   const shouldRegisterContextDocument = options?.registerContextDocument !== false
+  const insightsEnabled = options?.insights?.enabled !== false
 
   return {
     name: 'sanity/context/plugin',
@@ -62,15 +67,17 @@ export const contextPlugin = definePlugin<ContextPluginOptions | void>((options 
           : []),
       ],
     },
-    tools: [
-      {
-        name: 'agent-insights',
-        title: 'Agent Insights',
-        icon: ChartUpwardIcon,
-        component: InsightsMovedNotice,
-        router: route.create('/:path', [route.create('/:agentId', [route.create('/:id')])]),
-      },
-    ],
+    tools: insightsEnabled
+      ? [
+          {
+            name: 'agent-insights',
+            title: 'Agent Insights',
+            icon: ChartUpwardIcon,
+            component: InsightsMovedNotice,
+            router: route.create('/:path', [route.create('/:agentId', [route.create('/:id')])]),
+          },
+        ]
+      : [],
   }
 })
 
