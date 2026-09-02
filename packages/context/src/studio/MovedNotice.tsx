@@ -49,12 +49,6 @@ export function InsightsMovedNotice() {
       <Card display="flex" flex={1} padding={5} radius={4} tone="transparent">
         <Flex align="center" flex={1} justify="center">
           <Flex direction="column" align="center" gap={5} paddingY={5}>
-            <Text muted>
-              <span aria-hidden="true" style={{display: 'flex', fontSize: 45, lineHeight: 1}}>
-                <LaunchIcon />
-              </span>
-            </Text>
-
             <Stack gap={4} style={{maxWidth: 320, textAlign: 'center'}}>
               <Heading as="h2" size={3}>
                 Context has moved
