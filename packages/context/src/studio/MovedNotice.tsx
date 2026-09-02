@@ -51,12 +51,12 @@ export function InsightsMovedNotice() {
           <Flex direction="column" align="center" gap={5} paddingY={5}>
             <Stack gap={4} style={{maxWidth: 320, textAlign: 'center'}}>
               <Heading as="h2" size={3}>
-                Context has moved
+                Insights has moved
               </Heading>
 
               <Text size={2} muted>
-                Context MCP configuration and Insights now live in the Context app in the Sanity
-                Dashboard.
+                Insights now lives in the Context app in the Sanity Dashboard, where you can browse
+                conversation history and metrics.
               </Text>
 
               <Text size={1}>
