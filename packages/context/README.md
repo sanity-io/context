@@ -120,6 +120,10 @@ Classification runs on your side, with your model and your LLM API key. The pend
 
 2. Create `sanity.blueprint.ts`, see the [full example](https://github.com/sanity-io/context/tree/main/examples/ecommerce/sanity.blueprint.ts)
 
+   Requirements:
+   - Install `@sanity/functions`, `@ai-sdk/anthropic`, `@sanity/blueprints`, and `dotenv` alongside `@sanity/client` and `@sanity/context`
+   - Create a `.env` next to the blueprint with `ANTHROPIC_API_KEY`, `SANITY_ORGANIZATION_ID`, `SANITY_CONTEXT_ENDPOINT_NAME`, and `SANITY_API_TOKEN`
+
 3. Deploy:
 
 ```bash
@@ -196,7 +200,7 @@ const recent = await client.context.fetch(
 
 ### Notes
 
-- **Error handling**: Non-blocking by design. Save and classification failures are logged but don't break the user experience. Check logs for `[sanity-insights]` messages. A failed classification records the error on the conversation, which removes it from the pending queue.
+- **Error handling**: Non-blocking by design. Save and classification failures are logged but don't break the user experience. Save failures log `[sanity-insights]` messages; classification failures log `[classifyConversation]` messages. A failed classification records the error on the conversation, which removes it from the pending queue.
 - **Concurrency**: Create a fresh `sanityInsightsIntegration()` instance per request. Do not share instances across concurrent requests.
 - **Cooldown**: Conversations become eligible for classification only after they have been idle for `settledForMinutes` (default 10). You own this setting; tune it to how long your threads stay active.
 - **Costs**: Classification runs in scheduled batches (every 10 minutes in the example) with your own LLM key. Adjust the schedule and `limit` to control token usage.
