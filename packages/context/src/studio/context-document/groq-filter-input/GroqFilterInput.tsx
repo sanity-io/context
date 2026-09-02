@@ -22,14 +22,7 @@ import {
   useSchema,
 } from 'sanity'
 
-import {
-  CheckmarkIcon,
-  ChevronDownIcon,
-  CloseIcon,
-  ErrorOutlineIcon,
-  GroqIcon,
-  ListIcon,
-} from '../../icons'
+import {CheckmarkIcon, ChevronDownIcon, CloseIcon} from '../../icons'
 import {isSimpleTypeQuery, listToQuery, queryToList, validateGroqFilter} from './groqUtils'
 import {useComposedRefs} from './useComposedRefs'
 
@@ -161,7 +154,6 @@ export function GroqFilterInput(props: StringInputProps) {
                 : 'Types. The current filter is too complex to edit here. Use the GROQ tab to edit it.'
           }
           disabled={!isSimple || !validation.valid}
-          icon={ListIcon}
           id={TAB_IDS.TYPES_TAB}
           label="Types"
           onClick={() => isSimple && validation.valid && setPanel('types')}
@@ -171,7 +163,6 @@ export function GroqFilterInput(props: StringInputProps) {
 
         <Tab
           aria-controls={TAB_IDS.GROQ_PANEL}
-          icon={GroqIcon}
           id={TAB_IDS.GROQ_TAB}
           label="GROQ"
           onClick={() => setPanel('groq')}
@@ -354,13 +345,7 @@ export function GroqFilterInput(props: StringInputProps) {
       {/* ----- Result and validation errors ----- */}
       {!validation.valid && (
         <Card padding={3} radius={2} tone="critical" border>
-          <Flex align="flex-start" gap={2}>
-            <Text size={1}>
-              <ErrorOutlineIcon />
-            </Text>
-
-            <Text size={1}>{validation.error}</Text>
-          </Flex>
+          <Text size={1}>{validation.error}</Text>
         </Card>
       )}
     </Stack>
