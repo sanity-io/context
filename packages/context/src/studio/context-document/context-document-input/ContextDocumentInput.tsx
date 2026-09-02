@@ -1,6 +1,7 @@
+import {CheckmarkIcon} from '@sanity/icons/Checkmark'
 import {CopyIcon} from '@sanity/icons/Copy'
-import {Box, Button, Card, Flex, Stack, Text, Tooltip, useToast} from '@sanity/ui'
-import {useCallback} from 'react'
+import {Box, Button, Card, Flex, Stack, Text} from '@sanity/ui'
+import {useCallback, useEffect, useRef, useState} from 'react'
 import {
   DEFAULT_STUDIO_CLIENT_OPTIONS,
   getValueAtPath,
@@ -27,30 +28,26 @@ const CopyButton = styled(Button)`
 export function ContextDocumentInput(props: InputProps) {
   const dataset = useDataset()
   const projectId = useProjectId()
-  const toast = useToast()
   const apiHost = useClient(DEFAULT_STUDIO_CLIENT_OPTIONS).config().apiHost
 
   const slug = getValueAtPath(props.value, ['slug'])
   const mcpURL = getMcpURL({apiHost, projectId, dataset, slug})
 
+  const [copied, setCopied] = useState(false)
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => clearTimeout(copyTimeoutRef.current), [])
+
   const handleCopy = useCallback(() => {
-    try {
-      navigator.clipboard.writeText(mcpURL)
-      toast.push({
-        title: 'Copied to clipboard',
-        description: 'The MCP URL has been copied to your clipboard',
-        status: 'success',
-        closable: true,
+    navigator.clipboard
+      .writeText(mcpURL)
+      .then(() => {
+        setCopied(true)
+        clearTimeout(copyTimeoutRef.current)
+        copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000)
       })
-    } catch {
-      toast.push({
-        title: 'Error copying to clipboard',
-        description: 'Please copy the MCP URL manually',
-        status: 'error',
-        closable: true,
-      })
-    }
-  }, [mcpURL, toast])
+      .catch(() => null)
+  }, [mcpURL])
 
   return (
     <>
@@ -83,22 +80,14 @@ export function ContextDocumentInput(props: InputProps) {
               </Box>
 
               {mcpURL ? (
-                <Tooltip
-                  animate
-                  content={<Text size={1}>Copy</Text>}
-                  delay={{open: 300, close: 0}}
-                  placement="top"
-                  portal
-                >
-                  <CopyButton
-                    aria-label="Copy MCP URL"
-                    fontSize={1}
-                    icon={CopyIcon}
-                    mode="bleed"
-                    onClick={handleCopy}
-                    padding={2}
-                  />
-                </Tooltip>
+                <CopyButton
+                  aria-label={copied ? 'Copied' : 'Copy MCP URL'}
+                  fontSize={1}
+                  icon={copied ? CheckmarkIcon : CopyIcon}
+                  mode="bleed"
+                  onClick={handleCopy}
+                  padding={2}
+                />
               ) : null}
             </TitleFlex>
 

@@ -9,7 +9,6 @@ import {
   Button,
   Card,
   Flex,
-  Popover,
   Stack,
   Tab,
   TabList,
@@ -17,7 +16,6 @@ import {
   Text,
   TextArea,
   TextInput,
-  Tooltip,
   useClickOutsideEvent,
 } from '@sanity/ui'
 import {useCallback, useMemo, useRef, useState} from 'react'
@@ -43,6 +41,18 @@ const GroqFilterTextArea = styled(TextArea)`
   }
 `
 
+const ComboboxWrapper = styled.div`
+  position: relative;
+`
+
+const TypeListCard = styled(Card)`
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 1000;
+`
+
 const TAB_IDS = {
   TYPES_TAB: 'types-tab',
   TYPES_PANEL: 'types-panel',
@@ -51,6 +61,8 @@ const TAB_IDS = {
 } as const
 
 const ITEM_HEIGHT = 43
+const LIST_PADDING = 8
+const MAX_LIST_HEIGHT = 300
 
 export function GroqFilterInput(props: StringInputProps) {
   const {value, onChange, elementProps} = props
@@ -59,7 +71,7 @@ export function GroqFilterInput(props: StringInputProps) {
   const [open, setOpen] = useState<boolean>(false)
   const [inputElement, setInputElement] = useState<HTMLInputElement | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const popoverRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const openListButtonRef = useRef<HTMLButtonElement>(null)
   const [searchQuery, setSearchQuery] = useState<string | null>(null)
 
@@ -146,7 +158,7 @@ export function GroqFilterInput(props: StringInputProps) {
   )
 
   useClickOutsideEvent(closeList, () => [
-    popoverRef.current,
+    containerRef.current,
     inputRef.current,
     openListButtonRef.current,
   ])
@@ -159,35 +171,23 @@ export function GroqFilterInput(props: StringInputProps) {
   return (
     <Stack space={2}>
       <TabList space={1}>
-        <Tooltip
-          animate
-          disabled={isSimple && validation.valid}
-          content={
-            <Box padding={1} style={{maxWidth: '200px'}}>
-              <Text size={1}>
-                {!validation.valid
-                  ? 'The current filter has a syntax error that needs to be fixed in the GROQ tab.'
-                  : 'The current filter is too complex to edit here. Use the GROQ tab to edit it.'}
-              </Text>
-            </Box>
+        <Tab
+          aria-controls={TAB_IDS.TYPES_PANEL}
+          aria-label={
+            isSimple && validation.valid
+              ? undefined
+              : !validation.valid
+                ? 'Types. The current filter has a syntax error that needs to be fixed in the GROQ tab.'
+                : 'Types. The current filter is too complex to edit here. Use the GROQ tab to edit it.'
           }
-          delay={{open: 200, close: 0}}
-          placement="bottom"
-          portal
-        >
-          <div>
-            <Tab
-              aria-controls={TAB_IDS.TYPES_PANEL}
-              disabled={!isSimple || !validation.valid}
-              icon={ListIcon}
-              id={TAB_IDS.TYPES_TAB}
-              label="Types"
-              onClick={() => isSimple && validation.valid && setPanel('types')}
-              padding={3}
-              selected={effectivePanel === 'types'}
-            />
-          </div>
-        </Tooltip>
+          disabled={!isSimple || !validation.valid}
+          icon={ListIcon}
+          id={TAB_IDS.TYPES_TAB}
+          label="Types"
+          onClick={() => isSimple && validation.valid && setPanel('types')}
+          padding={3}
+          selected={effectivePanel === 'types'}
+        />
 
         <Tab
           aria-controls={TAB_IDS.GROQ_PANEL}
@@ -208,19 +208,39 @@ export function GroqFilterInput(props: StringInputProps) {
         tabIndex={-1}
       >
         <Stack space={3}>
-          <Popover
-            animate
-            constrainSize
-            fallbackPlacements={['bottom', 'top']}
-            matchReferenceWidth
-            open={isListOpen}
-            placement="bottom"
-            portal
-            ref={popoverRef}
-            content={
-              <Flex direction="column" height="fill">
+          <ComboboxWrapper ref={containerRef}>
+            <Card display="flex" border radius={2} overflow="hidden">
+              <Card flex={1} borderRight>
+                <TextInput
+                  {...restElementProps}
+                  autoComplete="off"
+                  border={false}
+                  onChange={(event) => setSearchQuery(event.currentTarget.value)}
+                  onKeyDown={handleTextInputKeyDown}
+                  placeholder="Search for document types"
+                  radius={0}
+                  ref={composedRef}
+                  value={searchQuery || ''}
+                />
+              </Card>
+
+              <Flex align="center" justify="center" sizing="border" padding={1} height="fill">
+                <Button
+                  aria-label="Open document types list"
+                  disabled={isListOpen}
+                  icon={ChevronDownIcon}
+                  mode="bleed"
+                  onClick={handleToggleList}
+                  padding={2}
+                  ref={openListButtonRef}
+                />
+              </Flex>
+            </Card>
+
+            {isListOpen && (
+              <TypeListCard radius={2} shadow={3}>
                 {filteredTypeNames.length === 0 && (
-                  <Flex direction="column" overflow="hidden" flex={1} padding={5}>
+                  <Flex direction="column" overflow="hidden" padding={5}>
                     <Text align="center" size={1}>
                       No document types found matching <b>{`"${searchQuery}"`}</b>
                     </Text>
@@ -228,7 +248,16 @@ export function GroqFilterInput(props: StringInputProps) {
                 )}
 
                 {filteredTypeNames.length > 0 && (
-                  <Flex direction="column" overflow="hidden" flex={1}>
+                  <Flex
+                    direction="column"
+                    overflow="hidden"
+                    style={{
+                      height: Math.min(
+                        filteredTypeNames.length * ITEM_HEIGHT + LIST_PADDING,
+                        MAX_LIST_HEIGHT,
+                      ),
+                    }}
+                  >
                     <CommandList
                       activeItemDataAttr="data-hovered"
                       ariaLabel="Document Types"
@@ -278,37 +307,9 @@ export function GroqFilterInput(props: StringInputProps) {
                     />
                   </Flex>
                 )}
-              </Flex>
-            }
-          >
-            <Card display="flex" border radius={2} overflow="hidden">
-              <Card flex={1} borderRight>
-                <TextInput
-                  {...restElementProps}
-                  autoComplete="off"
-                  border={false}
-                  onChange={(event) => setSearchQuery(event.currentTarget.value)}
-                  onKeyDown={handleTextInputKeyDown}
-                  placeholder="Search for document types"
-                  radius={0}
-                  ref={composedRef}
-                  value={searchQuery || ''}
-                />
-              </Card>
-
-              <Flex align="center" justify="center" sizing="border" padding={1} height="fill">
-                <Button
-                  aria-label="Open document types list"
-                  disabled={isListOpen}
-                  icon={ChevronDownIcon}
-                  mode="bleed"
-                  onClick={handleToggleList}
-                  padding={2}
-                  ref={openListButtonRef}
-                />
-              </Flex>
-            </Card>
-          </Popover>
+              </TypeListCard>
+            )}
+          </ComboboxWrapper>
 
           <Flex wrap="wrap" gap={2}>
             {selectedTypes.map((type) => {
