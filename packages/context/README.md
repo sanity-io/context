@@ -8,7 +8,7 @@ npm install @sanity/context
 
 ### Compatibility
 
-Requires `@sanity/client` ^8.4.0 as a peer dependency. Upgrade `sanity` to 6.12 or later to get a matching client automatically (6.11 also works if your lockfile resolves `@sanity/client` to 8.4+). Studios on `sanity` 6.10 or earlier depend on client 7 and will fail to install this package.
+Requires `@sanity/client` ^8.4.0 as a peer dependency, which comes automatically with `sanity` 6.12 or later.
 
 ## Exports
 
