@@ -16,7 +16,7 @@ flowchart LR
   B --> C["Your content in Sanity"]
 ```
 
-You create a Sanity Context document in [Sanity Studio](https://www.sanity.io/studio). This document controls what content your agent can access and generates a unique MCP URL. Your agent connects to that URL with an API token.
+You create an MCP endpoint in the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard). The endpoint controls what content your agent can access and generates a unique MCP URL. Your agent connects to that URL with an API token.
 
 The Sanity Context MCP server exposes three tools:
 
@@ -48,7 +48,7 @@ Structural filter (`category == "shoes"`) for precision. Semantic ranking (`text
 
 ### Prerequisites
 
-- A [Sanity](https://www.sanity.io/) project with content and a [deployed Studio](https://www.sanity.io/docs/deployment) (v5.1.0+)
+- A [Sanity](https://www.sanity.io/) project with content and a [deployed Studio](https://www.sanity.io/docs/deployment) (v6)
 - A **Sanity API read token** — create one at [sanity.io/manage](https://sanity.io/manage) (Project → API → Tokens) or via CLI:
   ```bash
   npx sanity tokens add "Sanity Context" --role=viewer
@@ -77,26 +77,9 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
 
 ### Manual setup
 
-1. Install the Studio plugin:
+1. Open the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), create an MCP endpoint, and copy the MCP URL.
 
-   ```bash
-   npm install @sanity/context
-   ```
-
-   ```ts
-   // sanity.config.ts
-   import {defineConfig} from 'sanity'
-   import {contextPlugin} from '@sanity/context/studio'
-
-   export default defineConfig({
-     // ...existing config
-     plugins: [contextPlugin()],
-   })
-   ```
-
-2. Create a Sanity Context document in Studio and copy the MCP URL.
-
-3. Connect your agent using any MCP-compatible framework. Example with [Vercel AI SDK](https://sdk.vercel.ai/):
+2. Connect your agent using any MCP-compatible framework. Example with [Vercel AI SDK](https://sdk.vercel.ai/):
 
    ```ts
    import {createMCPClient} from '@ai-sdk/mcp'
@@ -111,6 +94,27 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
      },
    })
    ```
+
+### Legacy: Studio plugin
+
+> **Deprecated:** Configuration for new setups happens in the Context app. The Studio plugin still works for editing existing Sanity Context documents. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
+
+If you have an existing Sanity Context document, install the plugin to keep editing it in Studio:
+
+```bash
+npm install @sanity/context
+```
+
+```ts
+// sanity.config.ts
+import {defineConfig} from 'sanity'
+import {contextPlugin} from '@sanity/context/studio'
+
+export default defineConfig({
+  // ...existing config
+  plugins: [contextPlugin()],
+})
+```
 
 ## Agent Insights
 
@@ -133,7 +137,7 @@ curl -X POST https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset/:
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-If this returns a list of tools, you're connected. The full MCP URL is shown in your Sanity Context document in Studio.
+If this returns a list of tools, you're connected. The full MCP URL is shown in the Context app (or in your Sanity Context document in Studio for legacy setups).
 
 **401 Unauthorized** — Your `SANITY_API_TOKEN` is missing or invalid. Generate a new token at [sanity.io/manage](https://sanity.io/manage) → Project → API → Tokens.
 

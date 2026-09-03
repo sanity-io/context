@@ -59,6 +59,9 @@
     "test:unit:coverage": "vitest run --coverage"
   },
   "browserslist": "extends @sanity/browserslist-config",
+  "dependencies": {
+    "groq-js": "^1.29.0"
+  },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@sanity/pkg-utils": "^10.4.13",
