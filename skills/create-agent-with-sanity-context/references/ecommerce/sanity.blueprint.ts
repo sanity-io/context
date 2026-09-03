@@ -1,4 +1,4 @@
-import {defineBlueprint, defineRobotToken, defineScheduledFunction} from '@sanity/blueprints'
+import {defineBlueprint, defineScheduledFunction} from '@sanity/blueprints'
 import 'dotenv/config'
 
 export default defineBlueprint({
@@ -6,26 +6,15 @@ export default defineBlueprint({
     defineScheduledFunction({
       name: 'classify-conversations',
       timeout: 600,
-      robotToken: '$.resources.classify-conversations-robot.token',
       env: {
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-        SANITY_PROJECT_ID: process.env.SANITY_STUDIO_PROJECT_ID,
-        SANITY_DATASET: process.env.SANITY_STUDIO_DATASET,
+        SANITY_ORGANIZATION_ID: process.env.SANITY_ORGANIZATION_ID,
+        SANITY_CONTEXT_ENDPOINT_NAME: process.env.SANITY_CONTEXT_ENDPOINT_NAME,
+        SANITY_API_TOKEN: process.env.SANITY_API_TOKEN,
       },
       event: {
         expression: '*/10 * * * *',
       },
-    }),
-    defineRobotToken({
-      name: 'classify-conversations-robot',
-      label: 'Classify Conversations Robot',
-      memberships: [
-        {
-          resourceType: 'project',
-          resourceId: process.env.SANITY_STUDIO_PROJECT_ID!,
-          roleNames: ['editor'],
-        },
-      ],
     }),
   ],
 })

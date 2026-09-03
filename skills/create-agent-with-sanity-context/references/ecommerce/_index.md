@@ -80,7 +80,6 @@ studio/
 app/src/sanity/
 ├── lib/
 │   ├── client.ts                 # Sanity client setup
-│   ├── write-client.ts           # Write client for insights
 │   └── image.ts                  # Image URL builder
 └── queries/
     ├── products.ts               # Product queries
@@ -126,4 +125,4 @@ See `app/src/components/chat/message/text-part.tsx` (uses `@sanity/agent-directi
 
 ### Conversation Insights
 
-Conversations are automatically saved via `sanityInsightsIntegration` in the chat route. Classification runs every 10 minutes via a scheduled function in `functions/classify-conversations/index.ts`.
+Conversations are automatically saved via `sanityInsightsIntegration` in the chat route, which sends transcripts to the Sanity Context API. Classification (success score, sentiment, content gaps) runs every 10 minutes via the scheduled function in `functions/classify-conversations/index.ts`, using your own AI SDK model and API key, and records verdicts back through the Context API.
