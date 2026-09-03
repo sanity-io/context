@@ -1,11 +1,11 @@
 import {forwardRef, type SVGProps} from 'react'
 
-/** Inlined from `@sanity/icons@5.2.1` `LaunchIcon` to avoid the peer dependency. */
-export const LaunchIcon = forwardRef<SVGSVGElement, Omit<SVGProps<SVGSVGElement>, 'ref'>>(
-  function LaunchIcon(props, ref) {
+/** Inlined from `@sanity/icons@5.2.1` `ArrowTopRightIcon` to avoid the peer dependency. */
+export const ArrowTopRightIcon = forwardRef<SVGSVGElement, Omit<SVGProps<SVGSVGElement>, 'ref'>>(
+  function ArrowTopRightIcon(props, ref) {
     return (
       <svg
-        data-sanity-icon="launch"
+        data-sanity-icon="arrow-top-right"
         width="1em"
         height="1em"
         viewBox="0 0 25 25"
@@ -14,14 +14,9 @@ export const LaunchIcon = forwardRef<SVGSVGElement, Omit<SVGProps<SVGSVGElement>
         {...props}
         ref={ref}
       >
-        <path
-          d="M12 7.5H6.5V18.5H17.5V13M19.5 5.5L10.5 14.5"
-          stroke="currentColor"
-          strokeWidth={1.2}
-          strokeLinejoin="round"
-        />
+        <path d="M16.5 8.5L7 18" stroke="currentColor" strokeWidth={1.2} strokeLinejoin="round" />
 
-        <path d="M14 5.5H19.5V11" stroke="currentColor" strokeWidth={1.2} strokeLinejoin="round" />
+        <path d="M9 8.5H16.5V16" stroke="currentColor" strokeWidth={1.2} strokeLinejoin="round" />
       </svg>
     )
   },

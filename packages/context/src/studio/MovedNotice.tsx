@@ -2,7 +2,7 @@ import {Button, Card, Flex, Heading, Stack, Text} from '@sanity/ui'
 import {useEffect, useState} from 'react'
 import {DEFAULT_STUDIO_CLIENT_OPTIONS, useClient, useProjectId} from 'sanity'
 
-import {LaunchIcon} from './icons'
+import {ArrowTopRightIcon} from './icons'
 
 const FALLBACK_URL = 'https://www.sanity.io'
 const MIGRATION_GUIDE_URL = 'https://www.sanity.io/docs/ai/context-migration-guide'
@@ -58,25 +58,34 @@ export function InsightsMovedNotice() {
                 Insights now lives in the Context app in the Sanity Dashboard, where you can browse
                 conversation history and metrics.
               </Text>
-
-              <Text size={1}>
-                <a href={MIGRATION_GUIDE_URL} target="_blank" rel="noopener noreferrer">
-                  Read the migration guide &rarr;
-                </a>
-              </Text>
             </Stack>
 
-            <Button
-              as="a"
-              fontSize={1}
-              href={href}
-              icon={LaunchIcon}
-              mode="default"
-              padding={3}
-              rel="noopener noreferrer"
-              target="_blank"
-              text="Open the Context app"
-            />
+            <Flex gap={2} wrap="wrap" justify="center">
+              <Button
+                as="a"
+                fontSize={1}
+                href={MIGRATION_GUIDE_URL}
+                iconRight={ArrowTopRightIcon}
+                mode="default"
+                padding={3}
+                rel="noopener noreferrer"
+                target="_blank"
+                text="Read the migration guide"
+                tone="primary"
+              />
+
+              <Button
+                as="a"
+                fontSize={1}
+                href={href}
+                iconRight={ArrowTopRightIcon}
+                mode="ghost"
+                padding={3}
+                rel="noopener noreferrer"
+                target="_blank"
+                text="Open Context app"
+              />
+            </Flex>
           </Flex>
         </Flex>
       </Card>
