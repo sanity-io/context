@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.0.0](https://github.com/sanity-io/context/compare/context-v1.0.0...context-v2.0.0) (2026-09-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* conversations over client.context, classification as thin helpers ([#248](https://github.com/sanity-io/context/issues/248))
+* **context:** replace Studio plugin UI with a Context app notice ([#249](https://github.com/sanity-io/context/issues/249))
+
+### Features
+
+* **context:** re-add Context document schema with deprecation notice ([#253](https://github.com/sanity-io/context/issues/253)) ([8b530ed](https://github.com/sanity-io/context/commit/8b530ed50eec63d1e72f83dc5026b45aac76b1fd))
+* **context:** replace Studio plugin UI with a Context app notice ([#249](https://github.com/sanity-io/context/issues/249)) ([a437fc6](https://github.com/sanity-io/context/commit/a437fc65d0131e3f2de18bca703603418a4c0725))
+* conversations over client.context, classification as thin helpers ([#248](https://github.com/sanity-io/context/issues/248)) ([d38a5a8](https://github.com/sanity-io/context/commit/d38a5a83e1c4059726418061861ce9fc248c7de2))
+
 ## [1.0.0](https://github.com/sanity-io/context/compare/context-v0.7.1...context-v1.0.0) (2026-08-11)
 
 ### ⚠ BREAKING CHANGES
