@@ -25,8 +25,8 @@
     "@sanity/vision": "^6",
     "ai": "^6.0.137",
     "easymde": "^2.20.0",
-    "react": "^19",
-    "react-dom": "^19",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",
     "sanity": "^6",
     "sanity-plugin-markdown": "^9",
@@ -34,7 +34,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/react": "^19",
+    "@types/react": "^19.2.18",
     "dotenv-cli": "^11.0.0",
     "typescript": "^5",
     "typescript-eslint": "^8.32.1"
