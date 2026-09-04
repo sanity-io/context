@@ -6,7 +6,7 @@ packages:
 catalog:
   '@ai-sdk/anthropic': ^3.0.58
   '@sanity/client': ^8.4.0
-  '@sanity/color': ^3
+  '@sanity/color': ^3.0.8
   '@sanity/icons': ^5
   '@sanity/ui': ^3
   '@sanity/vision': ^6
