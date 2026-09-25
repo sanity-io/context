@@ -18,7 +18,7 @@
   "dependencies": {
     "@sanity/blueprints": "0.14.0",
     "@sanity/context": "workspace:*",
-    "@sanity/functions": "1.2.1",
+    "@sanity/functions": "1.8.0",
     "@sanity/vision": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
