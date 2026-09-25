@@ -16,19 +16,19 @@ catalogs:
       specifier: ^6
       version: 6.15.0
     '@types/react':
-      specifier: ^19
+      specifier: ^19.3.0
       version: 19.3.0
     '@types/react-dom':
-      specifier: ^19
+      specifier: ^19.3.0
       version: 19.3.0
     ai:
       specifier: ^6.0.177
       version: 6.0.287
     react:
-      specifier: ^19
+      specifier: ^19.3.0
       version: 19.3.0
     react-dom:
-      specifier: ^19
+      specifier: ^19.3.0
       version: 19.3.0
     sanity:
       specifier: ^6
@@ -178,10 +178,10 @@ importers:
         specifier: ^13.3.4
         version: 13.3.4(@sanity/client@8.6.2(vitest@4.1.11))(@types/react@19.3.0)(next@16.3.5(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@types/node@22.20.4)(babel-plugin-react-compiler@1.0.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(sanity@6.15.0(@babel/core@7.29.7)(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.7)(@babel/runtime@7.29.7)(rolldown@1.2.9)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(@types/node@22.20.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.9)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(terser@5.51.2)(tsx@4.23.15)(typescript@5.9.3)(vitest@4.1.11))(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(typescript@5.9.3)(vitest@4.1.11)
       react:
-        specifier: ^19
+        specifier: ^19.3.0
         version: 19.3.0
       react-dom:
-        specifier: ^19
+        specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
       react-markdown:
         specifier: ^10.1.0
@@ -212,10 +212,10 @@ importers:
         specifier: ^22.20.4
         version: 22.20.4
       '@types/react':
-        specifier: ^19
+        specifier: ^19.3.0
         version: 19.3.0
       '@types/react-dom':
-        specifier: ^19
+        specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
       '@types/turndown':
         specifier: ^5.0.6
@@ -260,10 +260,10 @@ importers:
         specifier: ^2.21.0
         version: 2.21.0
       react:
-        specifier: ^19
+        specifier: ^19.3.0
         version: 19.3.0
       react-dom:
-        specifier: ^19
+        specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
       react-markdown:
         specifier: ^10.1.0
@@ -282,7 +282,7 @@ importers:
         version: 4.6.5
     devDependencies:
       '@types/react':
-        specifier: ^19
+        specifier: ^19.3.0
         version: 19.3.0
       dotenv-cli:
         specifier: ^11.0.0
