@@ -9,8 +9,6 @@
  *  5. Review and publish in Studio
  */
 
-import {appendFileSync} from 'node:fs'
-
 import {markdownToPortableText} from '@portabletext/markdown'
 import {ClientError} from '@sanity/client'
 import chalk from 'chalk'
@@ -104,10 +102,10 @@ export async function createChangelogDocuments(
     title,
     publishedAt: releaseInfo.publishedAt,
     version: {_ref: apiVersionDocId.published, _type: 'reference'},
+    content: suggestedContent,
     releaseAutomation: {
       tentativeVersion: version,
       source: 'context',
-      suggestedContent,
     },
   })
 
@@ -120,12 +118,6 @@ export async function createChangelogDocuments(
   if (studioBaseUrl) {
     const studioUrl = `${studioBaseUrl}/releases/${releaseId}?perspective=${releaseId}`
     console.log(chalk.cyan(`Review in Studio: ${studioUrl}`))
-
-    // Expose the URL as a step output so the workflow can use it (e.g. in Slack)
-    const ghOutput = process.env.GITHUB_OUTPUT
-    if (ghOutput) {
-      appendFileSync(ghOutput, `studio_url=${studioUrl}\n`)
-    }
   } else {
     console.log(chalk.dim(`Review and publish in Studio when ready.`))
   }

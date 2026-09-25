@@ -72,7 +72,6 @@ jobs:
 
       # Create changelog release in Sanity (needs manual review and publish in Studio)
       - name: Create changelog release
-        id: changelog
         if: ${{ steps.release.outputs.releases_created == 'true' }}
         run: pnpm release-notes create ${{ steps.release.outputs['packages/context--version'] }} --yes
         env:
@@ -82,31 +81,3 @@ jobs:
           CHANGELOG_SANITY_WRITE_TOKEN: ${{ secrets.CHANGELOG_SANITY_WRITE_TOKEN }}
           CHANGELOG_ANTHROPIC_API_KEY: ${{ secrets.CHANGELOG_ANTHROPIC_API_KEY }}
           CHANGELOG_STUDIO_BASE_URL: ${{ vars.CHANGELOG_STUDIO_BASE_URL }}
-
-      - name: Convert changelog to Slack markdown
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
-        uses: LoveToKnow/slackify-markdown-action@698a1d4d0ff1794152a93c03ee8ca5e03a310d4e # v1.1.1
-        id: changelog-markdown
-        with:
-          text: ${{ steps.release.outputs['packages/context--body'] }}
-
-      - name: Notify Slack
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
-        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
-        with:
-          webhook: ${{ secrets.CHANGELOG_SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            blocks:
-              - type: header
-                text:
-                  type: plain_text
-                  text: "@sanity/context v${{ steps.release.outputs['packages/context--version'] }} released"
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: "A changelog draft for this release is ready. <${{ steps.changelog.outputs.studio_url || vars.CHANGELOG_STUDIO_BASE_URL }}|Review and publish in Studio>."
-              - type: section
-                text:
-                  type: mrkdwn
-                  text: ${{ toJson(steps.changelog-markdown.outputs.text) }}
