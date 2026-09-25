@@ -180,7 +180,7 @@ export async function POST(req: Request) {
 
     const result = streamText({
       model: anthropic(modelId),
-      system: systemPrompt,
+      instructions: systemPrompt,
       messages: await convertToModelMessages(messages),
       experimental_download: downloadDataUrls,
       tools: {
@@ -188,8 +188,7 @@ export async function POST(req: Request) {
         ...clientTools,
       },
       stopWhen: stepCountIs(MAX_STEPS),
-      experimental_telemetry: {
-        isEnabled: true,
+      telemetry: {
         integrations: [
           sanityInsightsIntegration({
             client: insightsClient,
@@ -198,7 +197,7 @@ export async function POST(req: Request) {
           }),
         ],
       },
-      onFinish: async () => {
+      onEnd: async () => {
         await mcpClient?.close()
       },
     })
