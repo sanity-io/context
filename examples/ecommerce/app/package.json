@@ -13,7 +13,7 @@
   },
   "prettier": "@sanity/prettier-config",
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.119",
+    "@ai-sdk/anthropic": "^3.0.121",
     "@ai-sdk/mcp": "^1.0.83",
     "@ai-sdk/react": "^3.0.290",
     "@radix-ui/react-select": "^2.3.7",
