@@ -88,8 +88,8 @@ const client = createClient({
 const result = streamText({
   model: anthropic('claude-sonnet-4-5'),
   messages,
-  experimental_telemetry: {
-    isEnabled: true,
+  // On AI SDK v6, use `experimental_telemetry: {isEnabled: true, integrations: [...]}` instead
+  telemetry: {
     integrations: [
       sanityInsightsIntegration({
         client,
@@ -149,7 +149,7 @@ Each save is an idempotent upsert per thread: the messages replace the stored tr
 
 Ensure these packages are in the `package.json` next to `sanity.blueprint.ts`, merged into existing dependencies (do not overwrite the file):
 
-**dependencies**: `@ai-sdk/anthropic` (^3), `@sanity/client` (^8.4.0), `@sanity/context` (latest), `@sanity/functions` (^1), `ai` (^6.0.175 minimum, required for `experimental_telemetry.integrations`)
+**dependencies**: `@ai-sdk/anthropic` (^3), `@sanity/client` (^8.4.0), `@sanity/context` (latest), `@sanity/functions` (^1), `ai` (^6.0.175 or ^7; telemetry integrations go in `telemetry.integrations` on v7, `experimental_telemetry.integrations` on v6)
 
 **devDependencies**: `@sanity/blueprints` (latest), `dotenv` (^17)
 

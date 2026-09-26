@@ -1,5 +1,4 @@
 import type {Context, SanityClient} from '@sanity/client'
-import {bindTelemetryIntegration, type TelemetryIntegration} from 'ai'
 
 import type {ConversationSharing, Message} from '../../insights/types'
 
@@ -40,23 +39,57 @@ interface ModelMessage {
   content: unknown
 }
 
+interface TokenUsage {
+  inputTokens: number | undefined
+  outputTokens: number | undefined
+  totalTokens?: number
+}
+
 interface OnStartEvent {
+  /** Present on AI SDK v7 events, absent on v6. */
+  callId?: string
   messages?: ModelMessage[]
 }
 
 interface OnFinishEvent {
-  response: {
+  /** Present on AI SDK v7 events, absent on v6. */
+  callId?: string
+  /** AI SDK v7: response messages from all steps. */
+  responseMessages?: ModelMessage[]
+  /** AI SDK v6: response messages. In v7 this is final-step-only — prefer `responseMessages`. */
+  response?: {
     messages?: ModelMessage[]
   }
-  model: {
+  model?: {
     provider: string
     modelId: string
   }
-  totalUsage: {
-    inputTokens: number | undefined
-    outputTokens: number | undefined
-    totalTokens?: number
-  }
+  /** Aggregated usage across all steps (v6 and v7; deprecated alias of `usage` in v7). */
+  totalUsage?: TokenUsage
+  /** AI SDK v7: aggregated usage across all steps. In v6 this is final-step-only — prefer `totalUsage`. */
+  usage?: TokenUsage
+}
+
+/**
+ * An AI SDK v7 telemetry event for an operation that carries no conversation
+ * transcript (object generation, embedding, reranking). Accepted so the
+ * integration satisfies v7's `Telemetry` interface, which routes all
+ * operation kinds through the same hooks; such events produce no save.
+ */
+interface OtherOperationEvent {
+  callId?: string
+}
+
+/**
+ * The telemetry integration returned by {@link sanityInsightsIntegration}.
+ * Structurally compatible with AI SDK v6's `TelemetryIntegration` (which
+ * invokes `onFinish`) and v7's `Telemetry` (which invokes `onEnd`).
+ * @public
+ */
+export interface SanityInsightsIntegration {
+  onStart(event: OnStartEvent | OtherOperationEvent): void
+  onFinish(event: OnFinishEvent | OtherOperationEvent): Promise<void>
+  onEnd(event: OnFinishEvent | OtherOperationEvent): Promise<void>
 }
 
 const VALID_ROLES: Record<string, Message['role']> = {
@@ -154,63 +187,81 @@ function collectMessages(rawMessages: ModelMessage[]): Message[] {
   return messages
 }
 
-function createSanityInsightsIntegration(config: SanityInsightsConfig): TelemetryIntegration {
-  let inputMessages: ModelMessage[] | null = null
+function createSanityInsightsIntegration(config: SanityInsightsConfig): SanityInsightsIntegration {
+  // v7 events carry a callId, so concurrent calls sharing one instance are
+  // isolated. v6 events don't, so they all share the 'default' slot.
+  const inputMessagesByCall = new Map<string, ModelMessage[]>()
+
+  async function onGenerationEnd(rawEvent: OnFinishEvent | OtherOperationEvent): Promise<void> {
+    // Every OnFinishEvent field is optional, so the union narrows by plain
+    // assignment: non-text operation events simply have none of them set.
+    const event: OnFinishEvent = rawEvent
+    const callKey = event.callId ?? 'default'
+    const inputMessages = inputMessagesByCall.get(callKey)
+    inputMessagesByCall.delete(callKey)
+
+    const responseMessages = event.responseMessages ?? event.response?.messages
+    const allRaw = [...(inputMessages ?? []), ...(responseMessages ?? [])]
+
+    const messages = collectMessages(allRaw)
+    if (messages.length === 0) return
+
+    const threadId = typeof config.threadId === 'function' ? config.threadId() : config.threadId
+
+    const modelProvider = event.model?.provider
+    const modelId = event.model?.modelId
+    const usage = event.totalUsage ?? event.usage
+    const inputTokens = usage?.inputTokens
+    const outputTokens = usage?.outputTokens
+    const totalTokens =
+      usage?.totalTokens !== undefined
+        ? usage.totalTokens
+        : inputTokens !== undefined || outputTokens !== undefined
+          ? (inputTokens ?? 0) + (outputTokens ?? 0)
+          : undefined
+    const tokenUsage =
+      inputTokens !== undefined || outputTokens !== undefined
+        ? {inputTokens, outputTokens, totalTokens}
+        : undefined
+
+    try {
+      await config.client.context.conversations.save({
+        threadId,
+        messages,
+        ...(config.metadata !== undefined && {metadata: config.metadata}),
+        ...(config.sharing !== undefined && {sharing: config.sharing}),
+        ...(modelProvider !== undefined && {modelProvider}),
+        ...(modelId !== undefined && {modelId}),
+        ...(tokenUsage !== undefined && {tokenUsage}),
+      })
+    } catch (err) {
+      console.error('[sanity-insights] Failed to save conversation:', err)
+    }
+  }
 
   return {
-    onStart(event: OnStartEvent): void {
-      if (inputMessages !== null) {
+    onStart(rawEvent: OnStartEvent | OtherOperationEvent): void {
+      const event: OnStartEvent = rawEvent
+      const callKey = event.callId ?? 'default'
+      if (inputMessagesByCall.has(callKey)) {
         console.warn(
           '[sanity-insights] Integration instance reused before previous request completed. ' +
             'Create a new integration instance for each streamText/generateText call.',
         )
       }
-      inputMessages = event.messages ?? []
+      inputMessagesByCall.set(callKey, event.messages ?? [])
     },
 
-    async onFinish(event: OnFinishEvent): Promise<void> {
-      const allRaw = [...(inputMessages ?? []), ...(event.response.messages ?? [])]
-      inputMessages = null
-
-      const messages = collectMessages(allRaw)
-      if (messages.length === 0) return
-
-      const threadId = typeof config.threadId === 'function' ? config.threadId() : config.threadId
-
-      const modelProvider = event.model?.provider
-      const modelId = event.model?.modelId
-      const inputTokens = event.totalUsage?.inputTokens
-      const outputTokens = event.totalUsage?.outputTokens
-      const totalTokens =
-        event.totalUsage?.totalTokens !== undefined
-          ? event.totalUsage.totalTokens
-          : inputTokens !== undefined || outputTokens !== undefined
-            ? (inputTokens ?? 0) + (outputTokens ?? 0)
-            : undefined
-      const tokenUsage =
-        inputTokens !== undefined || outputTokens !== undefined
-          ? {inputTokens, outputTokens, totalTokens}
-          : undefined
-
-      try {
-        await config.client.context.conversations.save({
-          threadId,
-          messages,
-          ...(config.metadata !== undefined && {metadata: config.metadata}),
-          ...(config.sharing !== undefined && {sharing: config.sharing}),
-          ...(modelProvider !== undefined && {modelProvider}),
-          ...(modelId !== undefined && {modelId}),
-          ...(tokenUsage !== undefined && {tokenUsage}),
-        })
-      } catch (err) {
-        console.error('[sanity-insights] Failed to save conversation:', err)
-      }
-    },
+    // AI SDK v6 invokes onFinish; v7 invokes onEnd.
+    onFinish: onGenerationEnd,
+    onEnd: onGenerationEnd,
   }
 }
 
 /**
  * Creates a telemetry integration that saves conversations to Sanity Context.
+ *
+ * Compatible with AI SDK v6 (`experimental_telemetry`) and v7 (`telemetry`).
  *
  * @example
  * ```ts
@@ -227,8 +278,8 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): Telemetr
  * const result = await streamText({
  *   model: openai('gpt-4o'),
  *   messages,
- *   experimental_telemetry: {
- *     isEnabled: true,
+ *   // On AI SDK v6, use `experimental_telemetry: {isEnabled: true, integrations: [...]}`
+ *   telemetry: {
  *     integrations: [
  *       sanityInsightsIntegration({
  *         client,
@@ -241,6 +292,6 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): Telemetr
  * ```
  * @public
  */
-export function sanityInsightsIntegration(config: SanityInsightsConfig): TelemetryIntegration {
-  return bindTelemetryIntegration(createSanityInsightsIntegration(config))
+export function sanityInsightsIntegration(config: SanityInsightsConfig): SanityInsightsIntegration {
+  return createSanityInsightsIntegration(config)
 }

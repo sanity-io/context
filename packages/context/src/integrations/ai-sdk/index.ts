@@ -1,2 +1,2 @@
-export type {SanityInsightsConfig} from './telemetryIntegration'
+export type {SanityInsightsConfig, SanityInsightsIntegration} from './telemetryIntegration'
 export {sanityInsightsIntegration} from './telemetryIntegration'

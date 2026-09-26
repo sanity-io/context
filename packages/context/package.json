@@ -81,7 +81,7 @@
   "peerDependencies": {
     "@sanity/client": "^8.4.0",
     "@sanity/ui": "^3 || ^4",
-    "ai": "^6.0.175",
+    "ai": "^6.0.175 || ^7",
     "react": "^19",
     "react-dom": "^19",
     "sanity": "^6",

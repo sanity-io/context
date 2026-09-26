@@ -188,8 +188,8 @@ const client = createClient({
 const result = streamText({
   model: anthropic('claude-sonnet-4-5'),
   messages,
-  experimental_telemetry: {
-    isEnabled: true,
+  // On AI SDK v6, use `experimental_telemetry: {isEnabled: true, integrations: [...]}` instead
+  telemetry: {
     integrations: [
       sanityInsightsIntegration({
         client,

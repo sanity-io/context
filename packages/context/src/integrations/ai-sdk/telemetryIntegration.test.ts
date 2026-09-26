@@ -3,23 +3,18 @@ import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 import {makeClientStub} from '../../insights/clientStub'
 import {sanityInsightsIntegration} from './telemetryIntegration'
 
-/** Extract onStart/onFinish from the bound integration. */
 function makeIntegration(config?: {
   metadata?: {mcpEndpoints: string}
   sharing?: {metrics?: boolean; conversations?: boolean; contact?: string}
 }) {
   const {client, save} = makeClientStub()
   save.mockResolvedValue({threadId: 'thread-1'})
-  const integration = sanityInsightsIntegration({client, threadId: 'thread-1', ...config})
-  const handlers = integration as unknown as {
-    onStart: (event: {messages?: Array<{role: string; content: unknown}>}) => void
-    onFinish: (event: {
-      response: {messages?: Array<{role: string; content: unknown}>}
-      model?: {provider: string; modelId: string}
-      totalUsage?: {inputTokens?: number; outputTokens?: number; totalTokens?: number}
-    }) => Promise<void>
-  }
-  return {save, ...handlers}
+  const {onStart, onFinish, onEnd} = sanityInsightsIntegration({
+    client,
+    threadId: 'thread-1',
+    ...config,
+  })
+  return {save, onStart, onFinish, onEnd}
 }
 
 function savedMessages(save: ReturnType<typeof vi.fn>) {
@@ -174,8 +169,7 @@ describe('sanityInsightsIntegration', () => {
   it('resolves threadId functions at save time', async () => {
     const {client, save} = makeClientStub()
     save.mockResolvedValue({})
-    const integration = sanityInsightsIntegration({client, threadId: () => 'thread-fn'})
-    const {onStart, onFinish} = integration as unknown as ReturnType<typeof makeIntegration>
+    const {onStart, onFinish} = sanityInsightsIntegration({client, threadId: () => 'thread-fn'})
 
     onStart({messages: [{role: 'user', content: 'test'}]})
     await onFinish({response: {messages: []}})
@@ -203,6 +197,85 @@ describe('sanityInsightsIntegration', () => {
       '[sanity-insights] Failed to save conversation:',
       expect.any(Error),
     )
+  })
+
+  it('saves the transcript via the v7 onEnd hook with responseMessages and usage', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    onStart({callId: 'call-1', messages: [{role: 'user', content: 'Question'}]})
+    await onEnd({
+      callId: 'call-1',
+      responseMessages: [{role: 'assistant', content: 'Answer'}],
+      model: {provider: 'openai', modelId: 'gpt-4o'},
+      usage: {inputTokens: 100, outputTokens: 50},
+    })
+
+    expect(save).toHaveBeenCalledExactlyOnceWith({
+      threadId: 'thread-1',
+      messages: [
+        {role: 'user', content: 'Question'},
+        {role: 'assistant', content: 'Answer'},
+      ],
+      modelProvider: 'openai',
+      modelId: 'gpt-4o',
+      tokenUsage: {inputTokens: 100, outputTokens: 50, totalTokens: 150},
+    })
+  })
+
+  it('prefers all-step responseMessages over the final-step response.messages', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    onStart({messages: [{role: 'user', content: 'Q'}]})
+    await onEnd({
+      responseMessages: [
+        {role: 'assistant', content: 'step 1'},
+        {role: 'assistant', content: 'step 2'},
+      ],
+      response: {messages: [{role: 'assistant', content: 'step 2'}]},
+    })
+
+    expect(savedMessages(save)).toEqual([
+      {role: 'user', content: 'Q'},
+      {role: 'assistant', content: 'step 1'},
+      {role: 'assistant', content: 'step 2'},
+    ])
+  })
+
+  it('prefers all-step totalUsage over the final-step usage', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    onStart({messages: [{role: 'user', content: 'Q'}]})
+    await onEnd({
+      responseMessages: [],
+      totalUsage: {inputTokens: 300, outputTokens: 150},
+      usage: {inputTokens: 100, outputTokens: 50},
+    })
+
+    expect(save.mock.calls[0]![0].tokenUsage).toEqual({
+      inputTokens: 300,
+      outputTokens: 150,
+      totalTokens: 450,
+    })
+  })
+
+  it('isolates concurrent calls by callId without warning', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    onStart({callId: 'call-a', messages: [{role: 'user', content: 'first'}]})
+    onStart({callId: 'call-b', messages: [{role: 'user', content: 'second'}]})
+    await onEnd({callId: 'call-a', responseMessages: [{role: 'assistant', content: 'reply a'}]})
+    await onEnd({callId: 'call-b', responseMessages: [{role: 'assistant', content: 'reply b'}]})
+
+    expect(console.warn).not.toHaveBeenCalled()
+    expect(save).toHaveBeenCalledTimes(2)
+    expect(save.mock.calls[0]![0].messages).toEqual([
+      {role: 'user', content: 'first'},
+      {role: 'assistant', content: 'reply a'},
+    ])
+    expect(save.mock.calls[1]![0].messages).toEqual([
+      {role: 'user', content: 'second'},
+      {role: 'assistant', content: 'reply b'},
+    ])
   })
 
   it('warns on instance reuse and keeps the latest input messages', async () => {

@@ -110,7 +110,7 @@ Agents connect via HTTP transport with a Bearer token (Sanity API read token).
 
 Conversation tracking and classification system. Two parts:
 
-1. **Telemetry integration** (`@sanity/context/ai-sdk`) — saves conversations from chat routes via AI SDK's `experimental_telemetry`
+1. **Telemetry integration** (`@sanity/context/ai-sdk`) — saves conversations from chat routes via AI SDK telemetry integrations (`telemetry` on ai v7, `experimental_telemetry` on v6)
 2. **Insights primitives** (`@sanity/context/insights`) — classification primitives that run the customer's own AI SDK model and record verdicts through `client.context`; transcript saving itself is `client.context.conversations.save` from `@sanity/client`
 
 Key files:
