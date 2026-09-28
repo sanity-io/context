@@ -71,6 +71,7 @@
     "@types/react-dom": "catalog:",
     "@vitest/coverage-v8": "^4.1.11",
     "ai": "catalog:",
+    "ai-v7": "npm:ai@^7",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sanity": "catalog:",

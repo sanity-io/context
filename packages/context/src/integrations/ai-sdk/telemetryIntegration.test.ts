@@ -1,3 +1,5 @@
+import type {TelemetryIntegration} from 'ai'
+import type {Telemetry} from 'ai-v7'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {makeClientStub} from '../../insights/clientStub'
@@ -9,12 +11,12 @@ function makeIntegration(config?: {
 }) {
   const {client, save} = makeClientStub()
   save.mockResolvedValue({threadId: 'thread-1'})
-  const {onStart, onFinish, onEnd} = sanityInsightsIntegration({
+  const {onStart, onFinish, onEnd, onAbort, onError} = sanityInsightsIntegration({
     client,
     threadId: 'thread-1',
     ...config,
   })
-  return {save, onStart, onFinish, onEnd}
+  return {save, onStart, onFinish, onEnd, onAbort, onError}
 }
 
 function savedMessages(save: ReturnType<typeof vi.fn>) {
@@ -275,6 +277,79 @@ describe('sanityInsightsIntegration', () => {
     expect(save.mock.calls[1]![0].messages).toEqual([
       {role: 'user', content: 'second'},
       {role: 'assistant', content: 'reply b'},
+    ])
+  })
+
+  it('is assignable to AI SDK v6 TelemetryIntegration and v7 Telemetry (compile-time contract)', () => {
+    const {client} = makeClientStub()
+    const v6: TelemetryIntegration = sanityInsightsIntegration({client, threadId: 't'})
+    const v7: Telemetry = sanityInsightsIntegration({client, threadId: 't'})
+    expect(v6.onStart).toBeDefined()
+    expect(v7.onStart).toBeDefined()
+  })
+
+  it('clears the pending entry when a generation errors (v7 onError)', () => {
+    const {onStart, onError} = makeIntegration()
+
+    onStart({callId: 'call-err', messages: [{role: 'user', content: 'failing turn'}]})
+    onError({callId: 'call-err'})
+    onStart({callId: 'call-err', messages: [{role: 'user', content: 'retry'}]})
+
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it('skips the save for non-text operations that carry no response messages', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    // v7 generateObject with messages: onStart carries the prompt, but the
+    // end event has neither responseMessages nor response.messages
+    onStart({callId: 'obj-1', messages: [{role: 'user', content: 'Extract data'}]})
+    await onEnd({
+      callId: 'obj-1',
+      model: {provider: 'openai', modelId: 'gpt-4o'},
+      usage: {inputTokens: 50, outputTokens: 20},
+    })
+
+    expect(save).not.toHaveBeenCalled()
+
+    // and the pending entry was still cleaned up: reusing the callId doesn't warn
+    onStart({callId: 'obj-1', messages: [{role: 'user', content: 'again'}]})
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it('clears the pending entry on abort so the callId can be reused without warning', async () => {
+    const {save, onStart, onEnd, onAbort} = makeIntegration()
+
+    onStart({callId: 'call-a', messages: [{role: 'user', content: 'aborted turn'}]})
+    onAbort({callId: 'call-a'})
+    onStart({callId: 'call-a', messages: [{role: 'user', content: 'retry'}]})
+    await onEnd({callId: 'call-a', responseMessages: [{role: 'assistant', content: 'reply'}]})
+
+    expect(console.warn).not.toHaveBeenCalled()
+    expect(savedMessages(save)).toEqual([
+      {role: 'user', content: 'retry'},
+      {role: 'assistant', content: 'reply'},
+    ])
+  })
+
+  it('evicts the oldest pending entry with a warning once the cap is reached', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    for (let i = 0; i < 1001; i++) {
+      onStart({callId: `call-${i}`, messages: [{role: 'user', content: `turn ${i}`}]})
+    }
+
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('evicting the oldest'))
+
+    // call-0 was evicted: its input messages are gone, only the response saves
+    await onEnd({callId: 'call-0', responseMessages: [{role: 'assistant', content: 'late reply'}]})
+    expect(savedMessages(save)).toEqual([{role: 'assistant', content: 'late reply'}])
+
+    // call-1 survived the eviction
+    await onEnd({callId: 'call-1', responseMessages: [{role: 'assistant', content: 'reply 1'}]})
+    expect(save.mock.calls[1]![0].messages).toEqual([
+      {role: 'user', content: 'turn 1'},
+      {role: 'assistant', content: 'reply 1'},
     ])
   })
 

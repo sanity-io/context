@@ -90,6 +90,8 @@ export interface SanityInsightsIntegration {
   onStart(event: OnStartEvent | OtherOperationEvent): void
   onFinish(event: OnFinishEvent | OtherOperationEvent): Promise<void>
   onEnd(event: OnFinishEvent | OtherOperationEvent): Promise<void>
+  onAbort(event: OtherOperationEvent): void
+  onError(event: unknown): void
 }
 
 const VALID_ROLES: Record<string, Message['role']> = {
@@ -187,21 +189,34 @@ function collectMessages(rawMessages: ModelMessage[]): Message[] {
   return messages
 }
 
+// Pending entries are removed by onEnd/onFinish, onAbort, and onError. The
+// cap is a backstop for paths with no hook (v7's onAbort/onError are
+// text-generation-only, so e.g. an aborted streamObject leaves its entry
+// behind) and for future SDK gaps. It is sized far above any plausible number
+// of concurrent generations in one process so eviction only ever hits leaked
+// entries, and eviction warns because it costs a live call its input
+// messages if it does hit one.
+const MAX_PENDING_CALLS = 1000
+
 function createSanityInsightsIntegration(config: SanityInsightsConfig): SanityInsightsIntegration {
   // v7 events carry a callId, so concurrent calls sharing one instance are
   // isolated. v6 events don't, so they all share the 'default' slot.
   const inputMessagesByCall = new Map<string, ModelMessage[]>()
 
   async function onGenerationEnd(rawEvent: OnFinishEvent | OtherOperationEvent): Promise<void> {
-    // Every OnFinishEvent field is optional, so the union narrows by plain
-    // assignment: non-text operation events simply have none of them set.
     const event: OnFinishEvent = rawEvent
     const callKey = event.callId ?? 'default'
     const inputMessages = inputMessagesByCall.get(callKey)
     inputMessagesByCall.delete(callKey)
 
     const responseMessages = event.responseMessages ?? event.response?.messages
-    const allRaw = [...(inputMessages ?? []), ...(responseMessages ?? [])]
+    // Non-text operations (object/embed/rerank, routed through the same v7
+    // hooks) have no response-messages field at all — they are not
+    // conversations, so nothing is saved. An empty array is a real (text)
+    // response and still saves.
+    if (responseMessages === undefined) return
+
+    const allRaw = [...(inputMessages ?? []), ...responseMessages]
 
     const messages = collectMessages(allRaw)
     if (messages.length === 0) return
@@ -243,11 +258,22 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): SanityIn
     onStart(rawEvent: OnStartEvent | OtherOperationEvent): void {
       const event: OnStartEvent = rawEvent
       const callKey = event.callId ?? 'default'
-      if (inputMessagesByCall.has(callKey)) {
+      const isReusedKey = inputMessagesByCall.has(callKey)
+      if (isReusedKey) {
         console.warn(
           '[sanity-insights] Integration instance reused before previous request completed. ' +
             'Create a new integration instance for each streamText/generateText call.',
         )
+      }
+      if (!isReusedKey && inputMessagesByCall.size >= MAX_PENDING_CALLS) {
+        const oldestKey = inputMessagesByCall.keys().next().value
+        if (oldestKey !== undefined) {
+          inputMessagesByCall.delete(oldestKey)
+          console.warn(
+            `[sanity-insights] More than ${MAX_PENDING_CALLS} pending calls; evicting the oldest. ` +
+              'This usually means generations are erroring without completing.',
+          )
+        }
       }
       inputMessagesByCall.set(callKey, event.messages ?? [])
     },
@@ -255,6 +281,17 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): SanityIn
     // AI SDK v6 invokes onFinish; v7 invokes onEnd.
     onFinish: onGenerationEnd,
     onEnd: onGenerationEnd,
+
+    // AI SDK v7 fires onAbort / onError instead of onEnd for aborted or
+    // failed generations.
+    onAbort(event: OtherOperationEvent): void {
+      inputMessagesByCall.delete(event.callId ?? 'default')
+    },
+    onError(event: unknown): void {
+      const callId =
+        isObject(event) && typeof event['callId'] === 'string' ? event['callId'] : undefined
+      inputMessagesByCall.delete(callId ?? 'default')
+    },
   }
 }
 
