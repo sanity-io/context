@@ -71,6 +71,7 @@
     "@types/react-dom": "catalog:",
     "@vitest/coverage-v8": "^4.1.11",
     "ai": "catalog:",
+    "ai-v7": "npm:ai@^7",
     "react": "catalog:",
     "react-dom": "catalog:",
     "sanity": "catalog:",
@@ -81,7 +82,7 @@
   "peerDependencies": {
     "@sanity/client": "^8.4.0",
     "@sanity/ui": "^3 || ^4",
-    "ai": "^6.0.175",
+    "ai": "^6.0.175 || ^7",
     "react": "^19",
     "react-dom": "^19",
     "sanity": "^6",

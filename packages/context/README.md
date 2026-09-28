@@ -95,8 +95,8 @@ const result = await streamText({
   model: openai('gpt-4o'),
   // If using useChat, convert UIMessage[] to ModelMessage[] for streamText
   messages: await convertToModelMessages(messages),
-  experimental_telemetry: {
-    isEnabled: true,
+  // On AI SDK v6, use `experimental_telemetry: {isEnabled: true, integrations: [...]}` instead
+  telemetry: {
     integrations: [
       sanityInsightsIntegration({
         client,

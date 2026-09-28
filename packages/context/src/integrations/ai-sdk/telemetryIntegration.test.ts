@@ -1,25 +1,22 @@
+import type {TelemetryIntegration} from 'ai'
+import type {Telemetry} from 'ai-v7'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 import {makeClientStub} from '../../insights/clientStub'
 import {sanityInsightsIntegration} from './telemetryIntegration'
 
-/** Extract onStart/onFinish from the bound integration. */
 function makeIntegration(config?: {
   metadata?: {mcpEndpoints: string}
   sharing?: {metrics?: boolean; conversations?: boolean; contact?: string}
 }) {
   const {client, save} = makeClientStub()
   save.mockResolvedValue({threadId: 'thread-1'})
-  const integration = sanityInsightsIntegration({client, threadId: 'thread-1', ...config})
-  const handlers = integration as unknown as {
-    onStart: (event: {messages?: Array<{role: string; content: unknown}>}) => void
-    onFinish: (event: {
-      response: {messages?: Array<{role: string; content: unknown}>}
-      model?: {provider: string; modelId: string}
-      totalUsage?: {inputTokens?: number; outputTokens?: number; totalTokens?: number}
-    }) => Promise<void>
-  }
-  return {save, ...handlers}
+  const {onStart, onFinish, onEnd, onAbort, onError} = sanityInsightsIntegration({
+    client,
+    threadId: 'thread-1',
+    ...config,
+  })
+  return {save, onStart, onFinish, onEnd, onAbort, onError}
 }
 
 function savedMessages(save: ReturnType<typeof vi.fn>) {
@@ -174,8 +171,7 @@ describe('sanityInsightsIntegration', () => {
   it('resolves threadId functions at save time', async () => {
     const {client, save} = makeClientStub()
     save.mockResolvedValue({})
-    const integration = sanityInsightsIntegration({client, threadId: () => 'thread-fn'})
-    const {onStart, onFinish} = integration as unknown as ReturnType<typeof makeIntegration>
+    const {onStart, onFinish} = sanityInsightsIntegration({client, threadId: () => 'thread-fn'})
 
     onStart({messages: [{role: 'user', content: 'test'}]})
     await onFinish({response: {messages: []}})
@@ -203,6 +199,158 @@ describe('sanityInsightsIntegration', () => {
       '[sanity-insights] Failed to save conversation:',
       expect.any(Error),
     )
+  })
+
+  it('saves the transcript via the v7 onEnd hook with responseMessages and usage', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    onStart({callId: 'call-1', messages: [{role: 'user', content: 'Question'}]})
+    await onEnd({
+      callId: 'call-1',
+      responseMessages: [{role: 'assistant', content: 'Answer'}],
+      model: {provider: 'openai', modelId: 'gpt-4o'},
+      usage: {inputTokens: 100, outputTokens: 50},
+    })
+
+    expect(save).toHaveBeenCalledExactlyOnceWith({
+      threadId: 'thread-1',
+      messages: [
+        {role: 'user', content: 'Question'},
+        {role: 'assistant', content: 'Answer'},
+      ],
+      modelProvider: 'openai',
+      modelId: 'gpt-4o',
+      tokenUsage: {inputTokens: 100, outputTokens: 50, totalTokens: 150},
+    })
+  })
+
+  it('prefers all-step responseMessages over the final-step response.messages', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    onStart({messages: [{role: 'user', content: 'Q'}]})
+    await onEnd({
+      responseMessages: [
+        {role: 'assistant', content: 'step 1'},
+        {role: 'assistant', content: 'step 2'},
+      ],
+      response: {messages: [{role: 'assistant', content: 'step 2'}]},
+    })
+
+    expect(savedMessages(save)).toEqual([
+      {role: 'user', content: 'Q'},
+      {role: 'assistant', content: 'step 1'},
+      {role: 'assistant', content: 'step 2'},
+    ])
+  })
+
+  it('prefers all-step totalUsage over the final-step usage', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    onStart({messages: [{role: 'user', content: 'Q'}]})
+    await onEnd({
+      responseMessages: [],
+      totalUsage: {inputTokens: 300, outputTokens: 150},
+      usage: {inputTokens: 100, outputTokens: 50},
+    })
+
+    expect(save.mock.calls[0]![0].tokenUsage).toEqual({
+      inputTokens: 300,
+      outputTokens: 150,
+      totalTokens: 450,
+    })
+  })
+
+  it('isolates concurrent calls by callId without warning', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    onStart({callId: 'call-a', messages: [{role: 'user', content: 'first'}]})
+    onStart({callId: 'call-b', messages: [{role: 'user', content: 'second'}]})
+    await onEnd({callId: 'call-a', responseMessages: [{role: 'assistant', content: 'reply a'}]})
+    await onEnd({callId: 'call-b', responseMessages: [{role: 'assistant', content: 'reply b'}]})
+
+    expect(console.warn).not.toHaveBeenCalled()
+    expect(save).toHaveBeenCalledTimes(2)
+    expect(save.mock.calls[0]![0].messages).toEqual([
+      {role: 'user', content: 'first'},
+      {role: 'assistant', content: 'reply a'},
+    ])
+    expect(save.mock.calls[1]![0].messages).toEqual([
+      {role: 'user', content: 'second'},
+      {role: 'assistant', content: 'reply b'},
+    ])
+  })
+
+  it('is assignable to AI SDK v6 TelemetryIntegration and v7 Telemetry (compile-time contract)', () => {
+    const {client} = makeClientStub()
+    const v6: TelemetryIntegration = sanityInsightsIntegration({client, threadId: 't'})
+    const v7: Telemetry = sanityInsightsIntegration({client, threadId: 't'})
+    expect(v6.onStart).toBeDefined()
+    expect(v7.onStart).toBeDefined()
+  })
+
+  it('clears the pending entry when a generation errors (v7 onError)', () => {
+    const {onStart, onError} = makeIntegration()
+
+    onStart({callId: 'call-err', messages: [{role: 'user', content: 'failing turn'}]})
+    onError({callId: 'call-err'})
+    onStart({callId: 'call-err', messages: [{role: 'user', content: 'retry'}]})
+
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it('skips the save for non-text operations that carry no response messages', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    // v7 generateObject with messages: onStart carries the prompt, but the
+    // end event has neither responseMessages nor response.messages
+    onStart({callId: 'obj-1', messages: [{role: 'user', content: 'Extract data'}]})
+    await onEnd({
+      callId: 'obj-1',
+      model: {provider: 'openai', modelId: 'gpt-4o'},
+      usage: {inputTokens: 50, outputTokens: 20},
+    })
+
+    expect(save).not.toHaveBeenCalled()
+
+    // and the pending entry was still cleaned up: reusing the callId doesn't warn
+    onStart({callId: 'obj-1', messages: [{role: 'user', content: 'again'}]})
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
+  it('clears the pending entry on abort so the callId can be reused without warning', async () => {
+    const {save, onStart, onEnd, onAbort} = makeIntegration()
+
+    onStart({callId: 'call-a', messages: [{role: 'user', content: 'aborted turn'}]})
+    onAbort({callId: 'call-a'})
+    onStart({callId: 'call-a', messages: [{role: 'user', content: 'retry'}]})
+    await onEnd({callId: 'call-a', responseMessages: [{role: 'assistant', content: 'reply'}]})
+
+    expect(console.warn).not.toHaveBeenCalled()
+    expect(savedMessages(save)).toEqual([
+      {role: 'user', content: 'retry'},
+      {role: 'assistant', content: 'reply'},
+    ])
+  })
+
+  it('evicts the oldest pending entry with a warning once the cap is reached', async () => {
+    const {save, onStart, onEnd} = makeIntegration()
+
+    for (let i = 0; i < 1001; i++) {
+      onStart({callId: `call-${i}`, messages: [{role: 'user', content: `turn ${i}`}]})
+    }
+
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('evicting the oldest'))
+
+    // call-0 was evicted: its input messages are gone, only the response saves
+    await onEnd({callId: 'call-0', responseMessages: [{role: 'assistant', content: 'late reply'}]})
+    expect(savedMessages(save)).toEqual([{role: 'assistant', content: 'late reply'}])
+
+    // call-1 survived the eviction
+    await onEnd({callId: 'call-1', responseMessages: [{role: 'assistant', content: 'reply 1'}]})
+    expect(save.mock.calls[1]![0].messages).toEqual([
+      {role: 'user', content: 'turn 1'},
+      {role: 'assistant', content: 'reply 1'},
+    ])
   })
 
   it('warns on instance reuse and keeps the latest input messages', async () => {
