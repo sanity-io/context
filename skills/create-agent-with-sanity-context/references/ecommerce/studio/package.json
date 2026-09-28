@@ -17,26 +17,26 @@
   },
   "prettier": "@sanity/prettier-config",
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.74",
-    "@sanity/client": "^7.26.1",
+    "@ai-sdk/anthropic": "^3.0.119",
+    "@sanity/client": "^7.27.0",
     "@sanity/context": "workspace:*",
     "@sanity/icons": "^5",
     "@sanity/ui": "^3",
     "@sanity/vision": "^6",
-    "ai": "^6.0.137",
-    "easymde": "^2.20.0",
+    "ai": "^6.0.287",
+    "easymde": "^2.21.0",
     "react": "^19",
     "react-dom": "^19",
     "react-markdown": "^10.1.0",
     "sanity": "^6",
-    "sanity-plugin-markdown": "^9",
-    "styled-components": "^6.3.8",
-    "zod": "^4.3.6"
+    "sanity-plugin-markdown": "^9.0.13",
+    "styled-components": "^6.5.3",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@types/react": "^19",
     "dotenv-cli": "^11.0.0",
     "typescript": "^5",
-    "typescript-eslint": "^8.32.1"
+    "typescript-eslint": "^8.70.1"
   }
 }
