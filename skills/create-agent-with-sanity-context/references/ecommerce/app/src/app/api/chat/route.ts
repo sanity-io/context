@@ -131,10 +131,6 @@ export async function POST(req: Request) {
     throw new Error('SANITY_ORGANIZATION_ID is not set')
   }
 
-  if (!process.env.SANITY_CONTEXT_ENDPOINT_NAME) {
-    throw new Error('SANITY_CONTEXT_ENDPOINT_NAME is not set')
-  }
-
   let mcpClient: MCPClient | null = null
 
   try {
@@ -178,9 +174,15 @@ export async function POST(req: Request) {
 
     const modelId = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL
 
+    // The MCP endpoint name groups conversations in the Context dashboard.
+    // Falls back to the endpoint segment of the MCP URL (.../{project}/{dataset}/{endpoint}).
+    const mcpEndpointName =
+      process.env.SANITY_CONTEXT_ENDPOINT_NAME ??
+      new URL(process.env.SANITY_CONTEXT_MCP_URL).pathname.split('/').filter(Boolean).pop()
+
     const result = streamText({
       model: anthropic(modelId),
-      system: systemPrompt,
+      instructions: systemPrompt,
       messages: await convertToModelMessages(messages),
       experimental_download: downloadDataUrls,
       tools: {
@@ -188,17 +190,21 @@ export async function POST(req: Request) {
         ...clientTools,
       },
       stopWhen: stepCountIs(MAX_STEPS),
-      experimental_telemetry: {
-        isEnabled: true,
+      telemetry: {
         integrations: [
           sanityInsightsIntegration({
             client: insightsClient,
             threadId: chatId,
-            metadata: {mcpEndpoints: process.env.SANITY_CONTEXT_ENDPOINT_NAME ?? []},
+            metadata: {
+              // Well-known key: groups conversations by MCP endpoint in the dashboard
+              mcpEndpoints: mcpEndpointName ?? [],
+              // Custom keys ride along as queryable dimensions
+              page: documentContext.pathname,
+            },
           }),
         ],
       },
-      onFinish: async () => {
+      onEnd: async () => {
         await mcpClient?.close()
       },
     })

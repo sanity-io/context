@@ -9,14 +9,14 @@
     "test:functions": "sanity functions test classify-conversations --with-user-token"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.58",
-    "@sanity/client": "^8.4.0",
+    "@ai-sdk/anthropic": "^3.0.119",
+    "@sanity/client": "^8.6.2",
     "@sanity/context": "workspace:*",
-    "@sanity/functions": "^1.2.1",
-    "ai": "^6.0.175"
+    "@sanity/functions": "^1.8.0",
+    "ai": "^6.0.287"
   },
   "devDependencies": {
     "@sanity/blueprints": "^0.15.0",
-    "dotenv": "^17.4.1"
+    "dotenv": "^17.4.2"
   }
 }
