@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0](https://github.com/sanity-io/context/compare/context-v2.0.0...context-v2.1.0) (2026-09-28)
+
+
+### Features
+
+* **context:** support AI SDK v7 telemetry integrations ([#261](https://github.com/sanity-io/context/issues/261)) ([64906f9](https://github.com/sanity-io/context/commit/64906f944327d0a83ef1c543972e9182f5596183))
+
 ## [2.0.0](https://github.com/sanity-io/context/compare/context-v1.0.0...context-v2.0.0) (2026-09-03)
 
 ### ⚠ BREAKING CHANGES
