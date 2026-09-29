@@ -123,7 +123,7 @@ describe('sanityInsightsIntegration', () => {
     ])
   })
 
-  it('skips tool result messages', async () => {
+  it('skips successful tool results and keeps failed ones with their error', async () => {
     const {save, onStart, onFinish} = makeIntegration()
 
     onStart({messages: [{role: 'user', content: 'Hi'}]})
@@ -131,6 +131,13 @@ describe('sanityInsightsIntegration', () => {
       response: {
         messages: [
           {role: 'tool', content: [{result: 'some result'}]},
+          {
+            role: 'tool',
+            content: [
+              {toolName: 'search', output: {type: 'error-text', value: 'timeout'}},
+              {toolName: 'fetch', output: {type: 'error-json', value: {code: 503}}},
+            ],
+          },
           {role: 'assistant', content: 'Done'},
         ],
       },
@@ -138,6 +145,8 @@ describe('sanityInsightsIntegration', () => {
 
     expect(savedMessages(save)).toEqual([
       {role: 'user', content: 'Hi'},
+      {role: 'tool', toolName: 'search', toolType: 'result', content: null, error: 'timeout'},
+      {role: 'tool', toolName: 'fetch', toolType: 'result', content: null, error: '{"code":503}'},
       {role: 'assistant', content: 'Done'},
     ])
   })
@@ -288,13 +297,29 @@ describe('sanityInsightsIntegration', () => {
     expect(v7.onStart).toBeDefined()
   })
 
-  it('clears the pending entry when a generation errors (v7 onError)', () => {
-    const {onStart, onError} = makeIntegration()
+  it('saves a failed text generation as a failed turn, and nothing for other operations', async () => {
+    const {save, onStart, onError} = makeIntegration()
 
-    onStart({callId: 'call-err', messages: [{role: 'user', content: 'failing turn'}]})
-    onError({callId: 'call-err'})
+    onStart({
+      callId: 'obj',
+      operationId: 'ai.generateObject',
+      messages: [{role: 'user', content: 'x'}],
+    })
+    await onError({callId: 'obj', error: new Error('bad json')})
+    expect(save).not.toHaveBeenCalled()
+
+    onStart({
+      callId: 'call-err',
+      operationId: 'ai.streamText',
+      messages: [{role: 'user', content: 'Hi'}],
+    })
+    await onError({callId: 'call-err', error: 'x'.repeat(30_000)})
+    expect(savedMessages(save)).toEqual([
+      {role: 'user', content: 'Hi'},
+      {role: 'assistant', content: null, error: 'x'.repeat(20_000)},
+    ])
+
     onStart({callId: 'call-err', messages: [{role: 'user', content: 'retry'}]})
-
     expect(console.warn).not.toHaveBeenCalled()
   })
 
@@ -342,7 +367,10 @@ describe('sanityInsightsIntegration', () => {
     expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('evicting the oldest'))
 
     // call-0 was evicted: its input messages are gone, only the response saves
-    await onEnd({callId: 'call-0', responseMessages: [{role: 'assistant', content: 'late reply'}]})
+    await onEnd({
+      callId: 'call-0',
+      responseMessages: [{role: 'assistant', content: 'late reply'}],
+    })
     expect(savedMessages(save)).toEqual([{role: 'assistant', content: 'late reply'}])
 
     // call-1 survived the eviction
