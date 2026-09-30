@@ -116,6 +116,8 @@ const result = await streamText({
 
 Each save is an idempotent upsert per thread: the messages replace the stored transcript wholesale, so repeated saves with the same `threadId` keep the transcript current.
 
+Failures are saved too, so the Context dashboard can show them: a tool call that throws is saved with its error, and on AI SDK v7 a generation that fails is saved with the transcript so far and the error. AI SDK v6 has no hook for failed generations, so those are not saved.
+
 ### Set Up Classification
 
 Classification runs on your side, with your model and your LLM API key. The pending queue is a query over your org's Context document store: conversations with messages, no verdict, no recorded failure, and idle long enough to be considered settled. Run `classifyConversations` on a schedule, for example as a scheduled Sanity Function:

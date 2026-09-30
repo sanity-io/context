@@ -3,6 +3,8 @@ import {z} from 'zod'
 
 import {type ContextInsightsOptions, requireClient} from './types'
 
+type TranscriptMessage = {role: string; content?: string | null; error?: string | null}
+
 /** @public */
 export type Sentiment = 'positive' | 'neutral' | 'negative'
 
@@ -34,7 +36,7 @@ export interface ClassifyConversationOptions extends ContextInsightsOptions {
    * Messages to classify. When omitted, the full transcript is fetched
    * from the Context document store before classification.
    */
-  messages?: {role: string; content?: string | null}[]
+  messages?: TranscriptMessage[]
 }
 
 const MAX_ERROR_LENGTH = 500
@@ -55,11 +57,12 @@ const coreMetricsSchema = z.object({
     ),
 })
 
-function formatMessagesForPrompt(messages: {role: string; content?: string | null}[]): string {
+function formatMessagesForPrompt(messages: TranscriptMessage[]): string {
   return messages
     .map((m) => {
       const role = m.role.charAt(0).toUpperCase() + m.role.slice(1)
-      return `[${role}]: ${m.content || '(no content)'}`
+      const failure = m.error ? `(failed: ${m.error.split('\n', 1)[0]})` : undefined
+      return `[${role}]: ${[m.content, failure].filter(Boolean).join('\n') || '(no content)'}`
     })
     .join('\n\n')
 }

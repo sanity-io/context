@@ -78,6 +78,24 @@ describe('classifyConversation', () => {
     expect(args.system).toContain('- billing')
   })
 
+  it('prompts with the first line of a failed turn instead of (no content)', async () => {
+    const {client, classify} = makeClientStub()
+    classify.mockResolvedValue({classifiedAt: '2026-08-24T10:00:00Z'})
+
+    await classifyConversation({
+      client,
+      threadId: 't1',
+      model,
+      messages: [
+        {role: 'user', content: 'Hello'},
+        {role: 'assistant', content: null, error: 'AI_APICallError: Overloaded\n    at postToApi'},
+      ],
+    })
+
+    const args = mockGenerateText.mock.calls[0]![0] as {prompt: string}
+    expect(args.prompt).toContain('[Assistant]: (failed: AI_APICallError: Overloaded)')
+  })
+
   it('throws without classifying when the transcript is missing or empty', async () => {
     const {client, classify, get} = makeClientStub()
     get.mockResolvedValue(null)

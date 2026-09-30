@@ -311,6 +311,7 @@ The `sanityInsightsIntegration` hooks into AI SDK's telemetry system:
 
 - **On request start**: Captures input messages
 - **On request finish**: Combines with response messages and saves the transcript via `client.context.conversations.save`
+- **On failure**: A tool call that throws is saved with its error. On AI SDK v7, a failed generation saves the transcript so far plus the error
 
 Each save is an idempotent upsert per thread, scoped to the client's organization.
 
