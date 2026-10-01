@@ -10,7 +10,7 @@ catalogs:
       specifier: ^8.9.0
       version: 8.9.0
     '@sanity/ui':
-      specifier: ^3
+      specifier: ^3.5.5
       version: 3.5.5
     '@sanity/vision':
       specifier: ^6
@@ -248,7 +248,7 @@ importers:
         specifier: ^5
         version: 5.2.2(react@19.3.0)
       '@sanity/ui':
-        specifier: ^3
+        specifier: ^3.5.5
         version: 3.5.5(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
       '@sanity/vision':
         specifier: ^6
