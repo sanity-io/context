@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/sanity-io/context/compare/context-v2.1.0...context-v2.2.0) (2026-10-01)
+
+
+### Features
+
+* **context:** report failed tool calls and failed turns to Insights ([#269](https://github.com/sanity-io/context/issues/269)) ([22b25b6](https://github.com/sanity-io/context/commit/22b25b67b6234d7f4115bd6bed1ef399ff6fffb2))
+
 ## [2.1.0](https://github.com/sanity-io/context/compare/context-v2.0.0...context-v2.1.0) (2026-09-28)
 
 ### Features
