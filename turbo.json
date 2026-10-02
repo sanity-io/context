@@ -15,7 +15,7 @@
       "env": [
         "NEXT_PUBLIC_SANITY_PROJECT_ID",
         "NEXT_PUBLIC_SANITY_DATASET",
-        "SANITY_API_READ_TOKEN",
+        "SANITY_ORGANIZATION_TOKEN",
         "SANITY_CONTEXT_MCP_URL",
         "ANTHROPIC_API_KEY"
       ]

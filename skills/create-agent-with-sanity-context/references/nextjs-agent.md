@@ -40,12 +40,17 @@ Required variables:
 NEXT_PUBLIC_SANITY_PROJECT_ID=your-project-id
 NEXT_PUBLIC_SANITY_DATASET=production
 
-# Sanity API token: read access covers the MCP queries; adding conversation
-# insights also writes transcripts with it
-SANITY_API_TOKEN=your-token
+# Organization API token with Context access (Viewer reads the MCP; Editor
+# also records conversation insights). Server-side only
+SANITY_ORGANIZATION_TOKEN=your-token
 
-# Sanity Context MCP URL
-SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset/:slug
+# MCP endpoint URL, from the endpoint in the Context app
+SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+
+# Conversation insights: organization ID, and the endpoint's name (the last
+# path segment of SANITY_CONTEXT_MCP_URL) for grouping and classification
+SANITY_ORGANIZATION_ID=your-org-id
+SANITY_CONTEXT_ENDPOINT_NAME=your-endpoint-name
 
 # Anthropic API key
 ANTHROPIC_API_KEY=your-anthropic-key
@@ -73,7 +78,7 @@ const mcpClient = await createMCPClient({
     type: 'http',
     url: process.env.SANITY_CONTEXT_MCP_URL,
     headers: {
-      Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`,
+      Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`,
     },
   },
 })
@@ -81,7 +86,7 @@ const mcpClient = await createMCPClient({
 
 **Initial Context via HTTP:**
 
-Always fetch the schema context at startup and inject it into the system prompt. This gives a significant latency improvement (the agent already knows the schema without a tool call on the first message) and enables better prompt caching.
+Always fetch the initial context, cache it with a short TTL (the reference uses 5 minutes), and inject it into the system prompt. This gives a significant latency improvement (the agent already knows the schema without a tool call on the first message) and enables better prompt caching.
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for the full implementation, including caching and URL construction that handles query params correctly.
 
@@ -121,6 +126,8 @@ const result = streamText({
 The system prompt shapes how your agent behaves. You can define prompts entirely inline, or store the base prompt in Sanity and combine with implementation-specific parts in code. The reference implementation uses the hybrid approach.
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) (`buildSystemPrompt` function).
+
+The reference reads the base prompt from an `agent.config` document (selected by `AGENT_CONFIG_SLUG`) and returns a 500 if it's missing. To use that pattern, add the schema from [ecommerce/studio/schemaTypes/documents/agentConfig.ts](ecommerce/studio/schemaTypes/documents/agentConfig.ts) to the Studio and create one document. Otherwise, define the prompt inline.
 
 **For more examples**, see [system-prompts.md](system-prompts.md).
 
@@ -179,7 +186,7 @@ import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 // Server-side only: the token must never reach the browser
 const client = createClient({
   apiVersion: 'v2025-11-27',
-  token: process.env.SANITY_API_TOKEN,
+  token: process.env.SANITY_ORGANIZATION_TOKEN, // Context Editor: writes conversations
   context: {organizationId: process.env.SANITY_ORGANIZATION_ID},
   useCdn: false,
   useProjectHostname: false,
@@ -283,33 +290,12 @@ For e-commerce or content-heavy apps, define custom markdown directives to rende
 
 ## Troubleshooting
 
-### MCP endpoint returns 500 or schema errors
-
-Sanity Context requires a deployed Studio. See [Deploy Your Studio](studio-setup.md#deploy-your-studio) for instructions.
+See the [Troubleshooting section in SKILL.md](../SKILL.md#troubleshooting) for MCP connection errors (401, 403 / `-32007` `contextGrantRequired`, `-32004` schema not deployed, empty results, missing tools).
 
 ### "SANITY_CONTEXT_MCP_URL is not set"
 
-Ensure you've:
+Create the MCP endpoint in the Context app (see [Step 1 in SKILL.md](../SKILL.md#step-1-create-the-mcp-endpoint)), copy its URL, and add it to the `.env`.
 
-1. Created a Sanity Context document in Studio (or use the base URL without a slug)
-2. Given it a slug
-3. Copied the MCP URL from the document
-4. Added it to your `.env.local`
+### Conversations don't appear in Insights
 
-### "401 Unauthorized" from MCP
-
-Your `SANITY_API_TOKEN` is missing or invalid. Generate a new token at [sanity.io/manage](https://sanity.io/manage). Viewer covers the MCP queries; conversation insights also needs write access.
-
-### "No documents found" / Empty results
-
-Check your Sanity Context document's content filter:
-
-- Is the GROQ filter correct?
-- Are the document types spelled correctly?
-- Are there published documents matching the filter?
-
-### Tools not appearing
-
-1. Check that `mcpClient.tools()` returns tools (log it)
-2. Ensure the MCP URL is correct (project ID, dataset, and optionally slug)
-3. If using a slug-based URL, verify the Sanity Context document is published
+Check the token first: a Context **Viewer** token reads the MCP but can't record conversations. Recording needs Context **Editor** permissions. Also check that `SANITY_ORGANIZATION_ID` is set. Save failures don't break the chat; look for `[sanity-insights] Failed to save conversation:` in the server logs. See [conversation-classification.md](conversation-classification.md#troubleshooting) for the rest.

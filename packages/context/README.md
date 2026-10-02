@@ -12,61 +12,19 @@ Requires `@sanity/client` ^8.4.0 as a peer dependency, which comes automatically
 
 ## Exports
 
-| Entry point                | Purpose                                   |
-| -------------------------- | ----------------------------------------- |
-| `@sanity/context/studio`   | Studio plugin and schema type constant    |
-| `@sanity/context/ai-sdk`   | AI SDK telemetry integration for Insights |
-| `@sanity/context/insights` | Lower-level APIs for custom workflows     |
+| Entry point                | Purpose                                     |
+| -------------------------- | ------------------------------------------- |
+| `@sanity/context/studio`   | Deprecated Studio plugin (legacy documents) |
+| `@sanity/context/ai-sdk`   | AI SDK telemetry integration for Insights   |
+| `@sanity/context/insights` | Lower-level APIs for custom workflows       |
 
-## Studio Plugin
+## Studio Plugin (deprecated)
 
-> **Deprecated:** Context configuration has moved to the Context app in the Sanity Dashboard. The plugin still registers the document type so existing MCP context documents can be edited, but new setups should use the Context app. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
-
-Registers a document type for configuring AI agent access to your Sanity content. Each document defines a content filter that scopes what an agent can query.
-
-```ts
-// sanity.config.ts
-import {defineConfig} from 'sanity'
-import {contextPlugin} from '@sanity/context/studio'
-
-export default defineConfig({
-  // ...
-  plugins: [contextPlugin()],
-})
-```
-
-The plugin also exports `CONTEXT_SCHEMA_TYPE_NAME` which can be used to configure where the document type appears in the Studio structure:
-
-```ts
-import {defineConfig} from 'sanity'
-import {structureTool} from 'sanity/structure'
-import {contextPlugin, CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/context/studio'
-
-export default defineConfig({
-  // ...
-  plugins: [
-    structureTool({
-      structure: (S) =>
-        S.list()
-          .title('Content')
-          .items([
-            // Filter out the Sanity Context document from the default list
-            ...S.documentTypeListItems().filter(
-              (item) => item.getId() !== CONTEXT_SCHEMA_TYPE_NAME,
-            ),
-            // Add it elsewhere, e.g. after a divider
-            S.divider(),
-            S.documentTypeListItem(CONTEXT_SCHEMA_TYPE_NAME),
-          ]),
-    }),
-    contextPlugin(),
-  ],
-})
-```
+Context configuration has moved to the Context app in the Sanity Dashboard. The plugin only keeps existing Sanity Context documents editable in Studio. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
 
 ## Agent Insights
 
-Track and classify your AI agent conversations automatically. Insights saves every conversation transcript to your organization's Context store, and a classification step you run with your own AI SDK model extracts success scores, sentiment, and content gaps. Results are surfaced in the Context dashboard.
+Track and classify your AI agent conversations automatically. Insights saves every conversation transcript to your organization's Context store, and a classification step you run with your own AI SDK model extracts success scores, sentiment, and content gaps. Results are surfaced in Insights in the Context app in the Sanity Dashboard.
 
 Everything rides on `@sanity/client` (^8.4.0) and its `client.context` namespace. Create one org-scoped client and pass it to the telemetry integration and the insights functions:
 
@@ -75,7 +33,7 @@ import {createClient} from '@sanity/client'
 
 const client = createClient({
   apiVersion: 'v2025-11-27',
-  token: process.env.SANITY_API_TOKEN, // Keep server-side only
+  token: process.env.SANITY_ORGANIZATION_TOKEN, // Organization token with Context Editor permissions. Keep server-side only
   context: {organizationId: process.env.SANITY_ORGANIZATION_ID},
   useCdn: false,
   useProjectHostname: false,
@@ -116,7 +74,7 @@ const result = await streamText({
 
 Each save is an idempotent upsert per thread: the messages replace the stored transcript wholesale, so repeated saves with the same `threadId` keep the transcript current.
 
-Failures are saved too, so the Context dashboard can show them: a tool call that throws is saved with its error, and on AI SDK v7 a generation that fails is saved with the transcript so far and the error. AI SDK v6 has no hook for failed generations, so those are not saved.
+Failures are saved too, so Insights can show them: a tool call that throws is saved with its error, and on AI SDK v7 a generation that fails is saved with the transcript so far and the error. AI SDK v6 has no hook for failed generations, so those are not saved.
 
 ### Set Up Classification
 
@@ -128,7 +86,7 @@ Classification runs on your side, with your model and your LLM API key. The pend
 
    Requirements:
    - Install `@sanity/functions`, `@ai-sdk/anthropic`, `@sanity/blueprints`, and `dotenv` alongside `@sanity/client` and `@sanity/context`
-   - Create a `.env` next to the blueprint with `ANTHROPIC_API_KEY`, `SANITY_ORGANIZATION_ID`, `SANITY_CONTEXT_ENDPOINT_NAME`, and `SANITY_API_TOKEN`
+   - Create a `.env` next to the blueprint with `ANTHROPIC_API_KEY`, `SANITY_ORGANIZATION_ID`, `SANITY_CONTEXT_ENDPOINT_NAME`, and `SANITY_ORGANIZATION_TOKEN`
 
 3. Deploy:
 
