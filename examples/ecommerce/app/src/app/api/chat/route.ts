@@ -174,7 +174,7 @@ export async function POST(req: Request) {
 
     const modelId = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL
 
-    // The MCP endpoint name groups conversations in the Context dashboard.
+    // The MCP endpoint name groups conversations in Insights in the Context app.
     // Falls back to the last segment of the MCP URL (.../organizations/{org}/mcp/{endpoint}).
     const mcpEndpointName =
       process.env.SANITY_CONTEXT_ENDPOINT_NAME ??
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
             client: insightsClient,
             threadId: chatId,
             metadata: {
-              // Well-known key: groups conversations by MCP endpoint in the dashboard
+              // Well-known key: groups conversations by MCP endpoint in Insights
               mcpEndpoints: mcpEndpointName ?? [],
               // Custom keys ride along as queryable dimensions
               page: documentContext.pathname,
