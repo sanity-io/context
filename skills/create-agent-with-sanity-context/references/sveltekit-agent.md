@@ -93,9 +93,9 @@ export const POST: RequestHandler = async ({request}) => {
 
     // Stream the response
     const result = streamText({
-      model: createAnthropic({apiKey: ANTHROPIC_API_KEY})('claude-sonnet-4-20250514'),
+      model: createAnthropic({apiKey: ANTHROPIC_API_KEY})('claude-sonnet-4-5'),
       messages: await convertToModelMessages(messages),
-      system: SYSTEM_PROMPT,
+      instructions: SYSTEM_PROMPT, // AI SDK v7; use `system` on v6
       tools: mcpTools,
       stopWhen: stepCountIs(10),
       onFinish: async () => {
@@ -113,8 +113,8 @@ export const POST: RequestHandler = async ({request}) => {
 
 **Key patterns:**
 
-- **Imports**: Note `createAnthropic` (not bare `anthropic`), imports from `$env/static/private` and `$env/static/public`, `RequestHandler` type from `./$types`
-- **MCP URL**: Constructed from env vars
+- **Imports**: Note `createAnthropic` (not bare `anthropic`), imports from `$env/static/private`, `RequestHandler` type from `./$types`
+- **MCP URL**: Read from `SANITY_CONTEXT_MCP_URL`, copied from the endpoint in the Context app
 - **System prompt**: Inline for simplicity
 - **`POST` handler**: MCP client creation, tool discovery, `streamText` call, and response
 
@@ -122,7 +122,7 @@ export const POST: RequestHandler = async ({request}) => {
 
 - **`createAnthropic({ apiKey: ANTHROPIC_API_KEY })`** — Must pass the key explicitly because SvelteKit doesn't expose private env vars on `process.env`
 - **`convertToModelMessages(messages)`** — The `Chat` class from `@ai-sdk/svelte` sends `UIMessage[]` (with `parts` arrays). `streamText` expects `ModelMessage[]` (with `content` strings). This conversion is required.
-- **`stopWhen: stepCountIs(10)`** — AI SDK v6 pattern for limiting tool-call loops (replaces the older `maxSteps`)
+- **`stopWhen: stepCountIs(10)`** — AI SDK pattern for limiting tool-call loops (replaces the older `maxSteps`)
 - **`toUIMessageStreamResponse()`** — Returns the UI message stream format that the `Chat` class expects. Using `toDataStreamResponse()` will silently fail.
 
 ## Customizing the System Prompt

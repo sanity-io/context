@@ -12,11 +12,11 @@ Requires `@sanity/client` ^8.4.0 as a peer dependency, which comes automatically
 
 ## Exports
 
-| Entry point                | Purpose                                   |
-| -------------------------- | ----------------------------------------- |
-| `@sanity/context/studio`   | Studio plugin and schema type constant    |
-| `@sanity/context/ai-sdk`   | AI SDK telemetry integration for Insights |
-| `@sanity/context/insights` | Lower-level APIs for custom workflows     |
+| Entry point                | Purpose                                     |
+| -------------------------- | ------------------------------------------- |
+| `@sanity/context/studio`   | Deprecated Studio plugin (legacy documents) |
+| `@sanity/context/ai-sdk`   | AI SDK telemetry integration for Insights   |
+| `@sanity/context/insights` | Lower-level APIs for custom workflows       |
 
 ## Studio Plugin
 

@@ -44,7 +44,7 @@ import {contextPlugin} from '@sanity/context/studio'
 
 ### Deprecated Studio plugin
 
-The plugin still registers the legacy `sanity.agentContext` document type so existing documents stay editable, with a notice pointing at the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide). New setups create an MCP endpoint in the Context app instead. Don't build new features on it, and don't point docs or skills at it.
+The plugin still registers the legacy `sanity.agentContext` document type so existing documents stay editable, with a notice pointing at the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide). New setups create an MCP endpoint in the Context app instead. Don't build new features on it, and don't point new-setup docs or skills at it.
 
 | File                                                                          | Purpose                |
 | ----------------------------------------------------------------------------- | ---------------------- |
@@ -91,7 +91,7 @@ Created and managed in the Context app in the Sanity Dashboard, owned by the org
 
 An endpoint with a dataset source serves GROQ mode and needs a deployed schema from Studio v5.1.0+. One whose sources are all Knowledge Bases serves Knowledge Base mode. With both, the dataset wins and the Knowledge Bases are ignored.
 
-### Content Filter
+### GROQ Filter
 
 A GROQ filter expression (the part inside `*[...]`) that scopes what content an agent can access:
 

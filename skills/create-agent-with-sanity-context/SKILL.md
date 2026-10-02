@@ -83,7 +83,7 @@ The Context app shows the URL once the endpoint is created. Changes to instructi
 
 **Initial context (recommended):**
 
-Always fetch the schema context via the `/initial-context` HTTP endpoint and inject it into the system prompt. This gives a significant latency improvement on the first message—the agent already knows the schema and available tools without needing a tool call. It also enables better prompt caching since the schema prefix is stable across conversations.
+Always fetch the initial context via the `/initial-context` HTTP endpoint and inject it into the system prompt. This gives a significant latency improvement on the first message—the agent already knows the schema and available tools without needing a tool call. It also enables better prompt caching since the schema prefix is stable across conversations.
 
 Append `/initial-context` to the MCP URL path (before any query params), using the same auth header:
 
@@ -145,7 +145,7 @@ The reference patterns use Next.js + Vercel AI SDK, but adapt to whatever the us
 
 ## Workflow
 
-**Always present the full workflow.** Even if the user's request seems narrow, inform them of all four steps — you don't have to implement everything, but they should know what's available. Steps 3 and 4 are optional; make sure the user knows they exist, then let them decide. Walk the user through the steps, explaining what each unlocks:
+**Always present the full workflow.** Even if the user's request seems narrow, inform them of all four steps — you don't have to implement everything, but they should know what's available. Step 3 is optional and Step 4 is recommended once the agent works; make sure the user knows both exist, then let them decide. Walk the user through the steps, explaining what each unlocks:
 
 1. **Create the MCP Endpoint** — Deploy the schema or build a Knowledge Base, then create an endpoint in the Context app
 2. **Build the Agent** — Get a working chatbot connected to their content
@@ -158,7 +158,7 @@ After completing each step, present the next one. Stop when the user has what th
 
 Confirm the retrieval mode with the user first (see [Two retrieval modes](#how-sanity-context-works)), then prepare the content source.
 
-**GROQ mode: deploy the schema.** Context MCP reads the schema from Sanity, not from the local machine, and an endpoint with a dataset source won't serve without a deployed schema from Studio **v5.1.0+**. Check the Studio's `sanity` version first. Then, from the Studio directory:
+**GROQ mode: deploy the schema.** The MCP server reads the schema from Sanity, not from the local machine, and an endpoint with a dataset source won't serve without a deployed schema from Studio **v5.1.0+**. Check the Studio's `sanity` version first. Then, from the Studio directory:
 
 - **Any Studio:** `npx sanity schema deploy`
 - **Sanity-hosted Studio:** `npx sanity deploy` also works, but the user then has to open the deployed Studio in the browser once to trigger the schema deployment
@@ -242,7 +242,7 @@ Telemetry without classification just stores raw conversations. Classification i
 
 Once the production agent works:
 
-1. **Tune the Instructions field** using the `dial-your-context` skill — an interactive session where you explore the user's dataset together, verify findings, and produce concise Instructions that teach the production agent what the schema alone doesn't make obvious: counter-intuitive field names, second-order reference chains, data quality issues, required filters, and query patterns. The skill can also help configure the endpoint's GROQ filter to scope what content the production agent sees.
+1. **Tune the Instructions field** using the `dial-your-context` skill — an interactive session where you explore the user's dataset together, verify findings, and produce concise Instructions that teach the production agent what the schema alone doesn't make obvious: counter-intuitive field names, second-order reference chains, data quality issues, required filters, and query patterns. The skill can also help configure the endpoint's GROQ filter to scope what content the production agent sees. The user pastes the results into the endpoint's Instructions and GROQ filter fields in the Context app.
 
    **Knowledge Base mode:** `dial-your-context` targets GROQ mode. For a Knowledge Base, answers improve in the Context app by resolving issues and fixing sources; see [Resolve Knowledge Base issues](https://www.sanity.io/docs/ai/sanity-context-resolve-issues).
 
@@ -309,7 +309,7 @@ See [references/system-prompts.md](references/system-prompts.md) for domain-spec
 - **Start simple**: Build the basic integration first, then add advanced patterns as needed
 - **Schema design**: Use descriptive field names—agents rely on schema understanding
 - **GROQ queries**: Always include `_id` in projections so agents can reference documents
-- **Content filters**: Use the endpoint's GROQ filter to scope what the production agent sees — start broad, then narrow based on what it actually needs. The filter is a GROQ filter expression, the part inside `*[...]` (e.g., `_type in ["product", "article"]`), not a full query or projection
+- **Content filters**: Use the endpoint's GROQ filter to scope what the production agent sees — start broad, then narrow based on what it actually needs. The filter is a GROQ filter expression, the part inside `*[...]`, not a full query or projection. Examples: `_type in ["product", "article"]`, `_type == "article" && language == "en"`, `_type == "product" && references(*[_type == "category" && slug.current == "electronics"]._id)`
 - **Instructions field**: Keep it concise — only include what the auto-generated schema doesn't make obvious. Don't duplicate schema information. See the `dial-your-context` skill.
 - **System prompts**: Be explicit about forbidden behaviors and formatting rules. Less is more — an over-engineered prompt can interfere with the Instructions content. See the `shape-your-agent` skill.
 - **Package versions**: Always use the latest version of `@sanity/context` — run `npm info @sanity/context version` to get it. For other packages, check the reference `package.json` files or use `npm info <package> version`. AI SDK and Sanity packages update frequently, and using outdated versions will cause errors that are hard to debug.
@@ -320,9 +320,13 @@ See [references/system-prompts.md](references/system-prompts.md) for domain-spec
 
 The token is missing or malformed, or it doesn't belong to the organization in the URL (message: "Not a member of this organization"; JSON-RPC `-32001` on the MCP route). Confirm `SANITY_ORGANIZATION_TOKEN` is set, is read by the agent code, is sent as `Authorization: Bearer <token>`, and that the organization ID in the URL is right.
 
-### "403 Forbidden": JSON-RPC `-32007` (`contextGrantRequired`)
+### "404": MCP endpoint not found
 
-The token is not an organization API token with Context access. A 403 naming a Knowledge Base means the token lacks read access to that Knowledge Base. A project token is the most common first-run failure: it is refused however broad its permissions. Create an organization token as described in [What You'll Need](#what-youll-need).
+HTTP 404 with JSON-RPC `-32001` and the message "MCP endpoint not found: <name>". The endpoint name or organization ID in the URL is wrong. Copy the URL from the endpoint in the Context app; the name is lowercase and can't be changed. (`-32001` is also used for the 401 above, so check the HTTP status.)
+
+### "403 Forbidden": JSON-RPC `-32007` (`contextGrantRequired`) or `-32006` (`knowledgeBaseAccessDenied`)
+
+The token is not an organization API token with Context access. `-32007` comes from the check on endpoints with a dataset source; `-32006` ("No access to knowledge base 'kb…'") comes from the check on each Knowledge Base an endpoint serves. A project token is the most common first-run failure: it is refused however broad its permissions. Create an organization token as described in [What You'll Need](#what-youll-need).
 
 On the MCP route this arrives as JSON-RPC error `-32007` with the message "This requires an organization API token with Context access ('sanity.knowledge-base.read')…". On `/initial-context` it shows the code `contextGrantRequired`.
 

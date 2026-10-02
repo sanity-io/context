@@ -47,8 +47,10 @@ SANITY_ORGANIZATION_TOKEN=your-token
 # MCP endpoint URL, from the endpoint in the Context app
 SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
 
-# Organization ID (for conversation insights)
+# Conversation insights: organization ID, and the endpoint's name (the last
+# path segment of SANITY_CONTEXT_MCP_URL) for grouping and classification
 SANITY_ORGANIZATION_ID=your-org-id
+SANITY_CONTEXT_ENDPOINT_NAME=your-endpoint-name
 
 # Anthropic API key
 ANTHROPIC_API_KEY=your-anthropic-key
@@ -84,7 +86,7 @@ const mcpClient = await createMCPClient({
 
 **Initial Context via HTTP:**
 
-Always fetch the schema context at startup and inject it into the system prompt. This gives a significant latency improvement (the agent already knows the schema without a tool call on the first message) and enables better prompt caching.
+Always fetch the initial context, cache it with a short TTL (the reference uses 5 minutes), and inject it into the system prompt. This gives a significant latency improvement (the agent already knows the schema without a tool call on the first message) and enables better prompt caching.
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for the full implementation, including caching and URL construction that handles query params correctly.
 
@@ -109,8 +111,8 @@ const allMcpTools = await mcpClient.tools()
 const {initial_context: _, ...mcpTools} = allMcpTools
 
 const result = streamText({
-  model: anthropic('claude-opus-4-5'),
-  system: systemPrompt,
+  model: anthropic('claude-sonnet-4-5'),
+  instructions: systemPrompt, // AI SDK v7; use `system` on v6
   messages: await convertToModelMessages(messages),
   tools: {
     ...mcpTools, // Sanity Context tools (groq_query, schema_explorer, etc.)
@@ -124,6 +126,8 @@ const result = streamText({
 The system prompt shapes how your agent behaves. You can define prompts entirely inline, or store the base prompt in Sanity and combine with implementation-specific parts in code. The reference implementation uses the hybrid approach.
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) (`buildSystemPrompt` function).
+
+The reference reads the base prompt from an `agent.config` document (selected by `AGENT_CONFIG_SLUG`) and returns a 500 if it's missing. To use that pattern, add the schema from [ecommerce/studio/schemaTypes/documents/agentConfig.ts](ecommerce/studio/schemaTypes/documents/agentConfig.ts) to the Studio and create one document. Otherwise, define the prompt inline.
 
 **For more examples**, see [system-prompts.md](system-prompts.md).
 

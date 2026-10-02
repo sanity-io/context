@@ -11,7 +11,7 @@ The Insights system has two parts that work together:
 1. **Telemetry Integration**: Saves conversation transcripts from your chat route to your organization's Context store
 2. **Scheduled Classification**: Analyzes conversations with your own AI SDK model and records verdicts through the Context API
 
-**Set up both parts.** Telemetry alone just stores raw conversations. Classification is what produces the dashboard with success scores, sentiment, and content gaps.
+**Set up both parts.** Telemetry alone just stores raw conversations. Classification is what produces Insights in the Context app: success scores, sentiment, and content gaps.
 
 Both parts ride on `@sanity/client` (^8.4.0) and its `client.context` namespace. The pending queue is a GROQ query over the org's Context document store: conversations that were never classified, have no recorded failure, are non-empty, and have been idle for `settledForMinutes` (default 10, and you own the setting). Classification itself runs on your side, with your model and your LLM API key.
 
@@ -109,7 +109,7 @@ const result = streamText({
 - **AI SDK `useChat`**: The hook sends `id` (the chat ID) in the request body automatically. Extract it in your route handler and use it as `threadId`.
 - **Custom transport**: Pass the thread ID via request body, headers, or cookies, whatever fits the app's architecture.
 
-See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for how this is handled with cookies.
+See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for how this is handled with the `useChat` chat ID.
 
 For client-side thread ID generation, use SSR-safe initialization to avoid hydration mismatches:
 
@@ -230,7 +230,7 @@ export default defineBlueprint({
 
 ### Step 5: Configure Environment Variables
 
-The function needs four values at runtime: organization ID, endpoint name, a Sanity API token, and an LLM API key.
+The function needs four values at runtime: organization ID, endpoint name, an organization API token (Context Editor), and an LLM API key.
 
 All four are passed via the blueprint's `env` block (Step 4). The blueprint reads from your `.env` at deploy time. Create or update `.env` next to `sanity.blueprint.ts` and ask the user what env var names their project uses:
 

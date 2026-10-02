@@ -180,7 +180,7 @@ Test your prompt against real scenarios:
 | Layer                  | Controls                  | Example                                                        |
 | ---------------------- | ------------------------- | -------------------------------------------------------------- |
 | **System prompt**      | Agent behavior            | "Never quote exact pricing"                                    |
-| **Instructions field** | Data guidance             | "`price` is stored in cents; divide by 100 before quoting it"  |
+| **Instructions field** | Data guidance             | "`price` is stored in cents; divide by 100 for dollars"        |
 | **MCP**                | Query mechanics           | GROQ syntax, tool usage                                        |
 | **System prompt**      | Communicating uncertainty | "Say 'I don't have that information' and suggest alternatives" |
 | **Instructions field** | Recovery tactics          | "If product search returns empty, try support-article type"    |

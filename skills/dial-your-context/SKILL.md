@@ -18,7 +18,7 @@ The Sanity Context MCP server already provides the agent with:
 - A GROQ query tutorial in the `groq_query` tool description
 - Tool descriptions for GROQ queries, semantic search, etc.
 
-The Instructions field you're crafting is the MCP endpoint's **Instructions** field in the Context app. It's injected as a `Context Instructions` section at the top of the initial context (`##` in the `initial_context` tool, `###` from the HTTP `/initial-context` route, which shifts headings down one level by default), ahead of the efficiency, accuracy, tools, and schema sections. It should contain **only what the schema doesn't make obvious**:
+The Instructions field you're crafting is the MCP endpoint's **Instructions** field in the Context app. It appears under a `Context Instructions` heading at the top of the initial context, ahead of the efficiency, accuracy, tools, and schema sections. It should contain **only what the schema doesn't make obvious**:
 
 - Counter-intuitive field names (e.g., `body` is actually a slug, `hero` is a reference to `mediaAsset`)
 - Second-order reference chains the schema doesn't connect (e.g., "to find products with Dolby Atmos, chain `product → productFeature` and match on the feature's `id` field — the schema shows each hop but not the full path")
@@ -74,8 +74,8 @@ Get the MCP endpoint URL and an organization token from the user (see [Prerequis
 
 **Decide whether you need a draft endpoint.** Because `?groqFilter=` can only narrow, ask the user what the endpoint's saved GROQ filter is (it's shown on the endpoint in the Context app):
 
-- **No saved filter, or a filter you only expect to narrow:** work against the existing endpoint with URL params. Nothing else to set up.
-- **A saved filter you may need to widen:** ask the user to create a draft endpoint in the Context app (**New MCP endpoint**) with the same dataset source, a name like `tuning-draft`, and no GROQ filter. Run the session against the draft's URL. The production endpoint stays untouched.
+- **No saved filter, or a saved filter you only expect to narrow further:** work against the existing endpoint with URL params. Nothing else to set up.
+- **A saved filter you may need to widen:** ask the user to create a draft endpoint in the Context app (**New MCP endpoint**) with the same dataset source, a name like `tuning-draft`, and no GROQ filter. Creating it needs the Administrator or Developer role on the dataset's project, the same role Step 7 needs to change the filter. Run the session against the draft's URL. The production endpoint stays untouched.
 
 Use an empty `?instructions=` on every call until you're testing draft instructions, so existing instructions don't mask what the schema alone gets wrong.
 
@@ -121,7 +121,7 @@ The filter is a GROQ filter expression (the part inside `*[...]`), not just a ty
 - Locale filter: `_type in ["product", "article"] && lang == "en-us"`
 - Complex: `_type in ["product", "article"] && lang == "en-us" && defined(title)`
 
-Don't write a full query (`*[...]`), a projection (`{ name, price }`), or ordering/slicing: those are rejected or match everything. Drafts don't need filtering: the endpoint reads the published perspective by default.
+Don't write a full query (`*[...]`), a projection (`{ name, price }`), or ordering/slicing: those are rejected or match nothing, which looks like a broken connection. Drafts don't need filtering: the endpoint reads the published perspective by default.
 
 Based on the conversation, propose a filter:
 
@@ -286,7 +286,7 @@ The user saves the configuration in the Context app. Give them exactly what to p
 
 1. Open the **Context** app in the Sanity Dashboard and select the **production** endpoint
 2. **Instructions** field: [final instructions block]
-3. **GROQ filter** field: [final GROQ expression]. The new value replaces the saved one. If you tuned with `?groqFilter=` on an endpoint that already had a filter, the filter you tested was `(<saved filter>) && (<your filter>)`, so paste that combined expression unless the user wants to drop the old one
+3. **GROQ filter** field: [final GROQ expression]. The new value replaces the saved one. If you tuned with `?groqFilter=` on an endpoint that already had a filter, the filter you tested was `(<saved filter>) && (<your filter>)`, so paste that combined expression. If the user wants to drop the old filter, that widens scope beyond what you tested: re-test on a draft endpoint (Step 1) before saving
 4. Save. Changes take effect on the next connection, with no redeploy of the agent. If the agent caches `/initial-context`, instruction changes show up when that cache refreshes
 
 Changing the GROQ filter also needs the Administrator or Developer role on every attached dataset's project. If the user gets a 403 on save, someone with that role has to make the change.
