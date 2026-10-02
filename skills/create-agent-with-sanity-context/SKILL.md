@@ -126,7 +126,7 @@ A complete integration has **four distinct components** that may live in differe
 | **1. MCP Endpoint**         | A deployed schema (GROQ mode) or a built Knowledge Base, plus an endpoint created in the Context app | Studio (v5.1.0+) for the schema deploy, Context app in the Sanity Dashboard for Knowledge Bases and the endpoint                                        |
 | **2. Agent Implementation** | Code that connects to Sanity Context and handles LLM interactions                                    | Next.js API route, Express server, Python service, or any MCP-compatible client                                                                         |
 | **3. Frontend**             | UI for users to interact with the agent                                                              | Chat widget, search interface, CLI—or none for backend services                                                                                         |
-| **4. Functions**            | Scheduled classification via Sanity Blueprints                                                       | `sanity.blueprint.ts` + `functions/` directory — has its own placement constraints (see [Sanity Blueprints & Functions](#sanity-blueprints--functions)) |
+| **4. Functions**            | Scheduled classification via Sanity Blueprints (only with Insights, Step 3)                          | `sanity.blueprint.ts` + `functions/` directory — has its own placement constraints (see [Sanity Blueprints & Functions](#sanity-blueprints--functions)) |
 
 An MCP endpoint is always required, backed by a deployed schema (GROQ mode, Studio v5.1.0+) or a built Knowledge Base: the agent has nothing to connect to without them. Frontend depends on the use case (many agents run as backend services or integrate into existing UIs).
 
@@ -329,7 +329,7 @@ HTTP 404 with JSON-RPC `-32001` and the message "MCP endpoint not found: <name>"
 
 The token is not an organization API token with Context access. `-32007` comes from the check on endpoints with a dataset source; `-32006` ("No access to knowledge base 'kb…'") comes from the check on each Knowledge Base an endpoint serves. A project token is the most common first-run failure: it is refused however broad its permissions. Create an organization token as described in [What You'll Need](#what-youll-need).
 
-On the MCP route this arrives as JSON-RPC error `-32007` with the message "This requires an organization API token with Context access ('sanity.knowledge-base.read')…". On `/initial-context` it shows the code `contextGrantRequired`.
+The `-32007` message reads "This requires an organization API token with Context access ('sanity.knowledge-base.read')…". On `/initial-context` the same failure shows the code `contextGrantRequired`.
 
 ### `-32004`: "Only datasets with deployed Studio applications are supported"
 

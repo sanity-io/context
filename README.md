@@ -149,7 +149,7 @@ If this returns a list of tools, you're connected. The full MCP URL is shown on 
 
 **Empty results** — If the endpoint has a GROQ filter, check that it matches published documents. A filter that matches nothing looks like a broken connection.
 
-**Tools not appearing** — Verify the MCP URL is correct (organization ID and endpoint name) If you expect the GROQ tools, check that the endpoint's content source is a dataset; Knowledge Base endpoints serve different tools.
+**Tools not appearing** — Verify the MCP URL is correct (organization ID and endpoint name). If you expect the GROQ tools, check that the endpoint's content source is a dataset; Knowledge Base endpoints serve different tools.
 
 ## Learn more
 
