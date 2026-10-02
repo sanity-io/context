@@ -111,8 +111,8 @@ const allMcpTools = await mcpClient.tools()
 const {initial_context: _, ...mcpTools} = allMcpTools
 
 const result = streamText({
-  model: anthropic('claude-sonnet-4-5'),
-  instructions: systemPrompt, // AI SDK v7; use `system` on v6
+  model: anthropic('claude-opus-4-5'),
+  system: systemPrompt,
   messages: await convertToModelMessages(messages),
   tools: {
     ...mcpTools, // Sanity Context tools (groq_query, schema_explorer, etc.)

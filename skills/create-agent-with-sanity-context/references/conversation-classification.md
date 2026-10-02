@@ -109,7 +109,7 @@ const result = streamText({
 - **AI SDK `useChat`**: The hook sends `id` (the chat ID) in the request body automatically. Extract it in your route handler and use it as `threadId`.
 - **Custom transport**: Pass the thread ID via request body, headers, or cookies, whatever fits the app's architecture.
 
-See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for how this is handled with the `useChat` chat ID.
+See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for how this is handled with cookies.
 
 For client-side thread ID generation, use SSR-safe initialization to avoid hydration mismatches:
 
