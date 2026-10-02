@@ -11,10 +11,10 @@ A complete e-commerce demo with AI shopping assistant powered by Sanity Context 
 
 1. Copy `.env.example` to `.env` and fill in your credentials
 2. Install dependencies: `pnpm install`
-3. Deploy the schema: `cd studio && pnpm exec dotenv -e ../.env -- sanity schema deploy`
+3. Deploy the schema: `pnpm --dir studio exec dotenv -e ../.env -- sanity schema deploy`
 4. Create an MCP endpoint in the Context app in the Sanity Dashboard with your dataset as its content source, and put its URL in `SANITY_CONTEXT_MCP_URL`
-5. Start the studio: `cd studio && pnpm dev`
-6. Start the app: `cd app && pnpm dev`
+5. Start the studio: `pnpm --dir studio dev`
+6. Start the app, in a second terminal: `pnpm --dir app dev`
 
 ## About `_index.md`
 
