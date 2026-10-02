@@ -18,14 +18,7 @@ flowchart LR
 
 You create an MCP endpoint in the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard). The endpoint controls what content your agent can access and gets its own MCP URL. Your agent connects to that URL with an organization API token. An endpoint serves either your live dataset (GROQ mode) or [Knowledge Bases](https://www.sanity.io/docs/ai/sanity-context-knowledge-bases) built ahead of time from datasets, websites, and files (Knowledge Base mode, beta).
 
-In GROQ mode, the Sanity Context MCP server exposes these tools (Knowledge Base mode serves `initial_context`, `knowledge_base_read`, and `knowledge_base_search` instead):
-
-| Tool                 | What it does                                                                       |
-| -------------------- | ---------------------------------------------------------------------------------- |
-| `initial_context`    | Returns a compressed schema overview: content types, fields, and document counts   |
-| `groq_query`         | Runs [GROQ](https://www.sanity.io/docs/groq) queries with optional semantic search |
-| `schema_explorer`    | Returns the full schema for a specific content type                                |
-| `array_field_reader` | Reads large array fields and Portable Text content from a single document          |
+The endpoint gives your agent tools to read your schema and run [GROQ](https://www.sanity.io/docs/groq) queries with optional semantic search (GROQ mode), or to search and read Knowledge Base entries (Knowledge Base mode). See [Context MCP tools](https://www.sanity.io/docs/ai/sanity-context-mcp-tools) for the current list.
 
 With these tools, your agent can:
 

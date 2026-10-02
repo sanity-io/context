@@ -97,22 +97,14 @@ If you don't control the system prompt (e.g. using a third-party MCP client), th
 
 ## Available MCP Tools
 
-**GROQ mode:**
+The endpoint's mode decides which tools it serves:
 
-| Tool                 | Purpose                                                                                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `initial_context`    | Get compressed schema overview (types, fields, document counts) plus the endpoint's Instructions. Also available via the `/initial-context` HTTP endpoint. |
-| `groq_query`         | Execute GROQ queries with optional semantic search, subject to the endpoint's GROQ filter                                                                  |
-| `schema_explorer`    | Get detailed schema for a specific document type                                                                                                           |
-| `array_field_reader` | Read large array fields and Portable Text content from a single document                                                                                   |
+- **GROQ mode:** tools to read the schema, run GROQ queries (with optional semantic search), and read large array fields. Queries are always subject to the endpoint's GROQ filter.
+- **Knowledge Base mode:** tools to search and read Knowledge Base entries.
 
-**Knowledge Base mode:**
+Both modes serve `initial_context`: the schema overview (GROQ mode) or the Knowledge Base outline, plus the endpoint's Instructions. It's the same payload as the `/initial-context` HTTP endpoint.
 
-| Tool                    | Purpose                                                                                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `initial_context`       | The outline of each Knowledge Base (every entry path with a one-line summary) plus the endpoint's Instructions. Also available via HTTP                         |
-| `knowledge_base_read`   | Read the full content of up to 20 entries in one call, by Knowledge Base id (`kb…`) and entry paths taken verbatim from the outline                             |
-| `knowledge_base_search` | Keyword search over a Knowledge Base's entries (exact matching, up to 20 results). Returns ranked paths to read with `knowledge_base_read`, or the full entries |
+Don't hardcode the tool list. The set grows over time, so take it from the MCP client (`mcpClient.tools()` or `tools/list`). For what each tool does, see [Context MCP tools](https://www.sanity.io/docs/ai/sanity-context-mcp-tools).
 
 **For development and debugging:** The general Sanity MCP provides broader access to your Sanity project (schema deployment, document management, etc.). Useful during development but not intended for customer-facing applications.
 
@@ -196,7 +188,7 @@ curl -X POST https://api.sanity.io/v1/context/organizations/:organizationId/mcp/
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-The response should list `initial_context` and `groq_query` (GROQ mode) or `initial_context`, `knowledge_base_read`, and `knowledge_base_search` (Knowledge Base mode). If it doesn't, see [Troubleshooting](#troubleshooting).
+The response should return a `result.tools` array that includes `initial_context`. If it returns an error or an empty list, see [Troubleshooting](#troubleshooting).
 
 ### Step 2: Build the Agent (Adapt to user's stack)
 
