@@ -5,14 +5,16 @@ A complete e-commerce demo with AI shopping assistant powered by Sanity Context 
 ## Structure
 
 - `app/` - Next.js frontend with AI chat integration
-- `studio/` - Sanity Studio with product schemas and Sanity Context plugin
+- `studio/` - Sanity Studio with product schemas
 
 ## Setup
 
 1. Copy `.env.example` to `.env` and fill in your credentials
 2. Install dependencies: `pnpm install`
-3. Start the studio: `cd studio && pnpm dev`
-4. Start the app: `cd app && pnpm dev`
+3. Deploy the schema: `cd studio && pnpm exec dotenv -e ../.env -- sanity schema deploy`
+4. Create an MCP endpoint in the Context app in the Sanity Dashboard with your dataset as its content source, and put its URL in `SANITY_CONTEXT_MCP_URL`
+5. Start the studio: `cd studio && pnpm dev`
+6. Start the app: `cd app && pnpm dev`
 
 ## About `_index.md`
 

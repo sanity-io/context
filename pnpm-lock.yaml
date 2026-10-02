@@ -241,9 +241,6 @@ importers:
       '@sanity/client':
         specifier: ^7.27.0
         version: 7.27.0
-      '@sanity/context':
-        specifier: workspace:*
-        version: link:../../../packages/context
       '@sanity/icons':
         specifier: ^5
         version: 5.2.2(react@19.3.0)
