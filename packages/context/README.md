@@ -66,7 +66,7 @@ export default defineConfig({
 
 ## Agent Insights
 
-Track and classify your AI agent conversations automatically. Insights saves every conversation transcript to your organization's Context store, and a classification step you run with your own AI SDK model extracts success scores, sentiment, and content gaps. Results are surfaced in the Context dashboard.
+Track and classify your AI agent conversations automatically. Insights saves every conversation transcript to your organization's Context store, and a classification step you run with your own AI SDK model extracts success scores, sentiment, and content gaps. Results are surfaced in Insights in the Context app in the Sanity Dashboard.
 
 Everything rides on `@sanity/client` (^8.4.0) and its `client.context` namespace. Create one org-scoped client and pass it to the telemetry integration and the insights functions:
 
@@ -75,7 +75,7 @@ import {createClient} from '@sanity/client'
 
 const client = createClient({
   apiVersion: 'v2025-11-27',
-  token: process.env.SANITY_API_TOKEN, // Keep server-side only
+  token: process.env.SANITY_ORGANIZATION_TOKEN, // Organization token with Context Editor permissions. Keep server-side only
   context: {organizationId: process.env.SANITY_ORGANIZATION_ID},
   useCdn: false,
   useProjectHostname: false,
@@ -116,7 +116,7 @@ const result = await streamText({
 
 Each save is an idempotent upsert per thread: the messages replace the stored transcript wholesale, so repeated saves with the same `threadId` keep the transcript current.
 
-Failures are saved too, so the Context dashboard can show them: a tool call that throws is saved with its error, and on AI SDK v7 a generation that fails is saved with the transcript so far and the error. AI SDK v6 has no hook for failed generations, so those are not saved.
+Failures are saved too, so Insights can show them: a tool call that throws is saved with its error, and on AI SDK v7 a generation that fails is saved with the transcript so far and the error. AI SDK v6 has no hook for failed generations, so those are not saved.
 
 ### Set Up Classification
 
@@ -128,7 +128,7 @@ Classification runs on your side, with your model and your LLM API key. The pend
 
    Requirements:
    - Install `@sanity/functions`, `@ai-sdk/anthropic`, `@sanity/blueprints`, and `dotenv` alongside `@sanity/client` and `@sanity/context`
-   - Create a `.env` next to the blueprint with `ANTHROPIC_API_KEY`, `SANITY_ORGANIZATION_ID`, `SANITY_CONTEXT_ENDPOINT_NAME`, and `SANITY_API_TOKEN`
+   - Create a `.env` next to the blueprint with `ANTHROPIC_API_KEY`, `SANITY_ORGANIZATION_ID`, `SANITY_CONTEXT_ENDPOINT_NAME`, and `SANITY_ORGANIZATION_TOKEN`
 
 3. Deploy:
 

@@ -37,13 +37,11 @@ SvelteKit splits environment variables into two modules:
 Required variables in your `.env` file:
 
 ```bash
-# Sanity Configuration (private — server only)
-SANITY_PROJECT_ID=your-project-id
-SANITY_DATASET=production
-SANITY_API_TOKEN=your-token
-
-# Public (available in client bundles, prefixed with PUBLIC_)
-PUBLIC_SANITY_API_VERSION=vX
+# Sanity Context (private — server only)
+# MCP endpoint URL, from the endpoint in the Context app
+SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+# Organization API token with Context access
+SANITY_ORGANIZATION_TOKEN=your-token
 
 # Anthropic API key (private — server only)
 ANTHROPIC_API_KEY=your-anthropic-key
@@ -59,17 +57,10 @@ import {createAnthropic} from '@ai-sdk/anthropic'
 import {createMCPClient} from '@ai-sdk/mcp'
 import type {RequestHandler} from './$types'
 import {
-  SANITY_API_TOKEN,
+  SANITY_ORGANIZATION_TOKEN,
   ANTHROPIC_API_KEY,
-  SANITY_PROJECT_ID,
-  SANITY_DATASET,
+  SANITY_CONTEXT_MCP_URL,
 } from '$env/static/private'
-import {PUBLIC_SANITY_API_VERSION} from '$env/static/public'
-
-// MCP URL — connects to your Sanity Context document
-const SANITY_API_VERSION = PUBLIC_SANITY_API_VERSION || 'vX'
-const CONTEXT_SLUG = 'content-qa'
-const MCP_URL = `https://api.sanity.io/${SANITY_API_VERSION}/context/mcp/${SANITY_PROJECT_ID}/${SANITY_DATASET}/${CONTEXT_SLUG}`
 
 // System prompt for the agent
 const SYSTEM_PROMPT = `You are a helpful content assistant.
@@ -89,9 +80,9 @@ export const POST: RequestHandler = async ({request}) => {
   const mcpClient = await createMCPClient({
     transport: {
       type: 'http',
-      url: MCP_URL,
+      url: SANITY_CONTEXT_MCP_URL,
       headers: {
-        Authorization: `Bearer ${SANITY_API_TOKEN}`,
+        Authorization: `Bearer ${SANITY_ORGANIZATION_TOKEN}`,
       },
     },
   })
@@ -385,9 +376,9 @@ Ensure the file importing from `$env/static/private` is in a SvelteKit server co
 
 The `Chat` class requires browser APIs. Add a `+page.ts` file alongside your `+page.svelte` with `export const ssr = false`.
 
-### MCP endpoint returns 500 or schema errors
+### MCP connection errors
 
-Sanity Context requires a deployed Studio. See [Deploy Your Studio](studio-setup.md#deploy-your-studio) for instructions.
+See the [Troubleshooting section in SKILL.md](../SKILL.md#troubleshooting) for 401, 403 / `-32007` `contextGrantRequired`, `-32004` (schema not deployed), and empty results.
 
 ### "Module not found: @ai-sdk/mcp"
 

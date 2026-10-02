@@ -16,15 +16,16 @@ flowchart LR
   B --> C["Your content in Sanity"]
 ```
 
-You create an MCP endpoint in the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard). The endpoint controls what content your agent can access and generates a unique MCP URL. Your agent connects to that URL with an API token.
+You create an MCP endpoint in the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard). The endpoint controls what content your agent can access and gets its own MCP URL. Your agent connects to that URL with an organization API token. An endpoint serves either your live dataset (GROQ mode) or [Knowledge Bases](https://www.sanity.io/docs/ai/sanity-context-knowledge-bases) built ahead of time from datasets, websites, and files (Knowledge Base mode, beta).
 
-The Sanity Context MCP server exposes three tools:
+In GROQ mode, the Sanity Context MCP server exposes these tools (Knowledge Base mode serves `initial_context` and `knowledge_base_read` instead):
 
-| Tool              | What it does                                                                       |
-| ----------------- | ---------------------------------------------------------------------------------- |
-| `initial_context` | Returns a compressed schema overview: content types, fields, and document counts   |
-| `groq_query`      | Runs [GROQ](https://www.sanity.io/docs/groq) queries with optional semantic search |
-| `schema_explorer` | Returns the full schema for a specific content type                                |
+| Tool                 | What it does                                                                       |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `initial_context`    | Returns a compressed schema overview: content types, fields, and document counts   |
+| `groq_query`         | Runs [GROQ](https://www.sanity.io/docs/groq) queries with optional semantic search |
+| `schema_explorer`    | Returns the full schema for a specific content type                                |
+| `array_field_reader` | Reads large array fields and Portable Text content from a single document          |
 
 With these tools, your agent can:
 
@@ -48,11 +49,9 @@ Structural filter (`category == "shoes"`) for precision. Semantic ranking (`text
 
 ### Prerequisites
 
-- A [Sanity](https://www.sanity.io/) project with content and a [deployed Studio](https://www.sanity.io/docs/deployment) (v6)
-- A **Sanity API read token** — create one at [sanity.io/manage](https://sanity.io/manage) (Project → API → Tokens) or via CLI:
-  ```bash
-  npx sanity tokens add "Sanity Context" --role=viewer
-  ```
+- **Context enabled** for your organization. An organization admin can enable it from the organization's [Labs page](https://www.sanity.io/manage/org/labs) in Manage
+- For GROQ mode: a [Sanity](https://www.sanity.io/) project with content and a **deployed schema** from Studio v5.1.0 or later (`npx sanity schema deploy`). For Knowledge Base mode: a built Knowledge Base
+- An **organization API token** with Context permissions, created in [Manage](https://www.sanity.io/manage/org/api/tokens) under your organization's API > Tokens. Choose **Viewer** for an agent that only reads, or **Editor** if it also records [Insights](#agent-insights). Project tokens don't work. Keep the token server-side
 - An **LLM API key** (Anthropic, OpenAI, or another provider)
 
 New to Sanity? [Start here](https://www.sanity.io/docs/getting-started).
@@ -71,13 +70,13 @@ Then prompt:
 Use the create-agent-with-sanity-context skill to help me build an agent.
 ```
 
-The skill walks you through Studio setup, MCP connection, and configuration for your stack (Next.js, SvelteKit, Express, Python, etc).
+The skill walks you through creating the MCP endpoint, connecting your agent, and configuration for your stack (Next.js, SvelteKit, Express, Python, etc).
 
 Other skills help you refine: `dial-your-context` (tune the Instructions field) and `shape-your-agent` (craft a system prompt).
 
 ### Manual setup
 
-1. Open the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), create an MCP endpoint, and copy the MCP URL.
+1. Open the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), create an MCP endpoint with your dataset as its source, and copy the MCP URL. It looks like `https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName`.
 
 2. Connect your agent using any MCP-compatible framework. Example with [Vercel AI SDK](https://sdk.vercel.ai/):
 
@@ -89,7 +88,7 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
        type: 'http',
        url: process.env.SANITY_CONTEXT_MCP_URL,
        headers: {
-         Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`,
+         Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`,
        },
      },
    })
@@ -122,7 +121,9 @@ Track and analyze your agent conversations with built-in telemetry:
 
 - Automatic conversation saving via AI SDK integration
 - AI-powered classification (success score, sentiment, content gaps)
-- Analytics and conversation browsing in the Context dashboard
+- Analytics and conversation browsing in the Context app
+
+Recording conversations needs an organization token with Context **Editor** permissions.
 
 See the [package documentation](./packages/context#agent-insights) for setup.
 
@@ -131,19 +132,24 @@ See the [package documentation](./packages/context#agent-insights) for setup.
 **Validate the connection** — Test that your token and endpoint work:
 
 ```bash
-curl -X POST https://api.sanity.io/v2026-03-03/context/mcp/:projectId/:dataset/:slug \
-  -H "Authorization: Bearer $SANITY_API_TOKEN" \
+curl -X POST https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName \
+  -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN" \
+  -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-If this returns a list of tools, you're connected. The full MCP URL is shown in the Context app (or in your Sanity Context document in Studio for legacy setups).
+If this returns a list of tools, you're connected. The full MCP URL is shown on the endpoint in the Context app.
 
-**401 Unauthorized** — Your `SANITY_API_TOKEN` is missing or invalid. Generate a new token at [sanity.io/manage](https://sanity.io/manage) → Project → API → Tokens.
+**401 Unauthorized** — The token is missing or malformed, or it belongs to a different organization than the one in the URL. Check that it's sent as `Authorization: Bearer <token>` and that the organization ID is right.
 
-**No schema or empty results** — Sanity Context requires a deployed Studio. Run `npx sanity deploy`. If you've set a content filter, ensure it matches published documents.
+**403 Forbidden (JSON-RPC `-32007`, `contextGrantRequired`)** — The token isn't an organization API token with Context permissions. Project tokens are refused. Create one in [Manage](https://www.sanity.io/manage/org/api/tokens) under your organization's API > Tokens.
 
-**Tools not appearing** — Verify the MCP URL is correct (project ID, dataset, slug) and that the Sanity Context document is published.
+**"Only datasets with deployed Studio applications are supported"** — The schema isn't deployed for the endpoint's project and dataset. Run `npx sanity schema deploy` from a Studio on v5.1.0 or later.
+
+**Empty results** — If the endpoint has a GROQ filter, check that it matches published documents. A filter that matches nothing looks like a broken connection.
+
+**Tools not appearing** — Verify the MCP URL is correct (organization ID and endpoint name) and that the endpoint's content source is a dataset.
 
 ## Learn more
 

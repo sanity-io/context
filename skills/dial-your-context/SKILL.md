@@ -7,21 +7,23 @@ description: Interactive session to create Instructions field content for the Sa
 
 Help a user create the Instructions field content for the Sanity Context MCP server. The goal is a concise set of **pure deltas** — only information the agent can't figure out from the auto-generated schema.
 
+This skill is for **GROQ mode** endpoints (a dataset source). For a Knowledge Base mode endpoint, answers improve in the Context app instead, by resolving issues and fixing sources; see [Resolve Knowledge Base issues](https://www.sanity.io/docs/ai/sanity-context-resolve-issues).
+
 ## What you're building
 
 The Sanity Context MCP server already provides the agent with:
 
 - A compressed schema of all document types and fields
-- A GROQ query tutorial (~194 lines)
-- Response style guidance
+- Efficiency and accuracy guidance
+- A GROQ query tutorial in the `groq_query` tool description
 - Tool descriptions for GROQ queries, semantic search, etc.
 
-The Instructions field you're crafting gets injected as a `## Custom instructions` section between `## Response style` and `## Tools` in the MCP's instructions blob. It should contain **only what the schema doesn't make obvious**:
+The Instructions field you're crafting is the MCP endpoint's **Instructions** field in the Context app. It's injected as a `Context Instructions` section at the top of the initial context (`##` in the `initial_context` tool, `###` from the HTTP `/initial-context` route, which shifts headings down one level by default), ahead of the efficiency, accuracy, tools, and schema sections. It should contain **only what the schema doesn't make obvious**:
 
 - Counter-intuitive field names (e.g., `body` is actually a slug, `hero` is a reference to `mediaAsset`)
 - Second-order reference chains the schema doesn't connect (e.g., "to find products with Dolby Atmos, chain `product → productFeature` and match on the feature's `id` field — the schema shows each hop but not the full path")
 - Data quality issues the schema can't reveal (e.g., "the `product` type has a `features` array but it's always empty — use `support-product` instead")
-- Required filters the agent must always apply (locale, draft status, etc.)
+- Required filters the agent must always apply (locale, an editorial status field, etc.)
 - Known data gaps confirmed by the user (e.g., "the `subtitle` field is unused — ignore it")
 - Query patterns for common use cases that aren't obvious from the schema
 - Fallback strategies when primary approaches fail
@@ -30,13 +32,29 @@ The Instructions field you're crafting gets injected as a `## Custom instruction
 
 ## Prerequisites
 
-You need one of these to run this session:
+You need:
 
-**Path A — Write access (recommended):** A Sanity write token or the general Sanity MCP (OAuth). This lets you create a draft context doc, write instructions + filter to it during the session, and promote it to production when done. Production is never touched until you're ready.
+- **The MCP endpoint URL**: `https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName`, shown on the endpoint in the Context app
+- **An organization API token** with Context access (Viewer is enough for this session)
 
-**Path B — URL params only:** Use `?instructions=` and `?groqFilter=` URL query params on the MCP endpoint to test everything. At the end, provide the final content for the user to enter manually in Sanity Studio. Works with both base and document URLs.
+You test everything through URL query params on the endpoint, so the production agent is never touched during the session:
 
-Both paths are safe — neither modifies the production agent during the session.
+- `?instructions=<URL-encoded>` replaces the endpoint's instructions for that request. An empty `?instructions=` gives a blank slate (don't write `?instructions=""`: that sends two quote characters as the instructions)
+- `?groqFilter=<URL-encoded>` **narrows** the endpoint's saved filter: the two are combined with `&&`. It can't widen what the saved filter allows
+
+Saving the result happens in the Context app, by the user. You never write the endpoint configuration yourself.
+
+**Calling the tools.** If you don't have the endpoint connected as an MCP server, call it over HTTP. Put the query params on the URL:
+
+```bash
+curl -X POST "$MCP_URL?instructions=" \
+  -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"groq_query","arguments":{"query":"*[0...3]._type"}}}'
+```
+
+Read the schema the production agent sees with `GET $MCP_URL/initial-context` (same auth header, same query params).
 
 ## Critical rules
 
@@ -52,27 +70,25 @@ Both paths are safe — neither modifies the production agent during the session
 
 **Goal:** Establish MCP access, set up a safe working environment.
 
-Connect to the user's Sanity Context MCP server. Get the project ID and dataset from the user if not already known. The slug is only needed if they have an existing Sanity Context document.
+Get the MCP endpoint URL and an organization token from the user (see [Prerequisites](#prerequisites)).
 
-**Set up your working environment:**
+**Decide whether you need a draft endpoint.** Because `?groqFilter=` can only narrow, ask the user what the endpoint's saved GROQ filter is (it's shown on the endpoint in the Context app):
 
-**Path A (write access):** Create a new draft context doc by copying the existing one (if any) to a new slug like `tuning-draft`. All exploration and iteration happens against this draft — the production agent is untouched.
+- **No saved filter, or a filter you only expect to narrow:** work against the existing endpoint with URL params. Nothing else to set up.
+- **A saved filter you may need to widen:** ask the user to create a draft endpoint in the Context app (**New MCP endpoint**) with the same dataset source, a name like `tuning-draft`, and no GROQ filter. Run the session against the draft's URL. The production endpoint stays untouched.
 
-**Path B (no write access):** Use URL query params throughout the session:
+Use an empty `?instructions=` on every call until you're testing draft instructions, so existing instructions don't mask what the schema alone gets wrong.
 
-- `?instructions=""` — forces a blank slate (ignores existing instructions)
-- `?groqFilter=<expression>` — applies a filter without writing to the context doc
-
-Check if the context document already has instructions content:
+Check if the endpoint already has instructions (ask the user to copy them from the Context app, or fetch `/initial-context` without the `instructions` param and look for the `Context Instructions` section):
 
 - If yes, present the existing instructions to the user verbatim
 - Ask: "Do you want to keep any of this, or start fresh?"
 - Let the user decide — don't assume existing instructions are wrong
 - If they have existing instructions from a previous session, you'll verify and refine each finding rather than starting from scratch
 
-Verify you can query the dataset by running a simple GROQ query like `*[0..2]._type` to confirm access.
+Verify you can query the dataset by running a simple GROQ query like `*[0...3]._type` to confirm access.
 
-**Output:** Confirmed MCP access, safe working environment established (draft doc or URL params), any existing instructions surfaced to user.
+**Output:** Confirmed MCP access, safe working environment established (URL params, plus a draft endpoint if needed), any existing instructions surfaced to user.
 
 ### Step 2: Schema Dialogue
 
@@ -94,17 +110,18 @@ This is a **conversation**, not a monologue. Ask the user:
 1. **Which types matter?** "Which of these will your agent need to query? Any types here that are internal/system types the agent should ignore?"
 2. **What's misleading?** "Any field names that don't mean what they sound like? Fields that are unused or deprecated?"
 3. **What are the relationships?** "How do these types connect? For example, do articles reference authors? How — direct reference, array of references, something else?"
-4. **Any required filters?** "Does the agent need to always filter by locale, published status, or any other field?"
+4. **Any required filters?** "Does the agent need to always filter by locale, an editorial status field, or anything else?"
 5. **What's the primary content language?** If i18n is involved, clarify the pattern.
 
-**Suggest a filter.** The MCP supports a `groqFilter` — a full GROQ expression that scopes which documents the agent can access. This is high-leverage — it reduces noise significantly and prevents the agent from querying irrelevant types.
+**Suggest a filter.** The endpoint's GROQ filter scopes which documents the agent can access. This is high-leverage — it reduces noise significantly and prevents the agent from querying irrelevant types. It's also a hard boundary: it applies server-side, so nothing in a conversation can widen it.
 
-The filter is a GROQ expression string, not just a type list. This means you can carve out exactly the document set you want:
+The filter is a GROQ filter expression (the part inside `*[...]`), not just a type list. This means you can carve out exactly the document set you want:
 
 - Simple type filter: `_type in ["product", "support-article", "productFeature"]`
-- Exclude drafts: `!(_id in path("drafts.**")) && _type in ["product", "article"]`
 - Locale filter: `_type in ["product", "article"] && lang == "en-us"`
-- Complex: `_type in ["product", "article"] && !(_id in path("drafts.**")) && defined(title)`
+- Complex: `_type in ["product", "article"] && lang == "en-us" && defined(title)`
+
+Don't write a full query (`*[...]`), a projection (`{ name, price }`), or ordering/slicing: those are rejected or match everything. Drafts don't need filtering: the endpoint reads the published perspective by default.
 
 Based on the conversation, propose a filter:
 
@@ -116,10 +133,7 @@ Based on the conversation, propose a filter:
 >
 > This means the agent won't see `siteSettings`, `redirect`, `migration`, etc. Does that sound right?
 
-**Apply the filter immediately.** Once the user agrees:
-
-- **Path A (write access):** Write the `groqFilter` field to the draft context doc
-- **Path B (URL params):** Add `?groqFilter=<expression>` to all subsequent MCP calls
+**Apply the filter immediately.** Once the user agrees, add `?groqFilter=<URL-encoded expression>` to all subsequent MCP calls.
 
 All exploration from this point forward should use the agreed filter.
 
@@ -170,11 +184,11 @@ Work through the expected questions one by one (or in logical groups). For each 
 
 Track your findings in a simple table:
 
-| #   | Question             | Query                                                    | Result               | Finding                                                    |
-| --- | -------------------- | -------------------------------------------------------- | -------------------- | ---------------------------------------------------------- |
-| 1   | "Recent articles"    | `*[_type == "article"] \| order(publishedAt desc)[0..4]` | ✅ 5 results         | Works with schema alone                                    |
-| 2   | "Articles by author" | `*[_type == "article" && references(authorId)]`          | ⚠️ Empty             | Authors linked via `contributors[].person`, not direct ref |
-| 3   | "Published only"     | `*[_type == "article" && status == "published"]`         | ❌ No `status` field | User confirms: use `!(_id in path("drafts.**"))` instead   |
+| #   | Question             | Query                                                    | Result       | Finding                                                    |
+| --- | -------------------- | -------------------------------------------------------- | ------------ | ---------------------------------------------------------- |
+| 1   | "Recent articles"    | `*[_type == "article"] \| order(publishedAt desc)[0..4]` | ✅ 5 results | Works with schema alone                                    |
+| 2   | "Articles by author" | `*[_type == "article" && references(authorId)]`          | ⚠️ Empty     | Authors linked via `contributors[].person`, not direct ref |
+| 3   | "Guides only"        | `*[_type == "article" && category == "guide"]`           | ❌ Empty     | User confirms: guides are `articleType == "howto"`         |
 
 **Adapt to scale:**
 
@@ -194,7 +208,7 @@ Write the Instructions as short, declarative statements organized by category:
 ```markdown
 ### Rules
 
-- Always filter drafts: use `!(_id in path("drafts.**"))` — there is no `status` field
+- Guides are `article` documents with `articleType == "howto"` — there is no `guide` category
 - Always include `[_lang == "en"]` for localized content unless user specifies otherwise
 
 ### Schema notes
@@ -206,7 +220,7 @@ Write the Instructions as short, declarative statements organized by category:
 ### Query patterns
 
 - Articles by author: `*[_type == "article" && contributors[].person._ref == $authorId]`
-- Published articles by date: `*[_type == "article" && !(_id in path("drafts.**"))] | order(publishedAt desc)`
+- Recent guides: `*[_type == "article" && articleType == "howto"] | order(publishedAt desc)`
 
 ### Known limitations
 
@@ -214,13 +228,13 @@ Write the Instructions as short, declarative statements organized by category:
 - `relatedArticles` is manually curated and often empty for older content
 ```
 
-**Keep it tight.** Each line should pass this test: "Would an agent with the schema alone get this wrong?" If you're unsure, test it — try answering 2-3 questions with `?instructions=""` and see what the model gets wrong on its own. That's your empirical baseline for what actually needs to be here. If no, cut it.
+**Keep it tight.** Each line should pass this test: "Would an agent with the schema alone get this wrong?" If you're unsure, test it — try answering 2-3 questions with an empty `?instructions=` and see what the model gets wrong on its own. That's your empirical baseline for what actually needs to be here. If no, cut it.
 
 **Do not include:**
 
 - General GROQ syntax (the tutorial covers this)
 - Field lists or type descriptions (the schema covers this)
-- Response formatting guidance (the response style section covers this)
+- Response formatting guidance (that belongs in the system prompt; see the `shape-your-agent` skill)
 - Anything the agent would figure out on its own
 
 **Output:** A draft Instructions block, typically 10-40 lines depending on dataset complexity.
@@ -237,9 +251,9 @@ Go through the draft Instructions line by line. For each claim, show the user:
 
 Example:
 
-> **Claim:** "Always filter drafts using `!(_id in path("drafts.**"))` — there is no status field"
+> **Claim:** "Guides are `article` documents with `articleType == "howto"` — there is no `guide` category"
 >
-> **Evidence:** `*[_type == "article" && defined(status)][0..2]` → 0 results. `*[_type == "article" && _id in path("drafts.**")][0..2]` → 3 draft documents found.
+> **Evidence:** `*[_type == "article" && category == "guide"][0...3]` → 0 results. `array::unique(*[_type == "article"].articleType)` → `["howto", "news", "opinion"]`.
 >
 > **Is this correct?**
 
@@ -268,25 +282,18 @@ Present the final Instructions content and filter to the user for one last revie
 >
 > Ready to deploy?
 
-**Path A (write access):**
+The user saves the configuration in the Context app. Give them exactly what to paste:
 
-1. Write the `instructions` and `groqFilter` fields to the draft context doc
-2. Verify by querying the draft MCP endpoint — confirm the instructions appear in `## Custom instructions`
-3. **Promote to production:** Either update the production context doc's `instructions` and `groqFilter` fields to match, or update the production agent's MCP URL to point to the new slug
-4. Verify the production endpoint serves the correct instructions
+1. Open the **Context** app in the Sanity Dashboard and select the **production** endpoint
+2. **Instructions** field: [final instructions block]
+3. **GROQ filter** field: [final GROQ expression]. The new value replaces the saved one. If you tuned with `?groqFilter=` on an endpoint that already had a filter, the filter you tested was `(<saved filter>) && (<your filter>)`, so paste that combined expression unless the user wants to drop the old one
+4. Save. Changes take effect on the next connection, with no redeploy of the agent. If the agent caches `/initial-context`, instruction changes show up when that cache refreshes
 
-**Path B (no write access):**
+Changing the GROQ filter also needs the Administrator or Developer role on every attached dataset's project. If the user gets a 403 on save, someone with that role has to make the change.
 
-1. Provide the final MCP URL with all params baked in:
-   ```
-   https://api.sanity.io/vX/context/mcp/{project}/{dataset}/{slug}?instructions=<URL-encoded>&groqFilter=<URL-encoded>
-   ```
-2. Also provide the raw content separately for the user to paste into their Sanity Context document in Sanity Studio:
-   - **Instructions field:** [final instructions block]
-   - **Filter field:** [GROQ expression]
-   - Location: Sanity Studio → Sanity Context document → Instructions / Filter fields
+Paste into the production endpoint rather than pointing the agent at the draft: the endpoint name is part of the URL and can't be renamed, so switching endpoints means changing the agent's configuration.
 
-**After deployment, verify:** Query the production MCP endpoint and confirm the instructions and filter are active.
+**After saving, verify:** fetch `/initial-context` from the production endpoint **without** any `instructions` or `groqFilter` params, and confirm the `Context Instructions` section matches. Run one of the expected questions to confirm the filter is active. If a `tuning-draft` endpoint was created, remind the user they can delete it in the Context app.
 
 **Output:** Instructions and filter live in production, verified working.
 
@@ -324,7 +331,7 @@ Throughout the session, maintain a mental model of:
 
 ```
 - [ ] MCP access verified
-- [ ] Working environment set up (draft context doc or URL params)
+- [ ] Working environment set up (URL params, plus a draft endpoint if needed)
 - [ ] Existing instructions reviewed (if any)
 - [ ] Schema discussed with user
 - [ ] Filter agreed and applied
@@ -332,7 +339,7 @@ Throughout the session, maintain a mental model of:
 - [ ] Questions explored and findings tracked
 - [ ] Draft instructions written
 - [ ] Each claim verified with evidence
-- [ ] Instructions deployed to production
+- [ ] Instructions and filter saved in the Context app
 - [ ] Production deployment verified
 ```
 

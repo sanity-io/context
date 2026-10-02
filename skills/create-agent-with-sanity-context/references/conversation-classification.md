@@ -22,8 +22,8 @@ Before setting up insights, gather:
 | Requirement                | Where used              | Notes                                                                                                                      |
 | -------------------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | **Sanity organization ID** | Both                    | From [sanity.io/manage](https://sanity.io/manage), the organization that owns the Context endpoint                          |
-| **MCP endpoint name**      | Both                    | The last path segment of the MCP URL (from the Sanity Context plugin in Studio)                                            |
-| **Sanity API token**       | Both                    | Authenticates the Sanity client. Keep it server-side only                                                                  |
+| **MCP endpoint name**      | Both                    | The endpoint's name in the Context app, which is also the last path segment of the MCP URL                               |
+| **Organization API token** | Both                    | Context **Editor** permissions, created in Manage under the organization's API > Tokens. Keep it server-side only          |
 | **LLM API key**            | Classification (Step 3) | For the scheduled function that classifies conversations (Anthropic, OpenAI, etc.)                                         |
 
 ## Project Structure
@@ -79,7 +79,7 @@ import {streamText} from 'ai'
 // Server-side only: the token must never reach the browser
 const client = createClient({
   apiVersion: 'v2025-11-27',
-  token: process.env.SANITY_API_TOKEN,
+  token: process.env.SANITY_ORGANIZATION_TOKEN,
   context: {organizationId: process.env.SANITY_ORGANIZATION_ID},
   useCdn: false,
   useProjectHostname: false,
@@ -102,7 +102,7 @@ const result = streamText({
 })
 ```
 
-**Token**: The client authenticates with a Sanity API token that can write to the organization's Context store (a read-only Viewer token covers MCP queries but not conversation writes). Ask the user if they already have one in their environment; many projects do (e.g. `SANITY_API_TOKEN`). Keep it server-side only.
+**Token**: The client authenticates with an organization API token with Context **Editor** permissions. A Context Viewer token reads the MCP but can't record conversations, and project tokens don't work at all. If the agent already uses a Viewer token for the MCP, replace it with one Editor token for both rather than juggling two. Keep it server-side only.
 
 **Thread ID**: Each conversation needs a unique `threadId`. Generate one when a new chat starts and persist it across messages in that conversation. How it reaches the server depends on the setup:
 
@@ -169,18 +169,18 @@ import {scheduledEventHandler} from '@sanity/functions'
 export const handler = scheduledEventHandler(async () => {
   // These are injected by the blueprint's env block. The names are examples,
   // so adapt to match the user's env var conventions.
-  const {SANITY_ORGANIZATION_ID, SANITY_CONTEXT_ENDPOINT_NAME, SANITY_API_TOKEN} = process.env
+  const {SANITY_ORGANIZATION_ID, SANITY_CONTEXT_ENDPOINT_NAME, SANITY_ORGANIZATION_TOKEN} = process.env
 
-  if (!SANITY_ORGANIZATION_ID || !SANITY_CONTEXT_ENDPOINT_NAME || !SANITY_API_TOKEN) {
+  if (!SANITY_ORGANIZATION_ID || !SANITY_CONTEXT_ENDPOINT_NAME || !SANITY_ORGANIZATION_TOKEN) {
     console.error(
-      '[classify-conversations] Missing SANITY_ORGANIZATION_ID, SANITY_CONTEXT_ENDPOINT_NAME, or SANITY_API_TOKEN',
+      '[classify-conversations] Missing SANITY_ORGANIZATION_ID, SANITY_CONTEXT_ENDPOINT_NAME, or SANITY_ORGANIZATION_TOKEN',
     )
     return
   }
 
   const client = createClient({
     apiVersion: 'v2025-11-27',
-    token: SANITY_API_TOKEN,
+    token: SANITY_ORGANIZATION_TOKEN,
     context: {organizationId: SANITY_ORGANIZATION_ID},
     useCdn: false,
     useProjectHostname: false,
@@ -216,7 +216,7 @@ export default defineBlueprint({
         ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
         SANITY_ORGANIZATION_ID: process.env.SANITY_ORGANIZATION_ID,
         SANITY_CONTEXT_ENDPOINT_NAME: process.env.SANITY_CONTEXT_ENDPOINT_NAME,
-        SANITY_API_TOKEN: process.env.SANITY_API_TOKEN,
+        SANITY_ORGANIZATION_TOKEN: process.env.SANITY_ORGANIZATION_TOKEN,
       },
       event: {
         expression: '*/10 * * * *', // Every 10 minutes
@@ -238,7 +238,7 @@ All four are passed via the blueprint's `env` block (Step 4). The blueprint read
 # Example: use the env var names from the project's existing .env
 SANITY_ORGANIZATION_ID=your-org-id
 SANITY_CONTEXT_ENDPOINT_NAME=my-agent
-SANITY_API_TOKEN=sk...
+SANITY_ORGANIZATION_TOKEN=sk...
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
@@ -248,7 +248,7 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 Before deploying, verify the full pipeline works:
 
-1. **Conversations are saved**: Check the Context dashboard for conversations (send a few messages to your agent first)
+1. **Conversations are saved**: Check Insights in the Context app for conversations (send a few messages to your agent first)
 2. **Classification runs**: Execute the function locally:
 
 ```bash
@@ -345,7 +345,11 @@ Previously identified content gaps are fed back into the prompt so the model reu
 
 ### 401 errors from the Context API
 
-The Sanity API token is missing or invalid. Verify `SANITY_API_TOKEN` is set in the function's env (check the blueprint's `env` block and your `.env`).
+The organization token is missing or invalid, or belongs to a different organization than `SANITY_ORGANIZATION_ID`. Verify `SANITY_ORGANIZATION_TOKEN` is set in the function's env (check the blueprint's `env` block and your `.env`).
+
+### 403 `insightsWriteAccessDenied`
+
+The token can't record conversations. Recording Insights requires an organization token with Context **Editor** access or higher; a Viewer token only reads the MCP.
 
 ### 404 errors from the Context API
 
@@ -355,8 +359,8 @@ The organization ID or thread ID doesn't resolve. Verify `SANITY_ORGANIZATION_ID
 
 - Conversations need to sit idle for `settledForMinutes` (default 10) before they enter the pending queue
 - If you pass `mcpEndpoint`, only conversations tagged with that name via `metadata.mcpEndpoints` qualify
-- Conversations with a recorded classification failure are not retried; check the dashboard for errors
-- Check that telemetry is saving conversations: look for them in the Context dashboard
+- Conversations with a recorded classification failure are not retried; check Insights in the Context app for errors
+- Check that telemetry is saving conversations: look for them in Insights in the Context app
 
 ## Insights API Reference
 

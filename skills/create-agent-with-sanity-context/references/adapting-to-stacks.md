@@ -18,7 +18,7 @@ Regardless of framework, the integration follows this flow:
 ```
 1. Fetch initial context via HTTP (${MCP_URL}/initial-context) — cache the result
 2. Create MCP client with HTTP transport
-3. Authenticate with Sanity API token
+3. Authenticate with the organization API token (Context access)
 4. Get tools from MCP client
 5. Build system prompt with initial context injected
 6. Pass tools to your LLM along with system prompt
@@ -59,7 +59,7 @@ app.post('/api/chat', async (req, res) => {
       transport: {
         type: 'http',
         url: process.env.SANITY_CONTEXT_MCP_URL,
-        headers: {Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`},
+        headers: {Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`},
       },
     }),
     fetchInitialContext(), // See "Initial Context via HTTP" above
@@ -77,7 +77,7 @@ export async function action({request}: ActionFunctionArgs) {
     transport: {
       type: 'http',
       url: process.env.SANITY_CONTEXT_MCP_URL,
-      headers: {Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`},
+      headers: {Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`},
     },
   })
   const tools = await mcpClient.tools()
@@ -99,14 +99,14 @@ async def fetch_initial_context() -> str:
     async with httpx.AsyncClient() as http:
         resp = await http.get(
             url,
-            headers={"Authorization": f"Bearer {os.environ['SANITY_API_TOKEN']}"},
+            headers={"Authorization": f"Bearer {os.environ['SANITY_ORGANIZATION_TOKEN']}"},
         )
         return resp.text
 
 client = Client(
     transport=HttpTransport(
         url=os.environ["SANITY_CONTEXT_MCP_URL"],
-        headers={"Authorization": f"Bearer {os.environ['SANITY_API_TOKEN']}"}
+        headers={"Authorization": f"Bearer {os.environ['SANITY_ORGANIZATION_TOKEN']}"}
     )
 )
 initial_context, tools = await fetch_initial_context(), await client.get_tools()
@@ -156,5 +156,5 @@ When adapting this pattern, understand:
 1. **"What framework are you using?"** — Determines route/endpoint structure
 2. **"What AI SDK or library?"** — Determines how tools are passed to the LLM
 3. **"What's the agent's purpose?"** — Shapes the system prompt
-4. **"What content types will it access?"** — Informs the GROQ filter in Studio
+4. **"What content types will it access?"** — Informs the endpoint's GROQ filter in the Context app
 5. **"Streaming or request/response?"** — Affects response handling
