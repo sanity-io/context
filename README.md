@@ -87,26 +87,7 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
    })
    ```
 
-### Legacy: Studio plugin
-
-> **Deprecated:** Configuration for new setups happens in the Context app. The Studio plugin still works for editing existing Sanity Context documents. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
-
-If you have an existing Sanity Context document, install the plugin to keep editing it in Studio:
-
-```bash
-npm install @sanity/context
-```
-
-```ts
-// sanity.config.ts
-import {defineConfig} from 'sanity'
-import {contextPlugin} from '@sanity/context/studio'
-
-export default defineConfig({
-  // ...existing config
-  plugins: [contextPlugin()],
-})
-```
+Using the deprecated Studio plugin? See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
 
 ## Agent Insights
 

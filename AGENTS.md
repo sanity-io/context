@@ -31,28 +31,14 @@ This repo contains the `@sanity/context` package, agent skills for building and 
 
 ## Package: @sanity/context
 
-Two current entry points, plus a deprecated one:
-
 ```ts
 // Insights: AI SDK telemetry integration
 import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 // Insights: classification primitives
 import {classifyConversations} from '@sanity/context/insights'
-// Deprecated: Studio plugin for legacy `sanity.agentContext` documents
-import {contextPlugin} from '@sanity/context/studio'
 ```
 
-### Deprecated Studio plugin
-
-The plugin still registers the legacy `sanity.agentContext` document type so existing documents stay editable, with a notice pointing at the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide). New setups create an MCP endpoint in the Context app instead. Don't build new features on it, and don't point new-setup docs or skills at it.
-
-| File                                                                          | Purpose                |
-| ----------------------------------------------------------------------------- | ---------------------- |
-| `src/studio/plugin.ts`                                                        | Plugin definition      |
-| `src/studio/context-document/contextSchema.ts`                                | Document type schema   |
-| `src/studio/context-document/context-document-input/ContextDocumentInput.tsx` | Custom form component  |
-| `src/studio/context-document/groq-filter-input/GroqFilterInput.tsx`           | GROQ filter editor     |
-| `src/studio/context-document/groq-filter-input/groqUtils.ts`                  | GROQ parsing utilities |
+The deprecated Studio plugin lives in `src/studio/` (`@sanity/context/studio`). It only keeps legacy documents editable; don't extend it or point docs or skills at it.
 
 ## Development
 
@@ -65,9 +51,9 @@ pnpm check:types  # TypeScript checking
 pnpm check:lint   # ESLint
 ```
 
-### Testing Plugin Changes
+### Testing deprecated plugin changes
 
-Run `pnpm dev` in the root, then in another terminal:
+`sandboxes/dev-studio` exists only for the deprecated plugin. Run `pnpm dev` in the root, then in another terminal:
 
 ```bash
 cd sandboxes/dev-studio

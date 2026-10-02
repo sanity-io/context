@@ -18,51 +18,9 @@ Requires `@sanity/client` ^8.4.0 as a peer dependency, which comes automatically
 | `@sanity/context/ai-sdk`   | AI SDK telemetry integration for Insights   |
 | `@sanity/context/insights` | Lower-level APIs for custom workflows       |
 
-## Studio Plugin
+## Studio Plugin (deprecated)
 
-> **Deprecated:** Context configuration has moved to the Context app in the Sanity Dashboard. The plugin still registers the document type so existing MCP context documents can be edited, but new setups should use the Context app. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
-
-Registers a document type for configuring AI agent access to your Sanity content. Each document defines a content filter that scopes what an agent can query.
-
-```ts
-// sanity.config.ts
-import {defineConfig} from 'sanity'
-import {contextPlugin} from '@sanity/context/studio'
-
-export default defineConfig({
-  // ...
-  plugins: [contextPlugin()],
-})
-```
-
-The plugin also exports `CONTEXT_SCHEMA_TYPE_NAME` which can be used to configure where the document type appears in the Studio structure:
-
-```ts
-import {defineConfig} from 'sanity'
-import {structureTool} from 'sanity/structure'
-import {contextPlugin, CONTEXT_SCHEMA_TYPE_NAME} from '@sanity/context/studio'
-
-export default defineConfig({
-  // ...
-  plugins: [
-    structureTool({
-      structure: (S) =>
-        S.list()
-          .title('Content')
-          .items([
-            // Filter out the Sanity Context document from the default list
-            ...S.documentTypeListItems().filter(
-              (item) => item.getId() !== CONTEXT_SCHEMA_TYPE_NAME,
-            ),
-            // Add it elsewhere, e.g. after a divider
-            S.divider(),
-            S.documentTypeListItem(CONTEXT_SCHEMA_TYPE_NAME),
-          ]),
-    }),
-    contextPlugin(),
-  ],
-})
-```
+Context configuration has moved to the Context app in the Sanity Dashboard. The plugin only keeps existing Sanity Context documents editable in Studio. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
 
 ## Agent Insights
 
