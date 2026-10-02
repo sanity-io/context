@@ -18,7 +18,7 @@ flowchart LR
 
 You create an MCP endpoint in the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard). The endpoint controls what content your agent can access and gets its own MCP URL. Your agent connects to that URL with an organization API token. An endpoint serves either your live dataset (GROQ mode) or [Knowledge Bases](https://www.sanity.io/docs/ai/sanity-context-knowledge-bases) built ahead of time from datasets, websites, and files (Knowledge Base mode, beta).
 
-In GROQ mode, the Sanity Context MCP server exposes these tools (Knowledge Base mode serves `initial_context` and `knowledge_base_read` instead):
+In GROQ mode, the Sanity Context MCP server exposes these tools (Knowledge Base mode serves `initial_context`, `knowledge_base_read`, and `knowledge_base_search` instead):
 
 | Tool                 | What it does                                                                       |
 | -------------------- | ---------------------------------------------------------------------------------- |

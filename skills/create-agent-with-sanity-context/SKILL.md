@@ -109,10 +109,11 @@ If you don't control the system prompt (e.g. using a third-party MCP client), th
 
 **Knowledge Base mode:**
 
-| Tool                  | Purpose                                                                                                                                 |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `initial_context`     | The outline of each Knowledge Base (every entry path with a one-line summary) plus the endpoint's Instructions. Also available via HTTP |
-| `knowledge_base_read` | Read the full content of up to 20 entries in one call, by Knowledge Base id (`kb…`) and entry paths taken verbatim from the outline     |
+| Tool                    | Purpose                                                                                                                                                         |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `initial_context`       | The outline of each Knowledge Base (every entry path with a one-line summary) plus the endpoint's Instructions. Also available via HTTP                         |
+| `knowledge_base_read`   | Read the full content of up to 20 entries in one call, by Knowledge Base id (`kb…`) and entry paths taken verbatim from the outline                             |
+| `knowledge_base_search` | Keyword search over a Knowledge Base's entries (exact matching, up to 20 results). Returns ranked paths to read with `knowledge_base_read`, or the full entries |
 
 **For development and debugging:** The general Sanity MCP provides broader access to your Sanity project (schema deployment, document management, etc.). Useful during development but not intended for customer-facing applications.
 
@@ -196,7 +197,7 @@ curl -X POST https://api.sanity.io/v1/context/organizations/:organizationId/mcp/
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-The response should list `initial_context` and `groq_query` (GROQ mode) or `initial_context` and `knowledge_base_read` (Knowledge Base mode). If it doesn't, see [Troubleshooting](#troubleshooting).
+The response should list `initial_context` and `groq_query` (GROQ mode) or `initial_context`, `knowledge_base_read`, and `knowledge_base_search` (Knowledge Base mode). If it doesn't, see [Troubleshooting](#troubleshooting).
 
 ### Step 2: Build the Agent (Adapt to user's stack)
 
