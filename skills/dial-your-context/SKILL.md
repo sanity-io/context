@@ -54,7 +54,7 @@ curl -X POST "$MCP_URL?instructions=" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"groq_query","arguments":{"query":"*[0...3]._type"}}}'
 ```
 
-Read the schema the production agent sees with `GET $MCP_URL/initial-context` (same auth header, same query params).
+Read the initial context (schema plus instructions) with `GET $MCP_URL/initial-context` (same auth header, same query params).
 
 ## Critical rules
 
@@ -75,7 +75,7 @@ Get the MCP endpoint URL and an organization token from the user (see [Prerequis
 **Decide whether you need a draft endpoint.** Because `?groqFilter=` can only narrow, ask the user what the endpoint's saved GROQ filter is (it's shown on the endpoint in the Context app):
 
 - **No saved filter, or a saved filter you only expect to narrow further:** work against the existing endpoint with URL params. Nothing else to set up.
-- **A saved filter you may need to widen:** ask the user to create a draft endpoint in the Context app (**New MCP endpoint**) with the same dataset source, a name like `tuning-draft`, and no GROQ filter. Creating it needs the Administrator or Developer role on the dataset's project, the same role Step 7 needs to change the filter. Run the session against the draft's URL. The production endpoint stays untouched.
+- **A saved filter you may need to widen:** ask the user to create a draft endpoint in the Context app (**New MCP endpoint**) with the same dataset source, a name like `tuning-draft`, and no GROQ filter. Creating it needs the Administrator or Developer role in the organization and on the dataset's project (the project role is the same one Step 7 needs to change the filter). Run the session against the draft's URL. The production endpoint stays untouched.
 
 Use an empty `?instructions=` on every call until you're testing draft instructions, so existing instructions don't mask what the schema alone gets wrong.
 

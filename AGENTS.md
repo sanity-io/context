@@ -93,7 +93,7 @@ A `?groqFilter=` URL param narrows the saved filter (combined with `&&`); it nev
 https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
 ```
 
-Agents connect via HTTP transport with a Bearer token: an **organization** API token with Context access (Viewer to read; Editor to also record Insights). Project tokens are refused with HTTP 403 (JSON-RPC `-32007`, code `contextGrantRequired`).
+Agents connect via HTTP transport with a Bearer token: an **organization** API token with Context access (Viewer to read; Editor to also record Insights). Project tokens are refused with HTTP 403 (`-32007` `contextGrantRequired` on dataset endpoints, `-32006` `knowledgeBaseAccessDenied` on Knowledge Base endpoints).
 
 ### Insights
 
