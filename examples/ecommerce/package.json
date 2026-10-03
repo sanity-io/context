@@ -13,7 +13,7 @@
     "@sanity/client": "^8.9.0",
     "@sanity/context": "workspace:*",
     "@sanity/functions": "^1.8.0",
-    "ai": "^6.0.287"
+    "ai": "^6.0.299"
   },
   "devDependencies": {
     "@sanity/blueprints": "^0.15.0",
