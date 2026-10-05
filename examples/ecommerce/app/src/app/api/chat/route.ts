@@ -169,11 +169,10 @@ export async function POST(req: Request) {
       initialContext,
     })
 
-    const allMcpTools = await mcpClient.tools()
+    const mcpTools = await mcpClient.tools()
 
     // Drop initial_context only when its payload is inlined above; otherwise the model needs the tool
-    const {initial_context: _, ...mcpToolsWithoutInitialContext} = allMcpTools
-    const mcpTools = initialContext ? mcpToolsWithoutInitialContext : allMcpTools
+    if (initialContext) delete mcpTools.initial_context
     const tools = {...mcpTools, ...clientTools}
 
     const modelId = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL
@@ -215,10 +214,9 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     await mcpClient?.close()
+    // Keep details in the server log; upstream errors can include internal response bodies
+    console.error(error)
 
-    return Response.json(
-      {error: error instanceof Error ? error.message : 'An unexpected error occurred'},
-      {status: 500},
-    )
+    return Response.json({error: 'An unexpected error occurred'}, {status: 500})
   }
 }
