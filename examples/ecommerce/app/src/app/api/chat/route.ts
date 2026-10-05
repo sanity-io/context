@@ -3,9 +3,11 @@ import {createMCPClient, type MCPClient} from '@ai-sdk/mcp'
 import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 import {
   convertToModelMessages,
+  createUIMessageStreamResponse,
   type Experimental_DownloadFunction,
   stepCountIs,
   streamText,
+  toUIMessageStream,
   type UIMessage,
 } from 'ai'
 
@@ -169,8 +171,10 @@ export async function POST(req: Request) {
 
     const allMcpTools = await mcpClient.tools()
 
-    // Exclude initial_context tool, its data is already in the system prompt
-    const {initial_context: _, ...mcpTools} = allMcpTools
+    // Drop initial_context only when its payload is inlined above; otherwise the model needs the tool
+    const {initial_context: _, ...mcpToolsWithoutInitialContext} = allMcpTools
+    const mcpTools = initialContext ? mcpToolsWithoutInitialContext : allMcpTools
+    const tools = {...mcpTools, ...clientTools}
 
     const modelId = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL
 
@@ -185,10 +189,7 @@ export async function POST(req: Request) {
       instructions: systemPrompt,
       messages: await convertToModelMessages(messages),
       experimental_download: downloadDataUrls,
-      tools: {
-        ...mcpTools,
-        ...clientTools,
-      },
+      tools,
       stopWhen: stepCountIs(MAX_STEPS),
       telemetry: {
         integrations: [
@@ -209,8 +210,8 @@ export async function POST(req: Request) {
       },
     })
 
-    return result.toUIMessageStreamResponse({
-      originalMessages: messages,
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({stream: result.stream, tools, originalMessages: messages}),
     })
   } catch (error) {
     await mcpClient?.close()

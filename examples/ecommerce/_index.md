@@ -37,7 +37,6 @@ app/src/components/chat/
 ├── chat-input.tsx                # Input field
 ├── chat-button.tsx               # Floating button to open chat
 ├── loader.tsx                    # Loading indicator
-├── tool-call.tsx                 # Debug tool call display
 └── message/
     ├── message.tsx               # Message rendering
     ├── text-part.tsx             # Text with markdown + directive parsing
