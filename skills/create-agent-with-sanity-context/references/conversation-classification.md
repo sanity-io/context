@@ -88,7 +88,6 @@ const client = createClient({
 const result = streamText({
   model: anthropic('claude-sonnet-4-5'),
   messages,
-  // On AI SDK v6, use `experimental_telemetry: {isEnabled: true, integrations: [...]}` instead
   telemetry: {
     integrations: [
       sanityInsightsIntegration({
@@ -149,7 +148,7 @@ Each save is an idempotent upsert per thread: the messages replace the stored tr
 
 Ensure these packages are in the `package.json` next to `sanity.blueprint.ts`, merged into existing dependencies (do not overwrite the file):
 
-**dependencies**: `@ai-sdk/anthropic` (^4 with ai v7, ^3 with ai v6), `@sanity/client` (^8.4.0), `@sanity/context` (latest), `@sanity/functions` (^1), `ai` (^6.0.175 or ^7; telemetry integrations go in `telemetry.integrations` on v7, `experimental_telemetry.integrations` on v6)
+**dependencies**: `@ai-sdk/anthropic` (or your provider's package), `@sanity/client`, `@sanity/context`, `@sanity/functions`, `ai`. Use the latest versions on the same majors as [ecommerce/package.json](ecommerce/package.json) and [ecommerce/app/package.json](ecommerce/app/package.json).
 
 **devDependencies**: `@sanity/blueprints` (latest), `dotenv` (^17)
 
@@ -319,7 +318,7 @@ The `sanityInsightsIntegration` hooks into AI SDK's telemetry system:
 
 - **On request start**: Captures input messages
 - **On request finish**: Combines with response messages and saves the transcript via `client.context.conversations.save`
-- **On failure**: A tool call that throws is saved with its error. On AI SDK v7, a failed generation saves the transcript so far plus the error
+- **On failure**: A tool call that throws is saved with its error, and a failed generation saves the transcript so far plus the error
 
 Each save is an idempotent upsert per thread, scoped to the client's organization.
 
@@ -372,7 +371,7 @@ The organization ID or thread ID doesn't resolve. Verify `SANITY_ORGANIZATION_ID
 
 ## Insights API Reference
 
-Every function takes `{client}`: a `@sanity/client` (^8.4.0) created with `createClient({apiVersion: 'v2025-11-27', token, context: {organizationId}, useCdn: false, useProjectHostname: false})`. For staging, add `apiHost: 'https://api.sanity.work'` to the client config.
+Every function takes `{client}`: a `@sanity/client` (^8.4.0) created with `createClient({apiVersion: 'v2025-11-27', token, context: {organizationId}, useCdn: false, useProjectHostname: false})`.
 
 ### `sanityInsightsIntegration`
 
