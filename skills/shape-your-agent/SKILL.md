@@ -174,3 +174,15 @@ Test your prompt against real scenarios:
 - [ ] No overlap with Instructions field content
 - [ ] Under 500 words (aim for 200-400)
 - [ ] Tested against 5+ real user questions
+
+### The separation principle
+
+| Layer                  | Controls                  | Example                                                        |
+| ---------------------- | ------------------------- | -------------------------------------------------------------- |
+| **System prompt**      | Agent behavior            | "Never quote exact pricing"                                    |
+| **Instructions field** | Data guidance             | "`price` is stored in cents; divide by 100 for dollars"        |
+| **MCP**                | Query mechanics           | GROQ syntax, tool usage                                        |
+| **System prompt**      | Communicating uncertainty | "Say 'I don't have that information' and suggest alternatives" |
+| **Instructions field** | Recovery tactics          | "If product search returns empty, try support-article type"    |
+
+Each layer has its job. Don't cross the streams.
