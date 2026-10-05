@@ -28,11 +28,20 @@ Before setting up insights, gather:
 
 ## Project Structure
 
-**First, check if the project already has a `sanity.blueprint.ts`**: search the full repo. If one exists with deployed functions, add the classification function there. Do not create a second blueprint.
+Scheduled classification uses **Sanity Blueprints** to deploy **Sanity Functions**.
 
-If no blueprint exists, create one following the [placement rules in SKILL.md](../SKILL.md#sanity-blueprints--functions). The default placement is next to the project's lockfile.
+Before adding files, search the project for an existing `sanity.blueprint.ts`. If one exists with deployed functions, add the new function there — even if it's not next to the lockfile. An existing working setup takes precedence over the default placement rules below. Only follow these rules when creating a new blueprint from scratch.
 
-If creating a new blueprint in a **monorepo**, the default placement is the workspace root (next to the lockfile):
+Find the project's lockfile (`yarn.lock`, `pnpm-lock.yaml`, or `package-lock.json`). Two rules for new blueprints:
+
+1. **`sanity.blueprint.ts` must be in the same directory as the lockfile.** The CLI detects the package manager from the lockfile. If no lockfile is present, pass `--fn-installer pnpm` (or `npm`/`yarn`) to the deploy command.
+2. **Function `src` paths are resolved relative to the blueprint file.** By default a function named `classify-conversations` maps to `functions/classify-conversations/` next to the blueprint. Use the `src` property in `defineScheduledFunction` to point to a different directory.
+
+**In a monorepo** with no existing blueprint, the lockfile is at the workspace root — so `sanity.blueprint.ts` and `functions/` go there too, alongside the root `package.json`. However, if a blueprint already exists in a subdirectory (e.g. `apps/studio/`) and functions are successfully deploying from there, use that location. The CLI can work from subdirectories when configured correctly (e.g. with `--fn-installer pnpm`).
+
+**Dependencies**: Functions use the `package.json` next to the blueprint for dependencies by default (`project-level`). Each function can alternatively have its own `package.json` (`function-level`), but a function uses one or the other — never both. See [Sanity Functions: Dependencies](https://www.sanity.io/docs/functions/function-dependencies).
+
+Example layout for a new blueprint in a monorepo:
 
 ```
 my-monorepo/
@@ -48,22 +57,7 @@ my-monorepo/
     └── web/
 ```
 
-In a **flat project**, the layout is the same, with everything at the root:
-
-```
-my-project/
-├── sanity.blueprint.ts
-├── functions/
-│   └── classify-conversations/
-│       └── index.ts
-├── package.json
-├── pnpm-lock.yaml
-├── .env
-├── studio/
-└── app/
-```
-
-These are reference layouts for new blueprints, so always adapt to the user's existing directory structure. If a blueprint already exists elsewhere, use that location instead. If the project has multiple blueprint stacks in a subdirectory pattern (e.g. `apps/blueprints/studio/`, `apps/blueprints/web/`), create a new stack following the same convention.
+This is a reference layout for a new blueprint, so always adapt to the user's existing directory structure. If a blueprint already exists elsewhere, use that location instead. If the project has multiple blueprint stacks in a subdirectory pattern (e.g. `apps/blueprints/studio/`, `apps/blueprints/web/`), create a new stack following the same convention.
 
 ## Setup
 
@@ -109,16 +103,6 @@ const result = streamText({
 - **Custom transport**: Pass the thread ID via request body, headers, or cookies, whatever fits the app's architecture.
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts): it takes `id` from the `useChat` request body and uses it as `threadId`.
-
-For client-side thread ID generation, use SSR-safe initialization to avoid hydration mismatches:
-
-```tsx
-const [threadId] = useState(() =>
-  typeof window !== 'undefined' ? crypto.randomUUID() : ''
-)
-```
-
-Then pass it to your chat API via request body or headers.
 
 **Not using AI SDK?** The telemetry integration requires Vercel AI SDK. If using another library, save transcripts with `client.context.conversations.save` from `@sanity/client` directly:
 
@@ -310,39 +294,6 @@ npx sanity functions logs classify-conversations
 npx sanity functions test classify-conversations --with-user-token
 ```
 
-## How It Works
-
-### Conversation Saving
-
-The `sanityInsightsIntegration` hooks into AI SDK's telemetry system:
-
-- **On request start**: Captures input messages
-- **On request finish**: Combines with response messages and saves the transcript via `client.context.conversations.save`
-- **On failure**: A tool call that throws is saved with its error, and a failed generation saves the transcript so far plus the error
-
-Each save is an idempotent upsert per thread, scoped to the client's organization.
-
-### Classification
-
-The `getConversationsToClassify` primitive queries the pending queue with GROQ via `client.context.fetch`. A conversation is pending when it:
-
-- Has never been classified
-- Has no recorded classification failure
-- Is non-empty
-- Has been idle for `settledForMinutes` (default 10, caller-owned)
-
-Results are ordered oldest first and returned as summaries (no transcript). Pass `mcpEndpoint` to narrow to conversations tagged with that endpoint name.
-
-The `classifyConversation` primitive:
-
-1. Fetches the full transcript via the client (unless messages are provided)
-2. Sends the messages to your LLM with a classification prompt
-3. Records the verdict (success score, sentiment, content gaps) through `client.context.conversations.classify`
-
-If classification fails, the error is recorded on the conversation as `classificationError`, which removes it from the pending queue, and the error is re-thrown.
-
-Previously identified content gaps are fed back into the prompt so the model reuses consistent gap terminology across runs.
-
 ## Troubleshooting
 
 ### Function not running
@@ -373,19 +324,6 @@ The organization ID or thread ID doesn't resolve. Verify `SANITY_ORGANIZATION_ID
 
 Every function takes `{client}`: a `@sanity/client` (^8.4.0) created with `createClient({apiVersion: 'v2025-11-27', token, context: {organizationId}, useCdn: false, useProjectHostname: false})`.
 
-### `sanityInsightsIntegration`
-
-```ts
-import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
-
-sanityInsightsIntegration({
-  client: SanityClient, // Org-scoped client with a server-side token
-  threadId: string | (() => string), // Thread identifier
-  metadata?: Record<string, string | string[]>, // Dimensions recorded on the conversation;
-  // the well-known mcpEndpoints key tags it with an MCP endpoint name
-})
-```
-
 ### `classifyConversations`
 
 The recommended way to classify conversations. Handles fetching, batching, and error handling in a single call:
@@ -411,15 +349,3 @@ For custom workflows, use the individual primitives directly:
 - `getConversationsToClassify({client, limit?, settledForMinutes?, mcpEndpoint?})`: GROQ query for the pending classification queue (summaries only)
 - `getPreviousContentGaps({client})`: GROQ query for known content gaps ranked by frequency
 - `classifyConversation({client, threadId, model, previousContentGaps?, messages?})`: Classify a single conversation; fetches the transcript via the client when `messages` is omitted, and records the verdict or a `classificationError` through `client.context.conversations.classify`
-
-```ts
-import {classifyConversation, getConversationsToClassify, getPreviousContentGaps} from '@sanity/context/insights'
-```
-
-Saving a transcript is `client.context.conversations.save({threadId, messages, metadata?, modelProvider?, modelId?, tokenUsage?})` from `@sanity/client` directly. Reading conversations back for dashboards or reports is plain GROQ:
-
-```ts
-await client.context.fetch(
-  '*[_type == "sanity.context.conversation"] | order(messagesUpdatedAt desc) [0...50]',
-)
-```

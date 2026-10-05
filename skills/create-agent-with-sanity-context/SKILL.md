@@ -7,13 +7,6 @@ description: Build AI agents with structured access to Sanity content via Sanity
 
 Give AI agents intelligent access to your Sanity content. Unlike embedding-only approaches, Sanity Context is schema-aware—agents can reason over your content structure, query with real field values, follow references, and combine structural filters with semantic search.
 
-**What this enables:**
-
-- Agents understand the relationships between your content types
-- Queries use actual schema fields, not just text similarity
-- Results respect your content model (categories, tags, references)
-- Semantic search is available when needed, layered on structure
-
 Sanity Context gives agents your schema and teaches them GROQ, but it can't know your domain. You close that gap through the **Instructions field** (dataset-specific query guidance) and optionally the **system prompt** (agent behavior and tone).
 
 **Three actors in this workflow:**
@@ -83,9 +76,7 @@ The Context app shows the URL once the endpoint is created. Changes to instructi
 - `?groqFilter=<expression>` — **Narrows** the endpoint's filter. The saved filter always still applies; the two are combined with `&&`
 - `?perspective=drafts|raw|<releaseId>` — Content perspective. Defaults to `published`
 
-**The integration is simple**: Connect to the MCP URL, get tools, use them. The reference implementation shows one way to do this—adapt to your stack and LLM provider.
-
-**Initial context (recommended):**
+**Initial context:**
 
 Always fetch the initial context via the `/initial-context` HTTP endpoint and inject it into the system prompt. This gives a significant latency improvement on the first message—the agent already knows the schema and available tools without needing a tool call. It also enables better prompt caching since the schema prefix is stable across conversations.
 
@@ -123,18 +114,18 @@ Don't hardcode the tool list. The set grows over time, so take it from the MCP c
 
 A complete integration has **four distinct components** that may live in different places:
 
-| Component                   | What it is                                                                                           | Examples                                                                                                                                                |
-| --------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1. MCP Endpoint**         | A deployed schema (GROQ mode) or a built Knowledge Base, plus an endpoint created in the Context app | Studio (v5.1.0+) for the schema deploy, Context app in the Sanity Dashboard for Knowledge Bases and the endpoint                                        |
-| **2. Agent Implementation** | Code that connects to Sanity Context and handles LLM interactions                                    | Next.js API route, Express server, Python service, or any MCP-compatible client                                                                         |
-| **3. Frontend**             | UI for users to interact with the agent                                                              | Chat widget, search interface, CLI—or none for backend services                                                                                         |
-| **4. Functions**            | Scheduled classification via Sanity Blueprints (only with Insights, Step 3)                          | `sanity.blueprint.ts` + `functions/` directory — has its own placement constraints (see [Sanity Blueprints & Functions](#sanity-blueprints--functions)) |
+| Component                   | What it is                                                                                           | Examples                                                                                                                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. MCP Endpoint**         | A deployed schema (GROQ mode) or a built Knowledge Base, plus an endpoint created in the Context app | Studio (v5.1.0+) for the schema deploy, Context app in the Sanity Dashboard for Knowledge Bases and the endpoint                                                                    |
+| **2. Agent Implementation** | Code that connects to Sanity Context and handles LLM interactions                                    | Next.js API route, Express server, Python service, or any MCP-compatible client                                                                                                     |
+| **3. Frontend**             | UI for users to interact with the agent                                                              | Chat widget, search interface, CLI—or none for backend services                                                                                                                     |
+| **4. Functions**            | Scheduled classification via Sanity Blueprints (only with Insights, Step 3)                          | `sanity.blueprint.ts` + `functions/` directory — has its own placement constraints (see [Insights: Project Structure](references/conversation-classification.md#project-structure)) |
 
 An MCP endpoint is always required, backed by a deployed schema (GROQ mode, Studio v5.1.0+) or a built Knowledge Base: the agent has nothing to connect to without them. Frontend depends on the use case (many agents run as backend services or integrate into existing UIs).
 
 **Before writing any code, inspect the project to understand:**
 
-1. **Project layout**: Read the top-level `package.json` (check for `workspaces` or a `pnpm-workspace.yaml`), locate the lockfile, and map out the distinct apps/packages. This determines where `sanity.blueprint.ts` and `functions/` will go — see [Sanity Blueprints & Functions](#sanity-blueprints--functions).
+1. **Project layout**: Read the top-level `package.json` (check for `workspaces` or a `pnpm-workspace.yaml`), locate the lockfile, and map out the distinct apps/packages. This determines where `sanity.blueprint.ts` and `functions/` will go — see [Insights: Project Structure](references/conversation-classification.md#project-structure).
 2. **Their stack**: What framework/runtime? (Next.js, Remix, Node server, Python, etc.)
 3. **Their AI library**: Vercel AI SDK, LangChain, direct API calls, etc.
 4. **Their domain**: What will the agent help with? (Shopping, docs, support, search, etc.)
@@ -213,13 +204,6 @@ The response should return a `result.tools` array that includes `initial_context
 
 **Offer Insights; the user decides.** Without tracking, there's no easy way to know whether the agent is helping users or failing silently. Insights shows what users ask, where the agent struggles, and what content is missing. It adds a Context Editor token and a scheduled function, so skip it if the user doesn't want that yet.
 
-**What this unlocks:**
-
-- See which conversations succeed and which fail
-- Discover content gaps — topics users ask about that the agent can't answer well
-- Debug specific conversations with full transcripts
-- Compare performance across multiple agents
-
 **If the user wants it, setup is two parts — do both:**
 
 1. **Telemetry** — Add one integration to your existing `streamText` call (stores conversation transcripts in the organization's Context store). Recording conversations needs a Context **Editor** token; one Editor token can serve both the MCP and Insights
@@ -239,56 +223,8 @@ Once the production agent works:
 
 2. **Shape the system prompt** (optional) using the `shape-your-agent` skill — if the user controls the production agent's system prompt, this helps define tone, boundaries, and guardrails. Skip this if the user doesn't control the system prompt.
 
-## Sanity Blueprints & Functions
-
-Scheduled classification uses **Sanity Blueprints** to deploy **Sanity Functions**.
-
-### Placement principles
-
-Before adding files, search the project for an existing `sanity.blueprint.ts`. If one exists with deployed functions, add the new function there — even if it's not next to the lockfile. An existing working setup takes precedence over the default placement rules below. Only follow these rules when creating a new blueprint from scratch.
-
-Find the project's lockfile (`yarn.lock`, `pnpm-lock.yaml`, or `package-lock.json`). Two rules for new blueprints:
-
-1. **`sanity.blueprint.ts` must be in the same directory as the lockfile.** The CLI detects the package manager from the lockfile. If no lockfile is present, pass `--fn-installer pnpm` (or `npm`/`yarn`) to the deploy command.
-2. **Function `src` paths are resolved relative to the blueprint file.** By default a function named `classify-conversations` maps to `functions/classify-conversations/` next to the blueprint. Use the `src` property in `defineScheduledFunction` to point to a different directory.
-
-**In a monorepo** with no existing blueprint, the lockfile is at the workspace root — so `sanity.blueprint.ts` and `functions/` go there too, alongside the root `package.json`. However, if a blueprint already exists in a subdirectory (e.g. `apps/studio/`) and functions are successfully deploying from there, use that location. The CLI can work from subdirectories when configured correctly (e.g. with `--fn-installer pnpm`).
-
-**Dependencies**: Functions use the `package.json` next to the blueprint for dependencies by default (`project-level`). Each function can alternatively have its own `package.json` (`function-level`), but a function uses one or the other — never both. See [Sanity Functions: Dependencies](https://www.sanity.io/docs/functions/function-dependencies).
-
-### Commands
-
-Run from the directory containing `sanity.blueprint.ts`:
-
-| Command                                              | Purpose                                                 |
-| ---------------------------------------------------- | ------------------------------------------------------- |
-| `npx sanity blueprints init`                         | Initialize the blueprint stack (first time only)        |
-| `npx sanity blueprints promote`                      | Promote to org scope (required for scheduled functions) |
-| `npx sanity blueprints doctor`                       | Check blueprint health and flag issues                  |
-| `npx sanity blueprints plan`                         | Preview what deploy will change                         |
-| `npx sanity blueprints deploy`                       | Deploy blueprint and functions                          |
-| `npx sanity functions env add <fn> <key> <value>`    | Set an env var (after deploy)                           |
-| `npx sanity functions logs <name>`                   | View function logs                                      |
-| `npx sanity functions test <name> --with-user-token` | Test function locally                                   |
-
-## GROQ with Semantic Search
-
-Sanity Context supports `text::semanticSimilarity()` for semantic ranking:
-
-```groq
-*[_type == "article" && category == "guides"]
-  | score(text::semanticSimilarity("getting started tutorial"))
-  | order(_score desc)
-  { _id, title, summary }[0...10]
-```
-
-Always use `order(_score desc)` when using `score()` to get best matches first.
-
 ## Best Practices
 
-- **Start simple**: Build the basic integration first, then add advanced patterns as needed
-- **Schema design**: Use descriptive field names—agents rely on schema understanding
-- **GROQ queries**: Always include `_id` in projections so agents can reference documents
 - **Content filters**: Use the endpoint's GROQ filter to scope what the production agent sees — start broad, then narrow based on what it actually needs. The filter is a GROQ filter expression, the part inside `*[...]`, not a full query or projection. Examples: `_type in ["product", "article"]`, `_type == "article" && language == "en"`, `_type == "product" && references(*[_type == "category" && slug.current == "electronics"]._id)`
 - **Instructions field**: Keep it concise — only include what the auto-generated schema doesn't make obvious. Don't duplicate schema information. See the `dial-your-context` skill.
 - **System prompts**: Be explicit about forbidden behaviors and formatting rules. Less is more — an over-engineered prompt can interfere with the Instructions content. See the `shape-your-agent` skill.
