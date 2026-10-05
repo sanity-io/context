@@ -133,7 +133,6 @@ An MCP endpoint is always required, backed by a deployed schema (GROQ mode, Stud
 - **Co-located components**: All in the same project—work through them based on what the user wants to tackle first.
 - **No Studio in the codebase?** For GROQ mode, ask the user whether the schema is already deployed from a Studio elsewhere. If it isn't, it has to be deployed before the endpoint will serve. Knowledge Base mode doesn't need a deployed schema.
 
-The reference patterns use Next.js + Vercel AI SDK, but adapt to whatever the user is working with.
 
 ## Workflow
 
@@ -196,19 +195,9 @@ The response should return a `result.tools` array that includes `initial_context
 
 **Building from scratch?** Help the user set up the MCP connection and LLM integration. The reference implementations use Vercel AI SDK with Anthropic, but the pattern works with any LLM provider (OpenAI, local models, etc.). Start with the basics and add advanced patterns as needed.
 
-**Framework-specific guides:**
+**Follow [references/connecting-an-agent.md](references/connecting-an-agent.md)**: install, the initial context fetch, a request/response pattern for CLIs and APIs, a streaming route for chat UIs with where it goes in each framework, framework pitfalls, and a map of the full Next.js reference implementation.
 
-- **Next.js**: See [references/nextjs-agent.md](references/nextjs-agent.md)
-- **SvelteKit**: See [references/sveltekit-agent.md](references/sveltekit-agent.md)
-- **Other stacks** (Express, Remix, Python, LangChain): See [references/adapting-to-stacks.md](references/adapting-to-stacks.md)
-
-**System prompts** (applies to all frameworks): See [references/system-prompts.md](references/system-prompts.md) for structure and domain-specific examples (e-commerce, docs, support, content curation).
-
-The framework guides cover:
-
-- **Core setup** (required): MCP connection, authentication, basic chat route
-- **Frontend** (optional): Chat component for the framework, including markdown rendering (LLM responses are markdown — a renderer like `react-markdown` or `marked` is needed to display formatted output)
-- **Advanced patterns** (optional): Client-side tools, auto-continuation, custom directive rendering
+**System prompt:** keep it short and focused on behavior; the `shape-your-agent` skill covers what to put in it.
 
 ### Step 3: Conversation Insights (Optional)
 
@@ -284,17 +273,6 @@ Sanity Context supports `text::semanticSimilarity()` for semantic ranking:
 ```
 
 Always use `order(_score desc)` when using `score()` to get best matches first.
-
-## Adapting to Different Stacks
-
-The MCP connection pattern is framework and LLM-agnostic. Whether Next.js, Remix, Express, or Python FastAPI—the HTTP transport works the same. Any LLM provider that supports tool calling will work.
-
-See [references/adapting-to-stacks.md](references/adapting-to-stacks.md) for:
-
-- Framework-specific route patterns (Express, Remix, Python)
-- AI library integrations (LangChain, direct API calls)
-
-See [references/system-prompts.md](references/system-prompts.md) for domain-specific examples (e-commerce, docs, support, content curation).
 
 ## Best Practices
 
