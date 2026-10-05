@@ -21,7 +21,7 @@ export interface SanityInsightsConfig {
 
   /**
    * Dimensions recorded on the conversation. The well-known `mcpEndpoints`
-   * key groups conversations by MCP endpoint name in the Context dashboard;
+   * key groups conversations by MCP endpoint name in Insights in the Context app;
    * your own keys ride along for querying.
    */
   metadata?: Context.SaveConversationParams['metadata']
@@ -390,7 +390,7 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): SanityIn
  *
  * const client = createClient({
  *   apiVersion: 'v2025-11-27',
- *   token: process.env.SANITY_API_TOKEN,
+ *   token: process.env.SANITY_ORGANIZATION_TOKEN,
  *   context: {organizationId: 'org-id'},
  * })
  *

@@ -34,7 +34,7 @@ async function fetchInitialContext(): Promise<string | null> {
   const isStale = Date.now() - cacheTimestamp > CACHE_TTL_MS
   const fetchPromise = isStale
     ? fetch(initialContextUrl(mcpUrl), {
-        headers: {Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`},
+        headers: {Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`},
       })
         .then(async (res) => {
           if (res.ok) {
@@ -123,8 +123,8 @@ export async function POST(req: Request) {
     throw new Error('ANTHROPIC_API_KEY is not set')
   }
 
-  if (!process.env.SANITY_API_TOKEN) {
-    throw new Error('SANITY_API_TOKEN is not set')
+  if (!process.env.SANITY_ORGANIZATION_TOKEN) {
+    throw new Error('SANITY_ORGANIZATION_TOKEN is not set')
   }
 
   if (!process.env.SANITY_ORGANIZATION_ID) {
@@ -140,7 +140,7 @@ export async function POST(req: Request) {
           type: 'http',
           url: process.env.SANITY_CONTEXT_MCP_URL,
           headers: {
-            Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`,
+            Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`,
           },
         },
       }),
@@ -174,8 +174,8 @@ export async function POST(req: Request) {
 
     const modelId = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL
 
-    // The MCP endpoint name groups conversations in the Context dashboard.
-    // Falls back to the endpoint segment of the MCP URL (.../{project}/{dataset}/{endpoint}).
+    // The MCP endpoint name groups conversations in Insights in the Context app.
+    // Falls back to the last segment of the MCP URL (.../organizations/{org}/mcp/{endpoint}).
     const mcpEndpointName =
       process.env.SANITY_CONTEXT_ENDPOINT_NAME ??
       new URL(process.env.SANITY_CONTEXT_MCP_URL).pathname.split('/').filter(Boolean).pop()
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
             client: insightsClient,
             threadId: chatId,
             metadata: {
-              // Well-known key: groups conversations by MCP endpoint in the dashboard
+              // Well-known key: groups conversations by MCP endpoint in Insights
               mcpEndpoints: mcpEndpointName ?? [],
               // Custom keys ride along as queryable dimensions
               page: documentContext.pathname,

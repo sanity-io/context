@@ -221,17 +221,6 @@ export type Color = {
   hexValue?: string
 }
 
-export type SanityAgentContext = {
-  _id: string
-  _type: 'sanity.agentContext'
-  _createdAt: string
-  _updatedAt: string
-  _rev: string
-  name?: string
-  slug?: Slug
-  groqFilter?: string
-}
-
 export type SanityImagePaletteSwatch = {
   _type: 'sanity.imagePaletteSwatch'
   background?: string
@@ -348,7 +337,6 @@ export type AllSanitySchemaTypes =
   | SizeReference
   | ProductVariant
   | Color
-  | SanityAgentContext
   | SanityImagePaletteSwatch
   | SanityImagePalette
   | SanityImageDimensions
