@@ -159,7 +159,7 @@ export const POST: RequestHandler = async ({request}) => {
 
 - **Imports**: `createAnthropic` (not bare `anthropic`), env from `$app/env/private`, `RequestHandler` type from `./$types`
 - **MCP URL**: Read from `SANITY_CONTEXT_MCP_URL`, copied from the endpoint in the Context app
-- **Initial context**: Inlined into the instructions and the `initial_context` tool dropped, or the tool kept when the fetch failed. Never neither
+- **Initial context**: Inlined into the instructions, with the `initial_context` tool kept if the fetch failed (see [SKILL.md](../SKILL.md#how-sanity-context-works))
 - **Errors**: Returned as JSON so the browser sees the real message instead of an opaque 500
 
 **SvelteKit-specific details:**

@@ -6,7 +6,7 @@ The MCP connection pattern is framework and LLM-agnostic. This guide gives just 
 
 - [The Universal Pattern](#the-universal-pattern)
 - [Install](#install)
-- [Initial Context: Always Inline It or Keep the Tool](#initial-context-always-inline-it-or-keep-the-tool)
+- [Fetching Initial Context](#fetching-initial-context)
 - [Core Pattern (Request/Response)](#core-pattern-requestresponse)
 - [Different Frameworks](#different-frameworks)
 - [Other AI Libraries and Languages](#other-ai-libraries-and-languages)
@@ -43,14 +43,9 @@ Plain Node doesn't load `.env` files on its own: run with `node --env-file=.env 
 
 ---
 
-## Initial Context: Always Inline It or Keep the Tool
+## Fetching Initial Context
 
-**The model must always get the initial context**: either inlined into the system prompt, or through the `initial_context` tool. Never neither. Without it the agent has no schema (GROQ mode) or outline (Knowledge Base mode) and will guess.
-
-- If the `/initial-context` fetch succeeded, put the payload in the system prompt and remove the `initial_context` tool, so the model doesn't fetch it again.
-- If the fetch failed, keep the `initial_context` tool so the model can still call it.
-
-Append `/initial-context` to the MCP URL **path** (before any query params). Same auth header, same query params:
+The snippets below inline the initial context and drop the `initial_context` tool only when the fetch succeeded, per the rule in [SKILL.md](../SKILL.md#how-sanity-context-works). Append `/initial-context` to the MCP URL **path** (before any query params). Same auth header, same query params:
 
 ```ts
 async function fetchInitialContext(mcpUrl: string, token: string): Promise<string | null> {
@@ -178,7 +173,7 @@ export async function action({request}: {request: Request}) {
       createMCPClient({
         transport: {type: 'http', url: mcpUrl, headers: {Authorization: `Bearer ${token}`}},
       }),
-      fetchInitialContext(mcpUrl, token), // See "Initial Context" above
+      fetchInitialContext(mcpUrl, token), // See "Fetching Initial Context" above
     ])
     mcpClient = client
 

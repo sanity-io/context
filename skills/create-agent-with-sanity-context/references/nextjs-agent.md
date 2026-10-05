@@ -91,7 +91,7 @@ const mcpClient = await createMCPClient({
 
 Always fetch the initial context, cache it with a short TTL (the reference uses 5 minutes), and inject it into the system prompt. This gives a significant latency improvement (the agent already knows the schema without a tool call on the first message) and enables better prompt caching.
 
-**The model must always get the initial context**: inlined into the system prompt, or through the `initial_context` tool. Never neither. Drop the tool only when the fetch succeeded; if it failed, keep the tool so the model can still call it. See [adapting-to-stacks.md](adapting-to-stacks.md#initial-context-always-inline-it-or-keep-the-tool).
+Drop the `initial_context` tool only when the fetch succeeded, per the rule in [SKILL.md](../SKILL.md#how-sanity-context-works).
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for the full implementation, including caching and URL construction that handles query params correctly.
 
