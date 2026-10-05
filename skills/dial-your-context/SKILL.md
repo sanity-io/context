@@ -47,14 +47,14 @@ Saving the result happens in the Context app, by the user. You never write the e
 **Calling the tools.** If you don't have the endpoint connected as an MCP server, call it over HTTP. Put the query params on the URL:
 
 ```bash
-curl -X POST "$MCP_URL?instructions=" \
+curl -X POST "$SANITY_CONTEXT_MCP_URL?instructions=" \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN" \
   -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"groq_query","arguments":{"query":"*[0...3]._type"}}}'
 ```
 
-Read the initial context (schema plus instructions) with `GET $MCP_URL/initial-context` (same auth header, same query params).
+Read the initial context (schema plus instructions) with `GET $SANITY_CONTEXT_MCP_URL/initial-context` (same auth header, same query params).
 
 ## Critical rules
 

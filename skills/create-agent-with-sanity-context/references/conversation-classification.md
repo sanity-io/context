@@ -109,7 +109,7 @@ const result = streamText({
 - **AI SDK `useChat`**: The hook sends `id` (the chat ID) in the request body automatically. Extract it in your route handler and use it as `threadId`.
 - **Custom transport**: Pass the thread ID via request body, headers, or cookies, whatever fits the app's architecture.
 
-See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for how this is handled with cookies.
+See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts): it takes `id` from the `useChat` request body and uses it as `threadId`.
 
 For client-side thread ID generation, use SSR-safe initialization to avoid hydration mismatches:
 
@@ -207,17 +207,25 @@ If `sanity.blueprint.ts` already exists, add the scheduled function resource to 
 import {defineBlueprint, defineScheduledFunction} from '@sanity/blueprints'
 import 'dotenv/config'
 
+// Read from .env at deploy time. Unset values are skipped (this also keeps strict TypeScript
+// happy), so ANTHROPIC_API_KEY can instead be set after deploy with `sanity functions env add`.
+const env: Record<string, string> = {}
+for (const name of [
+  'ANTHROPIC_API_KEY',
+  'SANITY_ORGANIZATION_ID',
+  'SANITY_CONTEXT_ENDPOINT_NAME',
+  'SANITY_ORGANIZATION_TOKEN',
+]) {
+  const value = process.env[name]
+  if (value) env[name] = value
+}
+
 export default defineBlueprint({
   resources: [
     defineScheduledFunction({
       name: 'classify-conversations',
       timeout: 600,
-      env: {
-        ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
-        SANITY_ORGANIZATION_ID: process.env.SANITY_ORGANIZATION_ID,
-        SANITY_CONTEXT_ENDPOINT_NAME: process.env.SANITY_CONTEXT_ENDPOINT_NAME,
-        SANITY_ORGANIZATION_TOKEN: process.env.SANITY_ORGANIZATION_TOKEN,
-      },
+      env,
       event: {
         expression: '*/10 * * * *', // Every 10 minutes
       },
@@ -226,7 +234,7 @@ export default defineBlueprint({
 })
 ```
 
-**How this works**: The `env` block reads from your local `.env` at deploy time and injects the values into the function's `process.env` at runtime. The env var names on the left are what the function reads; the names on the right are what your `.env` file uses. Ask the user for the correct `.env` var names in their project.
+**How this works**: The `env` object is built from your local `.env` at deploy time and injected into the function's `process.env` at runtime. The names in the list are what the function reads; if the project's `.env` uses different names, map them here. `import 'dotenv/config'` reads `.env` only, not `.env.local`, so Next.js projects that keep secrets in `.env.local` need the values in `.env` (or exported in the shell) when deploying.
 
 ### Step 5: Configure Environment Variables
 
@@ -242,7 +250,7 @@ SANITY_ORGANIZATION_TOKEN=sk...
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-**LLM API key**: You can alternatively set it after deploying (Step 7) via `npx sanity functions env add`, useful if you don't want secrets in `.env` or are deploying from CI.
+**LLM API key**: Either keep it in `.env` (the blueprint passes it through at deploy), or leave it out of `.env` and set it after deploying with `npx sanity functions env add` (Step 7). Use one or the other: the second is useful if you don't want secrets in `.env` or deploy from CI.
 
 ### Step 6: Test Locally
 
@@ -281,7 +289,7 @@ npx sanity blueprints doctor
 # 5. Deploy the blueprint and function (ask for permission to deploy)
 npx sanity blueprints deploy
 
-# 6. Set the API key as an environment variable (after deploy)
+# 6. Only if ANTHROPIC_API_KEY isn't in .env: set it on the deployed function
 npx sanity functions env add classify-conversations ANTHROPIC_API_KEY <your-api-key>
 ```
 

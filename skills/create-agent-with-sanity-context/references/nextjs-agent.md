@@ -33,29 +33,32 @@ Do NOT guess versions: check the reference `package.json` or use `npm info <pack
 
 See [ecommerce/.env.example](ecommerce/.env.example) for the template.
 
-Required variables:
+Required for the agent:
 
 ```bash
-# Sanity Configuration
-NEXT_PUBLIC_SANITY_PROJECT_ID=your-project-id
-NEXT_PUBLIC_SANITY_DATASET=production
+# MCP endpoint URL, from the endpoint in the Context app
+SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
 
 # Organization API token with Context access (Viewer reads the MCP; Editor
 # also records conversation insights). Server-side only
 SANITY_ORGANIZATION_TOKEN=your-token
 
-# MCP endpoint URL, from the endpoint in the Context app
-SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+# Anthropic API key
+ANTHROPIC_API_KEY=your-anthropic-key
+```
 
-# Conversation insights: organization ID, and the endpoint's name (the last
-# path segment of SANITY_CONTEXT_MCP_URL) for grouping and classification
+Only for optional features:
+
+```bash
+# Insights: organization ID, and the endpoint's name (the last path segment of
+# SANITY_CONTEXT_MCP_URL) for grouping and classification
 SANITY_ORGANIZATION_ID=your-org-id
 SANITY_CONTEXT_ENDPOINT_NAME=your-endpoint-name
 
-# Anthropic API key
-ANTHROPIC_API_KEY=your-anthropic-key
-
-# Agent config slug (for fetching system prompt from Sanity)
+# The reference's extras: querying Sanity directly for product pages, and loading
+# the system prompt from an agent.config document
+NEXT_PUBLIC_SANITY_PROJECT_ID=your-project-id
+NEXT_PUBLIC_SANITY_DATASET=production
 AGENT_CONFIG_SLUG=default
 ```
 
@@ -73,20 +76,22 @@ See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/rou
 **MCP Connection Pattern** (`createMCPClient`):
 
 ```ts
+const mcpUrl = process.env.SANITY_CONTEXT_MCP_URL
+const token = process.env.SANITY_ORGANIZATION_TOKEN
+if (!mcpUrl || !token) {
+  return Response.json({error: 'Sanity Context is not configured'}, {status: 500})
+}
+
 const mcpClient = await createMCPClient({
-  transport: {
-    type: 'http',
-    url: process.env.SANITY_CONTEXT_MCP_URL,
-    headers: {
-      Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`,
-    },
-  },
+  transport: {type: 'http', url: mcpUrl, headers: {Authorization: `Bearer ${token}`}},
 })
 ```
 
 **Initial Context via HTTP:**
 
 Always fetch the initial context, cache it with a short TTL (the reference uses 5 minutes), and inject it into the system prompt. This gives a significant latency improvement (the agent already knows the schema without a tool call on the first message) and enables better prompt caching.
+
+**The model must always get the initial context**: inlined into the system prompt, or through the `initial_context` tool. Never neither. Drop the tool only when the fetch succeeded; if it failed, keep the tool so the model can still call it. See [adapting-to-stacks.md](adapting-to-stacks.md#initial-context-always-inline-it-or-keep-the-tool).
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for the full implementation, including caching and URL construction that handles query params correctly.
 
@@ -107,17 +112,28 @@ Include the result in your system prompt; see [ecommerce/app/src/app/api/chat/ro
 ```ts
 const allMcpTools = await mcpClient.tools()
 
-// Exclude initial_context tool: its data is already in the system prompt
-const {initial_context: _, ...mcpTools} = allMcpTools
+// Drop initial_context only when its payload is inlined above; otherwise the model needs the tool
+const {initial_context: _, ...mcpToolsWithoutInitialContext} = allMcpTools
+const mcpTools = initialContext ? mcpToolsWithoutInitialContext : allMcpTools
+const tools = {
+  ...mcpTools, // Sanity Context tools
+  ...clientTools, // Client-side tools (page context, screenshot)
+}
 
 const result = streamText({
-  model: anthropic('claude-opus-4-5'),
-  system: systemPrompt,
+  model: anthropic('claude-sonnet-4-5'),
+  instructions: systemPrompt,
   messages: await convertToModelMessages(messages),
-  tools: {
-    ...mcpTools, // Sanity Context tools (groq_query, schema_explorer, etc.)
-    ...clientTools, // Client-side tools (page context, screenshot)
+  tools,
+  // AI SDK v7 stops after 1 step by default. Without this the agent calls a tool and never answers.
+  stopWhen: stepCountIs(20),
+  onEnd: async () => {
+    await mcpClient.close()
   },
+})
+
+return createUIMessageStreamResponse({
+  stream: toUIMessageStream({stream: result.stream, tools, originalMessages: messages}),
 })
 ```
 
@@ -165,7 +181,7 @@ See [ecommerce/app/src/components/chat/message/text-part.tsx](ecommerce/app/src/
 ```bash
 curl -X POST http://localhost:3000/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "content": "What content do you have access to?"}]}'
+  -d '{"id": "test", "messages": [{"id": "1", "role": "user", "parts": [{"type": "text", "text": "What content do you have access to?"}]}], "documentContext": {}}'
 ```
 
 The agent should:

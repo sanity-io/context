@@ -1,12 +1,15 @@
 # Adapting to Different Stacks
 
-The MCP connection pattern is framework and LLM-agnostic. This guide shows how to adapt the core pattern to different frameworks and AI libraries.
+The MCP connection pattern is framework and LLM-agnostic. This guide gives just enough to connect a non-Next.js stack and get answers back; adapt it to the user's framework.
 
 ## Contents
 
 - [The Universal Pattern](#the-universal-pattern)
+- [Install](#install)
+- [Initial Context: Always Inline It or Keep the Tool](#initial-context-always-inline-it-or-keep-the-tool)
+- [Core Pattern (Request/Response)](#core-pattern-requestresponse)
 - [Different Frameworks](#different-frameworks)
-- [Different AI Libraries](#different-ai-libraries)
+- [Other AI Libraries and Languages](#other-ai-libraries-and-languages)
 - [Questions to Ask Users](#questions-to-ask-users)
 
 ---
@@ -16,136 +19,208 @@ The MCP connection pattern is framework and LLM-agnostic. This guide shows how t
 Regardless of framework, the integration follows this flow:
 
 ```
-1. Fetch initial context via HTTP (${MCP_URL}/initial-context) — cache the result
+1. Fetch initial context via HTTP (${SANITY_CONTEXT_MCP_URL}/initial-context)
 2. Create MCP client with HTTP transport
 3. Authenticate with the organization API token (Context access)
 4. Get tools from MCP client
-5. Build system prompt with initial context injected
-6. Pass tools to your LLM along with system prompt
-7. Handle tool calls and responses
-8. Clean up MCP connection when done
+5. Inline the initial context into the system prompt and drop the initial_context tool,
+   or, if the fetch failed, keep the initial_context tool
+6. Call the LLM with the tools, allowing multiple steps
+7. Clean up the MCP connection when done
 ```
 
 ---
 
-## Initial Context via HTTP
+## Install
 
-Append `/initial-context` to the MCP URL **path** (before any query params) to fetch the schema context as plain HTTP. Same auth header, same query params. Cache the result and inject it into your system prompt:
-
-```ts
-const url = new URL(MCP_URL)
-url.pathname = `${url.pathname.replace(/\/$/, '')}/initial-context`
-
-const response = await fetch(url, {
-  headers: { Authorization: `Bearer ${API_TOKEN}` },
-})
-const initialContext = await response.text()
-
-const systemPrompt = `${BASE_PROMPT}\n\n# Content context\n\n${initialContext}`
+```bash
+npm install ai @ai-sdk/mcp @ai-sdk/anthropic
 ```
 
-This eliminates the `initial_context` tool call on every first message and enables prompt caching (the schema prefix is stable across conversations).
+Swap `@ai-sdk/anthropic` for your provider's package if you use a different LLM. Add `@sanity/context` only if you set up Insights. The snippets below use AI SDK v7 (`instructions`, `onEnd`, standalone stream helpers).
+
+Plain Node doesn't load `.env` files on its own: run with `node --env-file=.env ...` or use your existing secrets setup.
+
+---
+
+## Initial Context: Always Inline It or Keep the Tool
+
+**The model must always get the initial context**: either inlined into the system prompt, or through the `initial_context` tool. Never neither. Without it the agent has no schema (GROQ mode) or outline (Knowledge Base mode) and will guess.
+
+- If the `/initial-context` fetch succeeded, put the payload in the system prompt and remove the `initial_context` tool, so the model doesn't fetch it again.
+- If the fetch failed, keep the `initial_context` tool so the model can still call it.
+
+Append `/initial-context` to the MCP URL **path** (before any query params). Same auth header, same query params:
+
+```ts
+async function fetchInitialContext(mcpUrl: string, token: string): Promise<string | null> {
+  const url = new URL(mcpUrl)
+  url.pathname = `${url.pathname.replace(/\/$/, '')}/initial-context`
+  try {
+    const res = await fetch(url, {headers: {Authorization: `Bearer ${token}`}})
+    if (res.ok) return await res.text()
+    console.error(`Initial context request failed: HTTP ${res.status} ${await res.text()}`)
+  } catch (error) {
+    console.error('Initial context request failed', error)
+  }
+  return null
+}
+```
+
+In a long-running server, cache the result with a short TTL (the reference implementation uses 5 minutes). In a CLI, script, or serverless cold start, a cache doesn't help: fetch per run.
+
+---
+
+## Core Pattern (Request/Response)
+
+The smallest complete agent: one question in, one answer out. Use it as-is for a CLI or script, or wrap it in a route handler.
+
+```ts
+import {anthropic} from '@ai-sdk/anthropic'
+import {createMCPClient} from '@ai-sdk/mcp'
+import {generateText, stepCountIs} from 'ai'
+
+const SYSTEM_PROMPT = 'You answer questions using the Sanity tools. Never guess; if nothing matches, say so.'
+
+export async function ask(question: string): Promise<string> {
+  const mcpUrl = process.env.SANITY_CONTEXT_MCP_URL
+  const token = process.env.SANITY_ORGANIZATION_TOKEN
+  if (!mcpUrl || !token) {
+    throw new Error('Set SANITY_CONTEXT_MCP_URL and SANITY_ORGANIZATION_TOKEN')
+  }
+
+  const [mcpClient, initialContext] = await Promise.all([
+    createMCPClient({
+      transport: {type: 'http', url: mcpUrl, headers: {Authorization: `Bearer ${token}`}},
+    }),
+    fetchInitialContext(mcpUrl, token), // See above
+  ])
+
+  try {
+    const allTools = await mcpClient.tools()
+    // Drop initial_context only when its payload is inlined above; otherwise the model needs the tool
+    const {initial_context: _, ...toolsWithoutInitialContext} = allTools
+    const tools = initialContext ? toolsWithoutInitialContext : allTools
+
+    const {text} = await generateText({
+      model: anthropic('claude-sonnet-4-5'),
+      instructions: initialContext
+        ? `${SYSTEM_PROMPT}\n\n# Data reference\n\n${initialContext}`
+        : SYSTEM_PROMPT,
+      prompt: question,
+      tools,
+      // AI SDK v7 stops after 1 step by default. Without this the agent calls a tool and never answers.
+      stopWhen: stepCountIs(20),
+    })
+    return text
+  } finally {
+    await mcpClient.close()
+  }
+}
+```
 
 ---
 
 ## Different Frameworks
 
-**Express/Node.js**
+**Express (JSON response)**
 
 ```ts
-app.post('/api/chat', async (req, res) => {
-  const [mcpClient, initialContext] = await Promise.all([
-    createMCPClient({
-      transport: {
-        type: 'http',
-        url: process.env.SANITY_CONTEXT_MCP_URL,
-        headers: {Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`},
-      },
-    }),
-    fetchInitialContext(), // See "Initial Context via HTTP" above
-  ])
-  const tools = await mcpClient.tools()
-  // Include initialContext in system prompt, pass tools to LLM...
+import express from 'express'
+
+const app = express()
+app.use(express.json())
+
+app.post('/api/assistant', async (req, res) => {
+  const question: unknown = req.body?.question
+  if (typeof question !== 'string' || !question.trim()) {
+    res.status(400).json({error: 'Body must be JSON: {"question": "..."}'})
+    return
+  }
+  try {
+    res.json({answer: await ask(question)}) // `ask` from the core pattern above
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({error: error instanceof Error ? error.message : 'Assistant failed'})
+  }
 })
 ```
 
-**Remix**
+For a streamed chat UI in Express, build the call like the Remix example below with `streamText`, then pipe it with `pipeUIMessageStreamToResponse({response: res, stream: toUIMessageStream({stream: result.stream})})` from `ai`.
+
+**Remix / React Router (streamed to `useChat`)**
+
+Any framework whose route handlers return a web `Response` works the same way:
 
 ```ts
-export async function action({request}: ActionFunctionArgs) {
-  const mcpClient = await createMCPClient({
-    transport: {
-      type: 'http',
-      url: process.env.SANITY_CONTEXT_MCP_URL,
-      headers: {Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`},
-    },
-  })
-  const tools = await mcpClient.tools()
-  // Pass tools to your LLM, handle response...
+import {anthropic} from '@ai-sdk/anthropic'
+import {createMCPClient, type MCPClient} from '@ai-sdk/mcp'
+import {
+  convertToModelMessages,
+  createUIMessageStreamResponse,
+  stepCountIs,
+  streamText,
+  toUIMessageStream,
+  type UIMessage,
+} from 'ai'
+
+export async function action({request}: {request: Request}) {
+  const mcpUrl = process.env.SANITY_CONTEXT_MCP_URL
+  const token = process.env.SANITY_ORGANIZATION_TOKEN
+  if (!mcpUrl || !token) {
+    return Response.json({error: 'Sanity Context is not configured'}, {status: 500})
+  }
+  const {messages}: {messages: UIMessage[]} = await request.json()
+  let mcpClient: MCPClient | undefined
+
+  try {
+    const [client, initialContext] = await Promise.all([
+      createMCPClient({
+        transport: {type: 'http', url: mcpUrl, headers: {Authorization: `Bearer ${token}`}},
+      }),
+      fetchInitialContext(mcpUrl, token), // See "Initial Context" above
+    ])
+    mcpClient = client
+
+    const allTools = await client.tools()
+    // Drop initial_context only when its payload is inlined above; otherwise the model needs the tool
+    const {initial_context: _, ...toolsWithoutInitialContext} = allTools
+    const tools = initialContext ? toolsWithoutInitialContext : allTools
+
+    const result = streamText({
+      model: anthropic('claude-sonnet-4-5'),
+      instructions: initialContext
+        ? `You are a helpful assistant.\n\n# Data reference\n\n${initialContext}`
+        : 'You are a helpful assistant.',
+      messages: await convertToModelMessages(messages),
+      tools,
+      // AI SDK v7 stops after 1 step by default. Without this the agent calls a tool and never answers.
+      stopWhen: stepCountIs(20),
+      onEnd: async () => {
+        await client.close()
+      },
+    })
+
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({stream: result.stream, tools, originalMessages: messages}),
+    })
+  } catch (error) {
+    await mcpClient?.close()
+    console.error(error)
+    return Response.json({error: error instanceof Error ? error.message : 'Chat failed'}, {status: 500})
+  }
 }
-```
-
-**Python/FastAPI**
-
-```python
-import httpx
-from mcp import Client, HttpTransport
-
-# Fetch initial context via HTTP
-async def fetch_initial_context() -> str:
-    from urllib.parse import urlparse, urlunparse
-    parsed = urlparse(os.environ["SANITY_CONTEXT_MCP_URL"])
-    url = urlunparse(parsed._replace(path=parsed.path.rstrip("/") + "/initial-context"))
-    async with httpx.AsyncClient() as http:
-        resp = await http.get(
-            url,
-            headers={"Authorization": f"Bearer {os.environ['SANITY_ORGANIZATION_TOKEN']}"},
-        )
-        return resp.text
-
-client = Client(
-    transport=HttpTransport(
-        url=os.environ["SANITY_CONTEXT_MCP_URL"],
-        headers={"Authorization": f"Bearer {os.environ['SANITY_ORGANIZATION_TOKEN']}"}
-    )
-)
-initial_context, tools = await fetch_initial_context(), await client.get_tools()
-# Include initial_context in system prompt, pass tools to LLM...
 ```
 
 ---
 
-## Different AI Libraries
+## Other AI Libraries and Languages
 
-**LangChain**: Wrap MCP tools as LangChain tools
+The endpoint is a standard MCP server, so any MCP-capable client works: connect over HTTP with `Authorization: Bearer <organization token>`, then apply the same initial context rule.
 
-```ts
-const mcpTools = await mcpClient.tools()
-const langchainTools = mcpTools.map(
-  (tool) =>
-    new DynamicTool({
-      name: tool.name,
-      description: tool.description,
-      func: async (input) => mcpClient.callTool(tool.name, JSON.parse(input)),
-    }),
-)
-```
-
-**Direct Anthropic API**: Pass tool definitions directly
-
-```ts
-const tools = await mcpClient.tools()
-const response = await anthropic.messages.create({
-  model: 'claude-sonnet-4-20250514',
-  system: systemPrompt,
-  messages,
-  tools: tools.map((t) => ({
-    name: t.name,
-    description: t.description,
-    input_schema: t.inputSchema,
-  })),
-})
-```
+- **Python with LangChain:** see [Connect Sanity Context with LangChain](https://www.sanity.io/docs/ai/sanity-context-langchain).
+- **Python with the OpenAI Agents SDK:** see [Connect Sanity Context with OpenAI Agents SDK](https://www.sanity.io/docs/ai/sanity-context-openai-agents-sdk).
+- **Anything else:** use the library's own MCP client support. Don't hand-convert tool definitions; MCP clients handle schemas and tool calls for you.
 
 ---
 
@@ -157,4 +232,4 @@ When adapting this pattern, understand:
 2. **"What AI SDK or library?"** — Determines how tools are passed to the LLM
 3. **"What's the agent's purpose?"** — Shapes the system prompt
 4. **"What content types will it access?"** — Informs the endpoint's GROQ filter in the Context app
-5. **"Streaming or request/response?"** — Affects response handling
+5. **"Streaming or request/response?"** — Streaming for chat UIs (`streamText`), request/response for APIs, CLIs, and scripts (`generateText`)

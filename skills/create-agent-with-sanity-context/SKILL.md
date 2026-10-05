@@ -24,16 +24,21 @@ Sanity Context gives agents your schema and teaches them GROQ, but it can't know
 
 ## What You'll Need
 
-Before starting, gather these:
+**The agent code needs only three values:**
 
-| Requirement                | Where to get it                                                                                                                                                                                                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Context enabled**        | An organization admin enables it from the organization's [Labs page](https://www.sanity.io/manage/org/labs) in Manage. This also enables Knowledge Bases                                                                                                                                                |
-| **Sanity Project ID**      | GROQ mode: your `sanity.config.ts` or [sanity.io/manage](https://sanity.io/manage)                                                                                                                                                                                                                      |
-| **Dataset name**           | GROQ mode: usually `production` — check your `sanity.config.ts`                                                                                                                                                                                                                                         |
-| **Organization ID**        | [Manage](https://www.sanity.io/manage) → organization settings, or the organization's URL                                                                                                                                                                                                               |
-| **Organization API token** | [Manage](https://www.sanity.io/manage/org/api/tokens) → organization → API → Tokens → **Add API token**, then under **Organization permissions** check **Context**. Choose **Viewer** for an agent that only reads; choose **Editor** if it also records Insights (Step 3). Project tokens do not work. |
-| **LLM API key**            | From your LLM provider (Anthropic, OpenAI, etc.) — any provider works                                                                                                                                                                                                                                   |
+| Value                                                    | Where to get it                                                                                                                                                                                                                                                                                         |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **MCP endpoint URL** (`SANITY_CONTEXT_MCP_URL`)          | Shown on the endpoint in the Context app once it's created ([Step 1](#step-1-create-the-mcp-endpoint))                                                                                                                                                                                                  |
+| **Organization API token** (`SANITY_ORGANIZATION_TOKEN`) | [Manage](https://www.sanity.io/manage/org/api/tokens) → organization → API → Tokens → **Add API token**, then under **Organization permissions** check **Context**. Choose **Viewer** for an agent that only reads; choose **Editor** if it also records Insights (Step 3). Project tokens do not work. |
+| **LLM API key**                                          | From your LLM provider (Anthropic, OpenAI, etc.) — any provider works                                                                                                                                                                                                                                   |
+
+**Setup also involves:**
+
+| Requirement                    | When      | Where to get it                                                                                                                                          |
+| ------------------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Context enabled**            | Always    | An organization admin enables it from the organization's [Labs page](https://www.sanity.io/manage/org/labs) in Manage. This also enables Knowledge Bases |
+| **Sanity project and dataset** | GROQ mode | Picked when creating the endpoint; also where the schema is deployed from (`sanity.config.ts`)                                                           |
+| **Organization ID**            | Insights  | [Manage](https://www.sanity.io/manage) → organization settings, or the organization's URL                                                                |
 
 The organization token is a server-side secret. It must never reach the browser.
 
@@ -87,13 +92,19 @@ Always fetch the initial context via the `/initial-context` HTTP endpoint and in
 Append `/initial-context` to the MCP URL path (before any query params), using the same auth header:
 
 ```bash
-curl https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName/initial-context \
+# SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+curl "$SANITY_CONTEXT_MCP_URL/initial-context" \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN"
 ```
 
-Cache the result with a short TTL (the reference implementation uses 5 minutes) and include it in your system prompt. A short TTL keeps schema, Instructions, and Knowledge Base rebuilds flowing through without a redeploy. When using this, exclude the `initial_context` tool from the tools passed to the LLM to avoid redundant calls.
+In a long-running server, cache the result with a short TTL (the reference implementation uses 5 minutes) and include it in your system prompt. A short TTL keeps schema, Instructions, and Knowledge Base rebuilds flowing through without a redeploy.
 
-If you don't control the system prompt (e.g. using a third-party MCP client), the `initial_context` MCP tool still works — the agent will call it on the first message instead.
+> **Critical: the model must always get the initial context.** It's either inlined into the system prompt, or available as the `initial_context` tool. Never neither: without it the agent has no schema or outline and guesses.
+>
+> - Fetch succeeded and inlined → remove the `initial_context` tool, so the model doesn't fetch it again.
+> - Fetch failed, or you don't control the system prompt (e.g. a third-party MCP client) → keep the `initial_context` tool; the agent calls it on the first message.
+>
+> Never remove the tool unless the payload is actually in the system prompt.
 
 ## Available MCP Tools
 
@@ -181,7 +192,7 @@ For details on sources, issues, and keeping it current, point the user to [Creat
 **Validate the endpoint:**
 
 ```bash
-curl -X POST https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName \
+curl -X POST "$SANITY_CONTEXT_MCP_URL" \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN" \
   -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
@@ -194,7 +205,7 @@ The response should return a `result.tools` array that includes `initial_context
 
 **The user already has an agent or MCP client?** They just need to connect it to the MCP endpoint URL with the organization token as a Bearer token. The tools will appear automatically.
 
-**Building from scratch?** Help the user set up the MCP connection and LLM integration. The reference implementations use Vercel AI SDK with Anthropic, but the pattern works with any LLM provider (OpenAI, local models, etc.). Start with the basics and add advanced patterns as needed.
+**Building from scratch?** Help the user set up the MCP connection and LLM integration. Whatever the stack, the model must get the initial context: inlined into the system prompt, or as the `initial_context` tool (see [Initial context](#how-sanity-context-works)). The snippets use AI SDK v7. The reference implementations use Vercel AI SDK with Anthropic, but the pattern works with any LLM provider (OpenAI, local models, etc.). Start with the basics and add advanced patterns as needed.
 
 **Framework-specific guides:**
 
@@ -304,13 +315,16 @@ See [references/system-prompts.md](references/system-prompts.md) for domain-spec
 - **Content filters**: Use the endpoint's GROQ filter to scope what the production agent sees — start broad, then narrow based on what it actually needs. The filter is a GROQ filter expression, the part inside `*[...]`, not a full query or projection. Examples: `_type in ["product", "article"]`, `_type == "article" && language == "en"`, `_type == "product" && references(*[_type == "category" && slug.current == "electronics"]._id)`
 - **Instructions field**: Keep it concise — only include what the auto-generated schema doesn't make obvious. Don't duplicate schema information. See the `dial-your-context` skill.
 - **System prompts**: Be explicit about forbidden behaviors and formatting rules. Less is more — an over-engineered prompt can interfere with the Instructions content. See the `shape-your-agent` skill.
-- **Package versions**: `@sanity/context` is only needed for Insights (Step 3); an agent without Insights doesn't install it. When you do use it, use the latest version — run `npm info @sanity/context version` to get it. For other packages, check the reference `package.json` files or use `npm info <package> version`. AI SDK and Sanity packages update frequently, and using outdated versions will cause errors that are hard to debug.
+- **Package versions**: `@sanity/context` is only needed for Insights (Step 3); an agent without Insights doesn't install it. When you do use it, use the latest version — run `npm info @sanity/context version` to get it. For other packages, use `npm info <package> version` for the latest release, but stay on the major versions the reference `package.json` uses (the snippets are written for those majors, e.g. AI SDK v7). AI SDK and Sanity packages update frequently, and using outdated versions will cause errors that are hard to debug.
 
 ## Troubleshooting
 
 ### "401 Unauthorized" from MCP
 
-The token is missing or malformed, or it doesn't belong to the organization in the URL (message: "Not a member of this organization"; JSON-RPC `-32001` on the MCP route). Confirm `SANITY_ORGANIZATION_TOKEN` is set, is read by the agent code, is sent as `Authorization: Bearer <token>`, and that the organization ID in the URL is right.
+- **No token or no `Bearer` header:** code `missingCredential`, "Missing Sanity session".
+- **Invalid token, or a token that isn't in the organization from the URL:** code `organizationAccessDenied`, "Not a member of this organization".
+
+Both are JSON-RPC `-32001` on the MCP route. Confirm `SANITY_ORGANIZATION_TOKEN` is set, is read by the agent code, is sent as `Authorization: Bearer <token>`, and that the organization ID in the URL is right.
 
 ### "404": MCP endpoint not found
 

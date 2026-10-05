@@ -18,112 +18,156 @@ This is a reference implementation using SvelteKit and Vercel AI SDK. Use it as 
 ## Install Dependencies
 
 ```bash
-npm install @ai-sdk/anthropic @ai-sdk/mcp @ai-sdk/svelte ai
+npm install @ai-sdk/anthropic @ai-sdk/mcp @ai-sdk/svelte ai marked
 # or
-pnpm add @ai-sdk/anthropic @ai-sdk/mcp @ai-sdk/svelte ai
+pnpm add @ai-sdk/anthropic @ai-sdk/mcp @ai-sdk/svelte ai marked
 ```
 
-Key difference from Next.js: `@ai-sdk/svelte` instead of `@ai-sdk/react`.
+Key difference from Next.js: `@ai-sdk/svelte` instead of `@ai-sdk/react`. `marked` renders the model's markdown. The snippets use AI SDK v7 and SvelteKit 3 (what `npx sv create` installs today).
 
 ## Environment Variables
 
-SvelteKit splits environment variables into two modules:
+SvelteKit 3 declares environment variables in `src/env.ts` and validates them at build time:
 
-- **`$env/static/private`** — Server-only variables (never exposed to client)
-- **`$env/static/public`** — Variables prefixed with `PUBLIC_` (available in client bundles)
+```ts
+// src/env.ts
+import {defineEnvVars} from '@sveltejs/kit/env'
+
+export const variables = defineEnvVars({
+  SANITY_CONTEXT_MCP_URL: {},
+  SANITY_ORGANIZATION_TOKEN: {},
+  ANTHROPIC_API_KEY: {},
+})
+```
+
+Server code imports them from `$app/env/private`. On **SvelteKit 2**, skip `src/env.ts` and import the same names from `$env/static/private` instead.
 
 > **Important:** SvelteKit does not expose private env vars on `process.env`. This means the default `anthropic()` provider (which reads `process.env.ANTHROPIC_API_KEY`) will not work. You must use `createAnthropic({ apiKey })` instead.
 
-Required variables in your `.env` file:
+Values in your `.env` file:
 
 ```bash
-# Sanity Context (private — server only)
 # MCP endpoint URL, from the endpoint in the Context app
 SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
 # Organization API token with Context access
 SANITY_ORGANIZATION_TOKEN=your-token
-
-# Anthropic API key (private — server only)
+# Anthropic API key
 ANTHROPIC_API_KEY=your-anthropic-key
 ```
+
+Because SvelteKit 3 validates these at build time, `npm run build` fails until they're set.
 
 ## Create the Chat API Route
 
 Create `src/routes/api/chat/+server.ts`:
 
 ```ts
-import {streamText, convertToModelMessages, stepCountIs, type UIMessage} from 'ai'
 import {createAnthropic} from '@ai-sdk/anthropic'
-import {createMCPClient} from '@ai-sdk/mcp'
-import type {RequestHandler} from './$types'
+import {createMCPClient, type MCPClient} from '@ai-sdk/mcp'
 import {
-  SANITY_ORGANIZATION_TOKEN,
-  ANTHROPIC_API_KEY,
-  SANITY_CONTEXT_MCP_URL,
-} from '$env/static/private'
+  convertToModelMessages,
+  createUIMessageStreamResponse,
+  stepCountIs,
+  streamText,
+  toUIMessageStream,
+  type UIMessage,
+} from 'ai'
+import type {RequestHandler} from './$types'
+import {ANTHROPIC_API_KEY, SANITY_CONTEXT_MCP_URL, SANITY_ORGANIZATION_TOKEN} from '$app/env/private'
 
-// System prompt for the agent
 const SYSTEM_PROMPT = `You are a helpful content assistant.
 
 When answering questions:
 - Use the available tools to search and retrieve relevant content
 - Be concise and accurate
 - Cite specific sources when relevant
-- If you don't find information, say so clearly
+- If you don't find information, say so clearly`
 
-Your goal is to help users find and understand the content available to you.`
+const CACHE_TTL_MS = 5 * 60 * 1000
+let cachedInitialContext: string | null = null
+let cacheTimestamp = 0
+
+async function fetchInitialContext(): Promise<string | null> {
+  if (cachedInitialContext && Date.now() - cacheTimestamp < CACHE_TTL_MS) return cachedInitialContext
+  const url = new URL(SANITY_CONTEXT_MCP_URL)
+  url.pathname = `${url.pathname.replace(/\/$/, '')}/initial-context`
+  try {
+    const res = await fetch(url, {headers: {Authorization: `Bearer ${SANITY_ORGANIZATION_TOKEN}`}})
+    if (res.ok) {
+      cachedInitialContext = await res.text()
+      cacheTimestamp = Date.now()
+    } else {
+      console.error(`Initial context request failed: HTTP ${res.status} ${await res.text()}`)
+    }
+  } catch (error) {
+    console.error('Initial context request failed', error)
+  }
+  return cachedInitialContext
+}
 
 export const POST: RequestHandler = async ({request}) => {
   const {messages}: {messages: UIMessage[]} = await request.json()
-
-  // Create MCP client using AI SDK wrapper
-  const mcpClient = await createMCPClient({
-    transport: {
-      type: 'http',
-      url: SANITY_CONTEXT_MCP_URL,
-      headers: {
-        Authorization: `Bearer ${SANITY_ORGANIZATION_TOKEN}`,
-      },
-    },
-  })
+  let mcpClient: MCPClient | undefined
 
   try {
-    // Get tools from MCP client
-    const mcpTools = await mcpClient.tools()
+    const [client, initialContext] = await Promise.all([
+      createMCPClient({
+        transport: {
+          type: 'http',
+          url: SANITY_CONTEXT_MCP_URL,
+          headers: {Authorization: `Bearer ${SANITY_ORGANIZATION_TOKEN}`},
+        },
+      }),
+      fetchInitialContext(),
+    ])
+    mcpClient = client
 
-    // Stream the response
+    const allTools = await client.tools()
+    // Drop initial_context only when its payload is inlined above; otherwise the model needs the tool
+    const {initial_context: _, ...toolsWithoutInitialContext} = allTools
+    const tools = initialContext ? toolsWithoutInitialContext : allTools
+
     const result = streamText({
-      model: createAnthropic({apiKey: ANTHROPIC_API_KEY})('claude-sonnet-4-20250514'),
+      model: createAnthropic({apiKey: ANTHROPIC_API_KEY})('claude-sonnet-4-5'),
+      instructions: initialContext
+        ? `${SYSTEM_PROMPT}\n\n# Data reference\n\n${initialContext}`
+        : SYSTEM_PROMPT,
       messages: await convertToModelMessages(messages),
-      system: SYSTEM_PROMPT,
-      tools: mcpTools,
-      stopWhen: stepCountIs(10),
-      onFinish: async () => {
-        await mcpClient.close()
+      tools,
+      // AI SDK v7 stops after 1 step by default. Without this the agent calls a tool and never answers.
+      stopWhen: stepCountIs(20),
+      onEnd: async () => {
+        await client.close()
       },
     })
 
-    return result.toUIMessageStreamResponse()
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({stream: result.stream, tools, originalMessages: messages}),
+    })
   } catch (error) {
-    await mcpClient.close()
-    throw error
+    await mcpClient?.close()
+    console.error(error)
+    return Response.json(
+      {error: error instanceof Error ? error.message : 'Chat request failed'},
+      {status: 500},
+    )
   }
 }
 ```
 
 **Key patterns:**
 
-- **Imports**: Note `createAnthropic` (not bare `anthropic`), imports from `$env/static/private`, `RequestHandler` type from `./$types`
+- **Imports**: `createAnthropic` (not bare `anthropic`), env from `$app/env/private`, `RequestHandler` type from `./$types`
 - **MCP URL**: Read from `SANITY_CONTEXT_MCP_URL`, copied from the endpoint in the Context app
-- **System prompt**: Inline for simplicity
-- **`POST` handler**: MCP client creation, tool discovery, `streamText` call, and response
+- **Initial context**: Inlined into the instructions and the `initial_context` tool dropped, or the tool kept when the fetch failed. Never neither
+- **Errors**: Returned as JSON so the browser sees the real message instead of an opaque 500
 
 **SvelteKit-specific details:**
 
 - **`createAnthropic({ apiKey: ANTHROPIC_API_KEY })`** — Must pass the key explicitly because SvelteKit doesn't expose private env vars on `process.env`
-- **`convertToModelMessages(messages)`** — The `Chat` class from `@ai-sdk/svelte` sends `UIMessage[]` (with `parts` arrays). `streamText` expects `ModelMessage[]` (with `content` strings). This conversion is required.
-- **`stopWhen: stepCountIs(10)`** — AI SDK v6 pattern for limiting tool-call loops (replaces the older `maxSteps`)
-- **`toUIMessageStreamResponse()`** — Returns the UI message stream format that the `Chat` class expects. Using `toDataStreamResponse()` will silently fail.
+- **`convertToModelMessages(messages)`** — The `Chat` class from `@ai-sdk/svelte` sends `UIMessage[]` (with `parts` arrays). `streamText` expects `ModelMessage[]`. This conversion is required.
+- **`stopWhen: stepCountIs(20)`** — Lets the agent call tools and then answer. AI SDK v7 stops after one step by default
+- **`createUIMessageStreamResponse` + `toUIMessageStream`** — Returns the UI message stream format that the `Chat` class expects (AI SDK v7; replaces the deprecated `result.toUIMessageStreamResponse()`)
 
 ## Customizing the System Prompt
 
@@ -146,11 +190,11 @@ export const ssr = false
 
 > **Important:** The `Chat` class uses browser-only APIs. Without `export const ssr = false`, you'll get runtime errors during server-side rendering.
 
-**`src/routes/chat/+page.svelte`** — Page wrapper:
+**`src/routes/chat/+page.svelte`** — Page wrapper (SvelteKit 3's `#lib` alias, defined under `imports` in `package.json` by `sv create`; SvelteKit 2 uses `$lib`):
 
 ```svelte
 <script lang="ts">
-  import Chat from '../../components/Chat.svelte';
+  import Chat from '#lib/components/Chat.svelte';
 </script>
 
 <svelte:head>
@@ -162,16 +206,16 @@ export const ssr = false
 </main>
 ```
 
-**`src/components/Chat.svelte`** — Chat component:
+**`src/lib/components/Chat.svelte`** — Chat component:
 
 ```svelte
 <script lang="ts">
   import { Chat } from '@ai-sdk/svelte';
+  import { marked } from 'marked';
 
-  let input = '';
-  const chat = new Chat({
-    api: '/api/chat'
-  });
+  let input = $state('');
+  // Posts to /api/chat by default
+  const chat = new Chat({});
 
   function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -194,7 +238,7 @@ export const ssr = false
       </div>
     {/if}
 
-    {#each chat.messages as message, i (i)}
+    {#each chat.messages as message (message.id)}
       <div class="message" class:user={message.role === 'user'} class:assistant={message.role === 'assistant'}>
         <div class="message-role">
           {message.role === 'user' ? 'You' : 'Assistant'}
@@ -202,12 +246,17 @@ export const ssr = false
         <div class="message-content">
           {#each message.parts as part}
             {#if part.type === 'text'}
-              <p>{part.text}</p>
+              <!-- Model output: sanitize (e.g. DOMPurify) if your content can contain untrusted HTML -->
+              {@html marked(part.text)}
             {/if}
           {/each}
         </div>
       </div>
     {/each}
+
+    {#if chat.error}
+      <p class="error">{chat.error.message}</p>
+    {/if}
   </div>
 
   <form class="input-form" onsubmit={handleSubmit}>
@@ -216,7 +265,7 @@ export const ssr = false
       bind:value={input}
       placeholder="Ask a question..."
     />
-    <button type="submit" disabled={!input.trim()}>
+    <button type="submit" disabled={!input.trim() || chat.status === 'streaming'}>
       Send
     </button>
   </form>
@@ -267,7 +316,10 @@ export const ssr = false
     max-width: 80%;
   }
 
-  .message-content p { margin: 0.25rem 0; }
+  /* :global because {@html} content isn't scoped */
+  .message-content :global(p) { margin: 0.25rem 0; }
+
+  .error { color: #c00; font-size: 0.875rem; }
 
   .message.user .message-content { background: #007bff; color: white; }
   .message.assistant .message-content { background: #f5f5f5; color: #333; }
@@ -302,33 +354,17 @@ export const ssr = false
 </style>
 ```
 
-**Initial Context via HTTP:**
-
-Always fetch the schema context at startup and inject it into the system prompt. Append `/initial-context` to the MCP URL path (before any query params) and fetch with the same auth header. Cache the result. See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts) for a full implementation with caching.
-
-```ts
-const [mcpClient, initialContext] = await Promise.all([
-  createMCPClient({ /* ... */ }),
-  fetchInitialContext(),
-])
-
-const mcpTools = await mcpClient.tools()
-
-const systemPrompt = initialContext
-  ? `${SYSTEM_PROMPT}\n\n# Content context\n\n${initialContext}`
-  : SYSTEM_PROMPT
-```
-
 **Key patterns:**
 
 - **`Chat` class** — Svelte uses a class instantiation (`new Chat({...})`) instead of React's `useChat` hook
 - **`chat.messages`** — Reactive by default in Svelte 5; no need for stores or subscriptions
 - **`chat.sendMessage({ text })`** — Sends a message to the API route
 - **Parts-based rendering** — Iterate `message.parts` and check `part.type === 'text'` to render text content
+- **`$state`** — `input` must be `$state` so the Send button's disabled state updates (Svelte 5 runes)
 
 ### Markdown Rendering
 
-LLM responses are markdown — without a renderer, users see raw syntax. Add `marked` as a dependency and use `{@html marked(part.text)}` instead of `<p>{part.text}</p>`.
+LLM responses are markdown; the component renders them with `marked`. `{@html ...}` inserts raw HTML, so sanitize it (for example with DOMPurify) if the content the agent reads can contain untrusted HTML.
 
 ## Testing the Agent
 
@@ -339,22 +375,23 @@ LLM responses are markdown — without a renderer, users see raw syntax. Add `ma
 ```bash
 curl -X POST http://localhost:5173/api/chat \
   -H "Content-Type: application/json" \
-  -d '{"messages": [{"role": "user", "parts": [{"type": "text", "text": "What content do you have access to?"}]}]}'
+  -d '{"messages": [{"id": "1", "role": "user", "parts": [{"type": "text", "text": "What content do you have access to?"}]}]}'
 ```
 
 The agent should:
 
-1. Already know the available content types (schema context is in the system prompt via `/initial-context`)
+1. Already know the available content types (the initial context is in the system prompt)
 2. Respond with a summary of what it can help with—no tool call needed on the first message
 
 ---
 
 ## SvelteKit-Specific Gotchas
 
-| Gotcha                      | Symptom                           | Fix                                                                                                               |
-| --------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| Bare `anthropic()` provider | "ANTHROPIC_API_KEY is missing"    | Use `createAnthropic({ apiKey: ANTHROPIC_API_KEY })` — SvelteKit doesn't expose private env vars on `process.env` |
-| Missing SSR disable         | Runtime errors about browser APIs | Add `src/routes/chat/+page.ts` with `export const ssr = false`                                                    |
+| Gotcha                          | Symptom                                                                | Fix                                                                                                                                       |
+| ------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Bare `anthropic()` provider     | "ANTHROPIC_API_KEY is missing"                                         | Use `createAnthropic({ apiKey: ANTHROPIC_API_KEY })`: SvelteKit doesn't expose private env vars on `process.env`                          |
+| Missing SSR disable             | Runtime errors about browser APIs                                      | Add `src/routes/chat/+page.ts` with `export const ssr = false`                                                                            |
+| SvelteKit 2 code on SvelteKit 3 | "`$lib` has been removed. Use `#lib` instead", or env imports untyped | Declare env in `src/env.ts` and import from `$app/env/private`; use `#lib`, which needs `"imports": {"#lib/*": "./src/lib/*"}` in `package.json` |
 
 ---
 
@@ -362,15 +399,15 @@ The agent should:
 
 ### "ANTHROPIC_API_KEY is missing"
 
-SvelteKit private env vars are only available via `$env/static/private`, not `process.env`. Use `createAnthropic({ apiKey: ANTHROPIC_API_KEY })` with the explicitly imported key.
+SvelteKit private env vars are only available through `$app/env/private`, not `process.env`. Use `createAnthropic({ apiKey: ANTHROPIC_API_KEY })` with the explicitly imported key.
 
 ### Chat messages render empty
 
-Verify you're using `toUIMessageStreamResponse()`, not `toDataStreamResponse()`. The `Chat` class from `@ai-sdk/svelte` expects the UI message stream format.
+Verify the route returns `createUIMessageStreamResponse({stream: toUIMessageStream({stream: result.stream, tools, originalMessages: messages})})`, not a text or data stream. The `Chat` class from `@ai-sdk/svelte` expects the UI message stream format.
 
-### "Cannot find module `$env/static/private`"
+### "Cannot find module `$app/env/private`", or the build fails with "Value is missing"
 
-Ensure the file importing from `$env/static/private` is in a SvelteKit server context (`+server.ts`, `+page.server.ts`, etc.). Client-side files cannot import private env vars.
+The variables must be declared in `src/env.ts`, which SvelteKit 3 validates at build time: set them in `.env` or the build environment before `npm run build`. Only server files (`+server.ts`, `+page.server.ts`, etc.) can import private env vars.
 
 ### Runtime errors on chat page
 
@@ -378,7 +415,7 @@ The `Chat` class requires browser APIs. Add a `+page.ts` file alongside your `+p
 
 ### MCP connection errors
 
-See the [Troubleshooting section in SKILL.md](../SKILL.md#troubleshooting) for 401, 403 / `-32007` `contextGrantRequired`, `-32004` (schema not deployed), and empty results.
+See the [Troubleshooting section in SKILL.md](../SKILL.md#troubleshooting) for 401, 403, `-32004` (schema not deployed), and empty results. Server errors also print in the dev server's terminal.
 
 ### "Module not found: @ai-sdk/mcp"
 
