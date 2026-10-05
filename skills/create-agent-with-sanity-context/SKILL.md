@@ -205,7 +205,7 @@ The response should return a `result.tools` array that includes `initial_context
 
 **The user already has an agent or MCP client?** They just need to connect it to the MCP endpoint URL with the organization token as a Bearer token. The tools will appear automatically.
 
-**Building from scratch?** Help the user set up the MCP connection and LLM integration. Whatever the stack, the model must get the initial context: inlined into the system prompt, or as the `initial_context` tool (see [Initial context](#how-sanity-context-works)). The snippets use AI SDK v7. The reference implementations use Vercel AI SDK with Anthropic, but the pattern works with any LLM provider (OpenAI, local models, etc.). Start with the basics and add advanced patterns as needed.
+**Building from scratch?** Help the user set up the MCP connection and LLM integration. Whatever the stack, the model must get the initial context: inlined into the system prompt, or as the `initial_context` tool (see [Initial context](#how-sanity-context-works)). The snippets and reference implementations use Vercel AI SDK v7 with Anthropic, but the pattern works with any LLM provider (OpenAI, local models, etc.). Start with the basics and add advanced patterns as needed.
 
 **Framework-specific guides:**
 
@@ -321,10 +321,10 @@ See [references/system-prompts.md](references/system-prompts.md) for domain-spec
 
 ### "401 Unauthorized" from MCP
 
-- **No token or no `Bearer` header:** code `missingCredential`, "Missing Sanity session".
-- **Invalid token, or a token that isn't in the organization from the URL:** code `organizationAccessDenied`, "Not a member of this organization".
+- **"Missing Sanity session":** no token, or no `Bearer` header.
+- **"Not a member of this organization":** an invalid token, or a token that isn't in the organization from the URL.
 
-Both are JSON-RPC `-32001` on the MCP route. Confirm `SANITY_ORGANIZATION_TOKEN` is set, is read by the agent code, is sent as `Authorization: Bearer <token>`, and that the organization ID in the URL is right.
+On the MCP route both come back as JSON-RPC `-32001` with that message. `/initial-context` errors also include a code: `missingCredential` or `organizationAccessDenied`. Confirm `SANITY_ORGANIZATION_TOKEN` is set, is read by the agent code, is sent as `Authorization: Bearer <token>`, and that the organization ID in the URL is right.
 
 ### "404": MCP endpoint not found
 

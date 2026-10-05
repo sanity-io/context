@@ -391,7 +391,7 @@ The agent should:
 | ------------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Bare `anthropic()` provider     | "ANTHROPIC_API_KEY is missing"                                         | Use `createAnthropic({ apiKey: ANTHROPIC_API_KEY })`: SvelteKit doesn't expose private env vars on `process.env`                          |
 | Missing SSR disable             | Runtime errors about browser APIs                                      | Add `src/routes/chat/+page.ts` with `export const ssr = false`                                                                            |
-| SvelteKit 2 code on SvelteKit 3 | "`$lib` has been removed. Use `#lib` instead", or env imports untyped | Declare env in `src/env.ts` and import from `$app/env/private`; use `#lib`, which needs `"imports": {"#lib/*": "./src/lib/*"}` in `package.json` |
+| SvelteKit 2 code on SvelteKit 3 | "`$lib` has been removed. Use `#lib` instead", or `Cannot find module '$env/static/private'` | Declare env in `src/env.ts` and import from `$app/env/private`; use `#lib`, which needs `"imports": {"#lib/*": "./src/lib/*"}` in `package.json` |
 
 ---
 
