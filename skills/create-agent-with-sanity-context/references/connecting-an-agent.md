@@ -131,10 +131,10 @@ export async function POST(request: Request) {
   if (!mcpUrl || !token) {
     return Response.json({error: 'Sanity Context is not configured'}, {status: 500})
   }
-  const {messages}: {messages: UIMessage[]} = await request.json()
   let mcpClient: MCPClient | undefined
 
   try {
+    const {messages}: {messages: UIMessage[]} = await request.json()
     const [client, initialContext] = await Promise.all([
       createMCPClient({
         transport: {type: 'http', url: mcpUrl, headers: {Authorization: `Bearer ${token}`}},
