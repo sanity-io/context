@@ -16,11 +16,22 @@ Just enough to connect Sanity Context on any JavaScript or TypeScript stack with
 
 ## Install
 
+The snippets are written for these versions. Install the same majors:
+
+| Package | Major | For |
+| --- | --- | --- |
+| `ai` | 7 | AI SDK core (`generateText`, `streamText`) |
+| `@ai-sdk/mcp` | 2 | MCP client |
+| `@ai-sdk/anthropic` | 4 | LLM provider (or the v7-compatible package for your provider) |
+| `@ai-sdk/react` / `@ai-sdk/svelte` | 4 / 5 | Chat UI, only for a streaming chat |
+
 ```bash
-npm install ai @ai-sdk/mcp @ai-sdk/anthropic
+npm install ai@^7 @ai-sdk/mcp@^2 @ai-sdk/anthropic@^4
+# plus, for a React chat UI:
+npm install @ai-sdk/react@^4
 ```
 
-Swap `@ai-sdk/anthropic` for your provider's package if you use a different LLM. Use the latest versions on the same majors as [ecommerce/app/package.json](ecommerce/app/package.json).
+Mismatched majors cause type errors that look like mistakes in your own code (for example on `model`). The example app's [package.json](ecommerce/app/package.json) uses the same majors.
 
 Plain Node doesn't load `.env` files on its own: run with `node --env-file=.env ...` or use your existing secrets setup.
 
@@ -173,7 +184,43 @@ export async function POST(request: Request) {
 | Hono, Workers, and other web-`Response` runtimes | The route handler |
 | Express / Node `http` | Same `streamText` call, then `pipeUIMessageStreamToResponse({response: res, stream: toUIMessageStream({stream: result.stream})})` from `ai` |
 
-**On the client**, use your framework's AI SDK UI package (`useChat` from `@ai-sdk/react`, `Chat` from `@ai-sdk/svelte`, or the Vue equivalent). It posts to `/api/chat` by default and reads this stream. Responses are markdown, so render them with a markdown renderer, and sanitize the HTML if the content can contain untrusted markup. The chat components need the browser: if your framework renders pages on the server, render the chat client-side.
+**On the client**, use your framework's AI SDK UI package. It posts to `/api/chat` by default and reads this stream. Don't parse the stream by hand; its wire format is internal to the AI SDK. A minimal React version:
+
+```tsx
+'use client'
+import {useChat} from '@ai-sdk/react'
+import {useState} from 'react'
+
+export function Chat() {
+  const {messages, sendMessage, status, error} = useChat()
+  const [input, setInput] = useState('')
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        sendMessage({text: input})
+        setInput('')
+      }}
+    >
+      {messages.map((message) => (
+        <div key={message.id}>
+          {message.role}:{' '}
+          {message.parts.map((part, i) => (part.type === 'text' ? <span key={i}>{part.text}</span> : null))}
+        </div>
+      ))}
+      {error && <p>{error.message}</p>}
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        disabled={status === 'submitted' || status === 'streaming'}
+      />
+    </form>
+  )
+}
+```
+
+Svelte (`Chat` from `@ai-sdk/svelte`) and Vue follow the same pattern. Text parts are markdown: render them with a markdown renderer, and sanitize the HTML if the content can contain untrusted markup. The chat needs the browser, so render it client-side. The example app's [chat components](ecommerce/app/src/components/chat/) show a fuller version.
 
 ---
 
