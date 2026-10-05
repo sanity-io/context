@@ -198,6 +198,8 @@ The response should return a `result.tools` array that includes `initial_context
 
 **Follow [references/connecting-an-agent.md](references/connecting-an-agent.md)**: install, the initial context fetch, a request/response pattern for CLIs and APIs, a streaming route for chat UIs with where it goes in each framework, framework pitfalls, and a map of the full Next.js reference implementation.
 
+**Check it end to end:** ask the agent "What content do you have access to?" With the initial context inlined, it answers straight away without calling the `initial_context` tool.
+
 **System prompt:** keep it short and focused on behavior; the `shape-your-agent` skill covers what to put in it.
 
 ### Step 3: Conversation Insights (Optional)

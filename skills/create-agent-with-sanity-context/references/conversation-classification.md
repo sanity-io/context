@@ -348,4 +348,14 @@ For custom workflows, use the individual primitives directly:
 
 - `getConversationsToClassify({client, limit?, settledForMinutes?, mcpEndpoint?})`: GROQ query for the pending classification queue (summaries only)
 - `getPreviousContentGaps({client})`: GROQ query for known content gaps ranked by frequency
-- `classifyConversation({client, threadId, model, previousContentGaps?, messages?})`: Classify a single conversation; fetches the transcript via the client when `messages` is omitted, and records the verdict or a `classificationError` through `client.context.conversations.classify`
+- `classifyConversation({client, threadId, model, previousContentGaps?, messages?})`: Classify a single conversation; fetches the transcript via the client when `messages` is omitted, and records the verdict or a `classificationError` through `client.context.conversations.classify`. Pass the `getPreviousContentGaps()` result as `previousContentGaps` so content gap names stay consistent across runs; `classifyConversations` does this for you
+
+Reading conversations back uses the same organization-scoped client: `client.context.conversations.get({threadId})` returns one recorded conversation, or `null`. For lists and reports, query the organization's Context store with `client.context.fetch`:
+
+```ts
+const conversation = await client.context.conversations.get({threadId: 'thread-123'})
+
+const recent = await client.context.fetch(
+  '*[_type == "sanity.context.conversation"] | order(messagesUpdatedAt desc) [0...50]',
+)
+```
