@@ -56,7 +56,7 @@ async function fetchInitialContext(mcpUrl: string, token: string): Promise<strin
 }
 ```
 
-In a long-running server, cache the result with a short TTL (the reference implementation uses 5 minutes). In a CLI, script, or serverless cold start, a cache doesn't help: fetch per run.
+Cache the result with a short TTL (the reference implementation uses 5 minutes): a module-level cache persists across requests in long-running servers and in warm serverless instances, such as Next.js routes on Vercel. In a CLI or script, fetch per run.
 
 ---
 
@@ -86,10 +86,9 @@ export async function ask(question: string): Promise<string> {
   ])
 
   try {
-    const allTools = await mcpClient.tools()
+    const tools = await mcpClient.tools()
     // Drop initial_context only when its payload is inlined above; otherwise the model needs the tool
-    const {initial_context: _, ...toolsWithoutInitialContext} = allTools
-    const tools = initialContext ? toolsWithoutInitialContext : allTools
+    if (initialContext) delete tools.initial_context
 
     const {text} = await generateText({
       model: anthropic('claude-sonnet-4-5'),
@@ -144,10 +143,9 @@ export async function POST(request: Request) {
     ])
     mcpClient = client
 
-    const allTools = await client.tools()
+    const tools = await client.tools()
     // Drop initial_context only when its payload is inlined above; otherwise the model needs the tool
-    const {initial_context: _, ...toolsWithoutInitialContext} = allTools
-    const tools = initialContext ? toolsWithoutInitialContext : allTools
+    if (initialContext) delete tools.initial_context
 
     const result = streamText({
       model: anthropic('claude-sonnet-4-5'),
@@ -168,8 +166,9 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     await mcpClient?.close()
+    // Keep details in the server log; upstream errors can include internal response bodies
     console.error(error)
-    return Response.json({error: error instanceof Error ? error.message : 'Chat failed'}, {status: 500})
+    return Response.json({error: 'Chat failed'}, {status: 500})
   }
 }
 ```
@@ -182,7 +181,7 @@ export async function POST(request: Request) {
 | SvelteKit | `src/routes/api/chat/+server.ts`, as `export const POST = ({request}) => ...` |
 | Remix / React Router | The route's `action({request})` |
 | Hono, Workers, and other web-`Response` runtimes | The route handler |
-| Express / Node `http` | Same `streamText` call, then `pipeUIMessageStreamToResponse({response: res, stream: toUIMessageStream({stream: result.stream})})` from `ai` |
+| Express / Node `http` | Same `streamText` call, then `pipeUIMessageStreamToResponse({response: res, stream: toUIMessageStream({stream: result.stream, tools, originalMessages: messages})})` from `ai` |
 
 **On the client**, use your framework's AI SDK UI package. It posts to `/api/chat` by default and reads this stream. Don't parse the stream by hand; its wire format is internal to the AI SDK. A minimal React version:
 
@@ -220,7 +219,7 @@ export function Chat() {
 }
 ```
 
-Svelte (`Chat` from `@ai-sdk/svelte`) and Vue follow the same pattern. Text parts are markdown: render them with a markdown renderer, and sanitize the HTML if the content can contain untrusted markup. The chat needs the browser, so render it client-side. The example app's [chat components](ecommerce/app/src/components/chat/) show a fuller version.
+Svelte (`Chat` from `@ai-sdk/svelte`) and Vue follow the same pattern. Text parts are markdown: render them with a markdown renderer. Only sanitize if your renderer passes raw HTML through. The chat needs the browser, so render it client-side. The example app's [chat components](ecommerce/app/src/components/chat/) show a fuller version.
 
 ---
 
