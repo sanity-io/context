@@ -133,7 +133,6 @@ An MCP endpoint is always required, backed by a deployed schema (GROQ mode, Stud
 - **Co-located components**: All in the same project—work through them based on what the user wants to tackle first.
 - **No Studio in the codebase?** For GROQ mode, ask the user whether the schema is already deployed from a Studio elsewhere. If it isn't, it has to be deployed before the endpoint will serve. Knowledge Base mode doesn't need a deployed schema.
 
-
 ## Workflow
 
 **Always present the full workflow.** Even if the user's request seems narrow, inform them of all four steps — you don't have to implement everything, but they should know what's available. Step 3 is optional and Step 4 is recommended once the agent works; make sure the user knows both exist, then let them decide. Walk the user through the steps, explaining what each unlocks:
