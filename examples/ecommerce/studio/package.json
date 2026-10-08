@@ -23,7 +23,7 @@
     "@sanity/icons": "^5",
     "@sanity/ui": "^3",
     "@sanity/vision": "^6",
-    "ai": "^6.0.287",
+    "ai": "^6.0.301",
     "easymde": "^2.21.0",
     "react": "^19",
     "react-dom": "^19",
