@@ -13,7 +13,7 @@ Complete working example of a Next.js e-commerce site with AI shopping assistant
 | Client-side tool handling | `app/src/components/chat/chat.tsx` (`onToolCall`), `app/src/lib/client-tools.ts`                           |
 | Page context capture      | `app/src/lib/capture-context.ts`                                                                           |
 | Custom markdown rendering | `app/src/components/chat/message/text-part.tsx`                                                            |
-| Studio plugin setup       | `studio/sanity.config.ts`                                                                                  |
+| Studio config             | `studio/sanity.config.ts`                                                                                  |
 | Schema design patterns    | `studio/schemaTypes/documents/product.ts`, `studio/schemaTypes/index.ts`                                   |
 | Sanity client/queries     | `app/src/sanity/lib/client.ts`, `app/src/sanity/queries/`                                                  |
 | Conversation insights     | `app/src/app/api/chat/route.ts` (`sanityInsightsIntegration`), `functions/classify-conversations/index.ts` |
@@ -59,7 +59,7 @@ app/src/components/chat/
 
 ```
 studio/
-├── sanity.config.ts              # Plugin setup (includes contextPlugin)
+├── sanity.config.ts              # Studio config and structure
 └── schemaTypes/
     ├── index.ts                  # Schema registration
     ├── documents/

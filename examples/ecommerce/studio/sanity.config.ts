@@ -1,4 +1,3 @@
-import {contextPlugin} from '@sanity/context/studio'
 import {visionTool} from '@sanity/vision'
 import {defineConfig} from 'sanity'
 import {type ListItemBuilder, type StructureBuilder, structureTool} from 'sanity/structure'
@@ -54,7 +53,6 @@ export default defineConfig({
       },
     }),
     visionTool(),
-    contextPlugin(),
     markdownSchema(),
   ],
 

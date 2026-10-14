@@ -51,7 +51,7 @@ export interface ClassifyConversationsResult {
  *
  * const client = createClient({
  *   apiVersion: 'v2025-11-27',
- *   token: process.env.SANITY_API_TOKEN,
+ *   token: process.env.SANITY_ORGANIZATION_TOKEN,
  *   context: {organizationId: 'org-id'},
  * })
  *

@@ -24,7 +24,6 @@ These are handled elsewhere — don't duplicate them:
 | Content schema, field meanings     | Instructions field (Dial Your Context) |
 | Query patterns, data relationships | Instructions field (Dial Your Context) |
 | GROQ syntax and guidance           | MCP auto-provides                      |
-| Response formatting rules          | MCP auto-provides                      |
 
 Duplicating these in the system prompt creates conflicts. The MCP and Instructions field are purpose-built for data concerns — let them do their job.
 
@@ -70,13 +69,18 @@ Choose concrete positions on each axis:
 - Bad: "Adjust to the user's level"
 - Good: "Assume the user knows JavaScript and REST APIs. Don't explain what an API key is. Do explain Sanity-specific concepts like GROQ projections."
 
+**Formatting:** The MCP doesn't tell the agent how to format answers, so this is the system prompt's job.
+
+- Bad: "Format responses nicely"
+- Good: "Use short paragraphs. Use a bulleted list only when comparing three or more items. Link to the source page for every product you mention."
+
 ## Step 3: Set Boundaries
 
 For each boundary, you need: the **rule**, a **trigger scenario**, and the **desired response**.
 
 **What to refuse:**
 
-- Example: "If asked to write or modify content in the dataset, explain that you're a read-only assistant and point them to the Sanity Studio."
+- Example: "If asked to write or modify content in the dataset, explain that you're a read-only assistant and point them to whoever manages the content."
 
 **What to redirect:**
 
@@ -176,8 +180,8 @@ Test your prompt against real scenarios:
 | Layer                  | Controls                  | Example                                                        |
 | ---------------------- | ------------------------- | -------------------------------------------------------------- |
 | **System prompt**      | Agent behavior            | "Never quote exact pricing"                                    |
-| **Instructions field** | Data guidance             | "Products are in the 'product' type with a 'price' field"      |
-| **MCP**                | Query mechanics           | GROQ syntax, response formatting                               |
+| **Instructions field** | Data guidance             | "`price` is stored in cents; divide by 100 for dollars"        |
+| **MCP**                | Query mechanics           | GROQ syntax, tool usage                                        |
 | **System prompt**      | Communicating uncertainty | "Say 'I don't have that information' and suggest alternatives" |
 | **Instructions field** | Recovery tactics          | "If product search returns empty, try support-article type"    |
 
