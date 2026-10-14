@@ -7,13 +7,6 @@ description: Build AI agents with structured access to Sanity content via Sanity
 
 Give AI agents intelligent access to your Sanity content. Unlike embedding-only approaches, Sanity Context is schema-aware—agents can reason over your content structure, query with real field values, follow references, and combine structural filters with semantic search.
 
-**What this enables:**
-
-- Agents understand the relationships between your content types
-- Queries use actual schema fields, not just text similarity
-- Results respect your content model (categories, tags, references)
-- Semantic search is available when needed, layered on structure
-
 Sanity Context gives agents your schema and teaches them GROQ, but it can't know your domain. You close that gap through the **Instructions field** (dataset-specific query guidance) and optionally the **system prompt** (agent behavior and tone).
 
 **Three actors in this workflow:**
@@ -24,16 +17,21 @@ Sanity Context gives agents your schema and teaches them GROQ, but it can't know
 
 ## What You'll Need
 
-Before starting, gather these:
+**The agent code needs only three values:**
 
-| Requirement                | Where to get it                                                                                                                                                                                                                                                                                         |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Context enabled**        | An organization admin enables it from the organization's [Labs page](https://www.sanity.io/manage/org/labs) in Manage. This also enables Knowledge Bases                                                                                                                                                |
-| **Sanity Project ID**      | GROQ mode: your `sanity.config.ts` or [sanity.io/manage](https://sanity.io/manage)                                                                                                                                                                                                                      |
-| **Dataset name**           | GROQ mode: usually `production` — check your `sanity.config.ts`                                                                                                                                                                                                                                         |
-| **Organization ID**        | [Manage](https://www.sanity.io/manage) → organization settings, or the organization's URL                                                                                                                                                                                                               |
-| **Organization API token** | [Manage](https://www.sanity.io/manage/org/api/tokens) → organization → API → Tokens → **Add API token**, then under **Organization permissions** check **Context**. Choose **Viewer** for an agent that only reads; choose **Editor** if it also records Insights (Step 3). Project tokens do not work. |
-| **LLM API key**            | From your LLM provider (Anthropic, OpenAI, etc.) — any provider works                                                                                                                                                                                                                                   |
+| Value                                                    | Where to get it                                                                                                                                                                                                                                                                                         |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **MCP endpoint URL** (`SANITY_CONTEXT_MCP_URL`)          | Shown on the endpoint in the Context app once it's created ([Step 1](#step-1-create-the-mcp-endpoint))                                                                                                                                                                                                  |
+| **Organization API token** (`SANITY_ORGANIZATION_TOKEN`) | [Manage](https://www.sanity.io/manage/org/api/tokens) → organization → API → Tokens → **Add API token**, then under **Organization permissions** check **Context**. Choose **Viewer** for an agent that only reads; choose **Editor** if it also records Insights (Step 3). Project tokens do not work. |
+| **LLM API key**                                          | From your LLM provider (Anthropic, OpenAI, etc.) — any provider works                                                                                                                                                                                                                                   |
+
+**Setup also involves:**
+
+| Requirement                    | When      | Where to get it                                                                                                                                          |
+| ------------------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Context enabled**            | Always    | An organization admin enables it from the organization's [Labs page](https://www.sanity.io/manage/org/labs) in Manage. This also enables Knowledge Bases |
+| **Sanity project and dataset** | GROQ mode | Picked when creating the endpoint; also where the schema is deployed from (`sanity.config.ts`)                                                           |
+| **Organization ID**            | Insights  | [Manage](https://www.sanity.io/manage) → organization settings, or the organization's URL                                                                |
 
 The organization token is a server-side secret. It must never reach the browser.
 
@@ -78,22 +76,26 @@ The Context app shows the URL once the endpoint is created. Changes to instructi
 - `?groqFilter=<expression>` — **Narrows** the endpoint's filter. The saved filter always still applies; the two are combined with `&&`
 - `?perspective=drafts|raw|<releaseId>` — Content perspective. Defaults to `published`
 
-**The integration is simple**: Connect to the MCP URL, get tools, use them. The reference implementation shows one way to do this—adapt to your stack and LLM provider.
-
-**Initial context (recommended):**
+**Initial context:**
 
 Always fetch the initial context via the `/initial-context` HTTP endpoint and inject it into the system prompt. This gives a significant latency improvement on the first message—the agent already knows the schema and available tools without needing a tool call. It also enables better prompt caching since the schema prefix is stable across conversations.
 
 Append `/initial-context` to the MCP URL path (before any query params), using the same auth header:
 
 ```bash
-curl https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName/initial-context \
+# SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+curl "$SANITY_CONTEXT_MCP_URL/initial-context" \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN"
 ```
 
-Cache the result with a short TTL (the reference implementation uses 5 minutes) and include it in your system prompt. A short TTL keeps schema, Instructions, and Knowledge Base rebuilds flowing through without a redeploy. When using this, exclude the `initial_context` tool from the tools passed to the LLM to avoid redundant calls.
+In a long-running server, cache the result with a short TTL (the reference implementation uses 5 minutes) and include it in your system prompt. A short TTL keeps schema, Instructions, and Knowledge Base rebuilds flowing through without a redeploy.
 
-If you don't control the system prompt (e.g. using a third-party MCP client), the `initial_context` MCP tool still works — the agent will call it on the first message instead.
+> **Critical: the model must always get the initial context.** It's either inlined into the system prompt, or available as the `initial_context` tool. Never neither: without it the agent has no schema or outline and guesses.
+>
+> - Fetch succeeded and inlined → remove the `initial_context` tool, so the model doesn't fetch it again.
+> - Fetch failed, or you don't control the system prompt (e.g. a third-party MCP client) → keep the `initial_context` tool; the agent calls it on the first message.
+>
+> Never remove the tool unless the payload is actually in the system prompt.
 
 ## Available MCP Tools
 
@@ -112,18 +114,18 @@ Don't hardcode the tool list. The set grows over time, so take it from the MCP c
 
 A complete integration has **four distinct components** that may live in different places:
 
-| Component                   | What it is                                                                                           | Examples                                                                                                                                                |
-| --------------------------- | ---------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1. MCP Endpoint**         | A deployed schema (GROQ mode) or a built Knowledge Base, plus an endpoint created in the Context app | Studio (v5.1.0+) for the schema deploy, Context app in the Sanity Dashboard for Knowledge Bases and the endpoint                                        |
-| **2. Agent Implementation** | Code that connects to Sanity Context and handles LLM interactions                                    | Next.js API route, Express server, Python service, or any MCP-compatible client                                                                         |
-| **3. Frontend**             | UI for users to interact with the agent                                                              | Chat widget, search interface, CLI—or none for backend services                                                                                         |
-| **4. Functions**            | Scheduled classification via Sanity Blueprints (only with Insights, Step 3)                          | `sanity.blueprint.ts` + `functions/` directory — has its own placement constraints (see [Sanity Blueprints & Functions](#sanity-blueprints--functions)) |
+| Component                   | What it is                                                                                           | Examples                                                                                                                                                                            |
+| --------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. MCP Endpoint**         | A deployed schema (GROQ mode) or a built Knowledge Base, plus an endpoint created in the Context app | Studio (v5.1.0+) for the schema deploy, Context app in the Sanity Dashboard for Knowledge Bases and the endpoint                                                                    |
+| **2. Agent Implementation** | Code that connects to Sanity Context and handles LLM interactions                                    | Next.js API route, Express server, Python service, or any MCP-compatible client                                                                                                     |
+| **3. Frontend**             | UI for users to interact with the agent                                                              | Chat widget, search interface, CLI—or none for backend services                                                                                                                     |
+| **4. Functions**            | Scheduled classification via Sanity Blueprints (only with Insights, Step 3)                          | `sanity.blueprint.ts` + `functions/` directory — has its own placement constraints (see [Insights: Project Structure](references/conversation-classification.md#project-structure)) |
 
 An MCP endpoint is always required, backed by a deployed schema (GROQ mode, Studio v5.1.0+) or a built Knowledge Base: the agent has nothing to connect to without them. Frontend depends on the use case (many agents run as backend services or integrate into existing UIs).
 
 **Before writing any code, inspect the project to understand:**
 
-1. **Project layout**: Read the top-level `package.json` (check for `workspaces` or a `pnpm-workspace.yaml`), locate the lockfile, and map out the distinct apps/packages. This determines where `sanity.blueprint.ts` and `functions/` will go — see [Sanity Blueprints & Functions](#sanity-blueprints--functions).
+1. **Project layout**: Read the top-level `package.json` (check for `workspaces` or a `pnpm-workspace.yaml`), locate the lockfile, and map out the distinct apps/packages. This determines where `sanity.blueprint.ts` and `functions/` will go — see [Insights: Project Structure](references/conversation-classification.md#project-structure).
 2. **Their stack**: What framework/runtime? (Next.js, Remix, Node server, Python, etc.)
 3. **Their AI library**: Vercel AI SDK, LangChain, direct API calls, etc.
 4. **Their domain**: What will the agent help with? (Shopping, docs, support, search, etc.)
@@ -179,7 +181,7 @@ For details on sources, issues, and keeping it current, point the user to [Creat
 **Validate the endpoint:**
 
 ```bash
-curl -X POST https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName \
+curl -X POST "$SANITY_CONTEXT_MCP_URL" \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN" \
   -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
@@ -192,22 +194,17 @@ The response should return a `result.tools` array that includes `initial_context
 
 **The user already has an agent or MCP client?** They just need to connect it to the MCP endpoint URL with the organization token as a Bearer token. The tools will appear automatically.
 
-**Building from scratch?** Help the user set up the MCP connection and LLM integration. The reference implementations use Vercel AI SDK with Anthropic, but the pattern works with any LLM provider (OpenAI, local models, etc.). Start with the basics and add advanced patterns as needed.
+**Building from scratch?** Help the user set up the MCP connection and LLM integration. Whatever the stack, the model must get the initial context: inlined into the system prompt, or as the `initial_context` tool (see [Initial context](#how-sanity-context-works)). The snippets and reference implementations use Vercel AI SDK v7 with Anthropic, but the pattern works with any LLM provider (OpenAI, local models, etc.). Start with the basics and add advanced patterns as needed.
 
 **Follow [references/connecting-an-agent.md](references/connecting-an-agent.md)**: install, the initial context fetch, a request/response pattern for CLIs and APIs, a streaming route for chat UIs with where it goes in each framework, framework pitfalls, and a map of the full Next.js reference implementation.
+
+**Check it end to end:** ask the agent "What content do you have access to?" With the initial context inlined, it answers straight away without calling the `initial_context` tool.
 
 **System prompt:** keep it short and focused on behavior; the `shape-your-agent` skill covers what to put in it.
 
 ### Step 3: Conversation Insights (Optional)
 
 **Offer Insights; the user decides.** Without tracking, there's no easy way to know whether the agent is helping users or failing silently. Insights shows what users ask, where the agent struggles, and what content is missing. It adds a Context Editor token and a scheduled function, so skip it if the user doesn't want that yet.
-
-**What this unlocks:**
-
-- See which conversations succeed and which fail
-- Discover content gaps — topics users ask about that the agent can't answer well
-- Debug specific conversations with full transcripts
-- Compare performance across multiple agents
 
 **If the user wants it, setup is two parts — do both:**
 
@@ -228,66 +225,21 @@ Once the production agent works:
 
 2. **Shape the system prompt** (optional) using the `shape-your-agent` skill — if the user controls the production agent's system prompt, this helps define tone, boundaries, and guardrails. Skip this if the user doesn't control the system prompt.
 
-## Sanity Blueprints & Functions
-
-Scheduled classification uses **Sanity Blueprints** to deploy **Sanity Functions**.
-
-### Placement principles
-
-Before adding files, search the project for an existing `sanity.blueprint.ts`. If one exists with deployed functions, add the new function there — even if it's not next to the lockfile. An existing working setup takes precedence over the default placement rules below. Only follow these rules when creating a new blueprint from scratch.
-
-Find the project's lockfile (`yarn.lock`, `pnpm-lock.yaml`, or `package-lock.json`). Two rules for new blueprints:
-
-1. **`sanity.blueprint.ts` must be in the same directory as the lockfile.** The CLI detects the package manager from the lockfile. If no lockfile is present, pass `--fn-installer pnpm` (or `npm`/`yarn`) to the deploy command.
-2. **Function `src` paths are resolved relative to the blueprint file.** By default a function named `classify-conversations` maps to `functions/classify-conversations/` next to the blueprint. Use the `src` property in `defineScheduledFunction` to point to a different directory.
-
-**In a monorepo** with no existing blueprint, the lockfile is at the workspace root — so `sanity.blueprint.ts` and `functions/` go there too, alongside the root `package.json`. However, if a blueprint already exists in a subdirectory (e.g. `apps/studio/`) and functions are successfully deploying from there, use that location. The CLI can work from subdirectories when configured correctly (e.g. with `--fn-installer pnpm`).
-
-**Dependencies**: Functions use the `package.json` next to the blueprint for dependencies by default (`project-level`). Each function can alternatively have its own `package.json` (`function-level`), but a function uses one or the other — never both. See [Sanity Functions: Dependencies](https://www.sanity.io/docs/functions/function-dependencies).
-
-### Commands
-
-Run from the directory containing `sanity.blueprint.ts`:
-
-| Command                                              | Purpose                                                 |
-| ---------------------------------------------------- | ------------------------------------------------------- |
-| `npx sanity blueprints init`                         | Initialize the blueprint stack (first time only)        |
-| `npx sanity blueprints promote`                      | Promote to org scope (required for scheduled functions) |
-| `npx sanity blueprints doctor`                       | Check blueprint health and flag issues                  |
-| `npx sanity blueprints plan`                         | Preview what deploy will change                         |
-| `npx sanity blueprints deploy`                       | Deploy blueprint and functions                          |
-| `npx sanity functions env add <fn> <key> <value>`    | Set an env var (after deploy)                           |
-| `npx sanity functions logs <name>`                   | View function logs                                      |
-| `npx sanity functions test <name> --with-user-token` | Test function locally                                   |
-
-## GROQ with Semantic Search
-
-Sanity Context supports `text::semanticSimilarity()` for semantic ranking:
-
-```groq
-*[_type == "article" && category == "guides"]
-  | score(text::semanticSimilarity("getting started tutorial"))
-  | order(_score desc)
-  { _id, title, summary }[0...10]
-```
-
-Always use `order(_score desc)` when using `score()` to get best matches first.
-
 ## Best Practices
 
-- **Start simple**: Build the basic integration first, then add advanced patterns as needed
-- **Schema design**: Use descriptive field names—agents rely on schema understanding
-- **GROQ queries**: Always include `_id` in projections so agents can reference documents
 - **Content filters**: Use the endpoint's GROQ filter to scope what the production agent sees — start broad, then narrow based on what it actually needs. The filter is a GROQ filter expression, the part inside `*[...]`, not a full query or projection. Examples: `_type in ["product", "article"]`, `_type == "article" && language == "en"`, `_type == "product" && references(*[_type == "category" && slug.current == "electronics"]._id)`
 - **Instructions field**: Keep it concise — only include what the auto-generated schema doesn't make obvious. Don't duplicate schema information. See the `dial-your-context` skill.
 - **System prompts**: Be explicit about forbidden behaviors and formatting rules. Less is more — an over-engineered prompt can interfere with the Instructions content. See the `shape-your-agent` skill.
-- **Package versions**: `@sanity/context` is only needed for Insights (Step 3); an agent without Insights doesn't install it. When you do use it, use the latest version — run `npm info @sanity/context version` to get it. For other packages, check the reference `package.json` files or use `npm info <package> version`. AI SDK and Sanity packages update frequently, and using outdated versions will cause errors that are hard to debug.
+- **Package versions**: `@sanity/context` is only needed for Insights (Step 3); an agent without Insights doesn't install it. When you do use it, use the latest version — run `npm info @sanity/context version` to get it. For other packages, use `npm info <package> version` for the latest release, but stay on the major versions the reference `package.json` uses (the snippets are written for those majors, e.g. AI SDK v7). AI SDK and Sanity packages update frequently, and using outdated versions will cause errors that are hard to debug.
 
 ## Troubleshooting
 
 ### "401 Unauthorized" from MCP
 
-The token is missing or malformed, or it doesn't belong to the organization in the URL (message: "Not a member of this organization"; JSON-RPC `-32001` on the MCP route). Confirm `SANITY_ORGANIZATION_TOKEN` is set, is read by the agent code, is sent as `Authorization: Bearer <token>`, and that the organization ID in the URL is right.
+- **"Missing Sanity session":** no token, or no `Bearer` header.
+- **"Not a member of this organization":** an invalid token, or a token that isn't in the organization from the URL.
+
+On the MCP route both come back as JSON-RPC `-32001` with that message. `/initial-context` errors also include a code: `missingCredential` or `organizationAccessDenied`. Confirm `SANITY_ORGANIZATION_TOKEN` is set, is read by the agent code, is sent as `Authorization: Bearer <token>`, and that the organization ID in the URL is right.
 
 ### "404": MCP endpoint not found
 

@@ -47,14 +47,14 @@ Saving the result happens in the Context app, by the user. You never write the e
 **Calling the tools.** If you don't have the endpoint connected as an MCP server, call it over HTTP. Put the query params on the URL:
 
 ```bash
-curl -X POST "$MCP_URL?instructions=" \
+curl -X POST "$SANITY_CONTEXT_MCP_URL?instructions=" \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN" \
   -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"groq_query","arguments":{"query":"*[0...3]._type"}}}'
 ```
 
-Read the initial context (schema plus instructions) with `GET $MCP_URL/initial-context` (same auth header, same query params).
+Read the initial context (schema plus instructions) with `GET $SANITY_CONTEXT_MCP_URL/initial-context` (same auth header, same query params).
 
 ## Critical rules
 
@@ -299,31 +299,7 @@ Paste into the production endpoint rather than pointing the agent at the draft: 
 
 ## Adaptation guidelines
 
-This workflow scales to any dataset size:
-
-**Small dataset (3-5 types, 5 questions):**
-
-- Step 2 might be a 2-minute conversation
-- Step 4 might find zero non-obvious patterns
-- Final Instructions might be 5 lines or even empty (which is fine — it means the schema is self-explanatory)
-
-**Large dataset (50+ types, 20 questions):**
-
-- Step 2 needs more structure — group types by domain area
-- Step 3 is critical — without good questions, you'll explore aimlessly
-- Step 4 should group related questions to avoid redundant exploration
-- Final Instructions might be 30-40 lines with multiple sections
-
-**The filter matters more for large datasets.** A 50-type dataset where the agent only needs 8 types benefits enormously from a filter.
-
-## Anti-patterns to avoid
-
-- **Don't explore without the user.** Running 50 queries silently and presenting a wall of findings is overwhelming and error-prone. Explore interactively.
-- **Don't assume from samples.** "I checked 3 articles and none had a subtitle" ≠ "subtitle is unused." Ask the user.
-- **Don't duplicate the schema.** "The article type has fields: title, body, author, publishedAt..." — the agent already knows this.
-- **Don't write prose.** Instructions should be scannable bullet points, not paragraphs.
-- **Don't over-engineer.** If the dataset is simple and the schema is clear, the Instructions might be 3 lines. That's a success, not a failure.
-- **Don't skip verification.** Every claim needs evidence + user confirmation. This is the quality gate.
+Scale the workflow to the dataset. A small, clear schema may need 5 lines of Instructions or none, and that's a success. A large one (50+ types) needs types grouped by domain in Step 2, 15-20 expected questions in Step 3, and benefits most from a filter.
 
 ## Session state tracking
 
