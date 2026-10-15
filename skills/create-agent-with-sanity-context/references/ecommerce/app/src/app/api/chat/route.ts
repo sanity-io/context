@@ -3,9 +3,11 @@ import {createMCPClient, type MCPClient} from '@ai-sdk/mcp'
 import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 import {
   convertToModelMessages,
+  createUIMessageStreamResponse,
   type Experimental_DownloadFunction,
   stepCountIs,
   streamText,
+  toUIMessageStream,
   type UIMessage,
 } from 'ai'
 
@@ -34,7 +36,7 @@ async function fetchInitialContext(): Promise<string | null> {
   const isStale = Date.now() - cacheTimestamp > CACHE_TTL_MS
   const fetchPromise = isStale
     ? fetch(initialContextUrl(mcpUrl), {
-        headers: {Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`},
+        headers: {Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`},
       })
         .then(async (res) => {
           if (res.ok) {
@@ -123,8 +125,8 @@ export async function POST(req: Request) {
     throw new Error('ANTHROPIC_API_KEY is not set')
   }
 
-  if (!process.env.SANITY_API_TOKEN) {
-    throw new Error('SANITY_API_TOKEN is not set')
+  if (!process.env.SANITY_ORGANIZATION_TOKEN) {
+    throw new Error('SANITY_ORGANIZATION_TOKEN is not set')
   }
 
   if (!process.env.SANITY_ORGANIZATION_ID) {
@@ -140,7 +142,7 @@ export async function POST(req: Request) {
           type: 'http',
           url: process.env.SANITY_CONTEXT_MCP_URL,
           headers: {
-            Authorization: `Bearer ${process.env.SANITY_API_TOKEN}`,
+            Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`,
           },
         },
       }),
@@ -167,15 +169,16 @@ export async function POST(req: Request) {
       initialContext,
     })
 
-    const allMcpTools = await mcpClient.tools()
+    const mcpTools = await mcpClient.tools()
 
-    // Exclude initial_context tool, its data is already in the system prompt
-    const {initial_context: _, ...mcpTools} = allMcpTools
+    // Drop initial_context only when its payload is inlined above; otherwise the model needs the tool
+    if (initialContext) delete mcpTools.initial_context
+    const tools = {...mcpTools, ...clientTools}
 
     const modelId = process.env.ANTHROPIC_MODEL || DEFAULT_MODEL
 
-    // The MCP endpoint name groups conversations in the Context dashboard.
-    // Falls back to the endpoint segment of the MCP URL (.../{project}/{dataset}/{endpoint}).
+    // The MCP endpoint name groups conversations in Insights in the Context app.
+    // Falls back to the last segment of the MCP URL (.../organizations/{org}/mcp/{endpoint}).
     const mcpEndpointName =
       process.env.SANITY_CONTEXT_ENDPOINT_NAME ??
       new URL(process.env.SANITY_CONTEXT_MCP_URL).pathname.split('/').filter(Boolean).pop()
@@ -185,10 +188,7 @@ export async function POST(req: Request) {
       instructions: systemPrompt,
       messages: await convertToModelMessages(messages),
       experimental_download: downloadDataUrls,
-      tools: {
-        ...mcpTools,
-        ...clientTools,
-      },
+      tools,
       stopWhen: stepCountIs(MAX_STEPS),
       telemetry: {
         integrations: [
@@ -196,7 +196,7 @@ export async function POST(req: Request) {
             client: insightsClient,
             threadId: chatId,
             metadata: {
-              // Well-known key: groups conversations by MCP endpoint in the dashboard
+              // Well-known key: groups conversations by MCP endpoint in Insights
               mcpEndpoints: mcpEndpointName ?? [],
               // Custom keys ride along as queryable dimensions
               page: documentContext.pathname,
@@ -209,15 +209,14 @@ export async function POST(req: Request) {
       },
     })
 
-    return result.toUIMessageStreamResponse({
-      originalMessages: messages,
+    return createUIMessageStreamResponse({
+      stream: toUIMessageStream({stream: result.stream, tools, originalMessages: messages}),
     })
   } catch (error) {
     await mcpClient?.close()
+    // Keep details in the server log; upstream errors can include internal response bodies
+    console.error(error)
 
-    return Response.json(
-      {error: error instanceof Error ? error.message : 'An unexpected error occurred'},
-      {status: 500},
-    )
+    return Response.json({error: 'An unexpected error occurred'}, {status: 500})
   }
 }

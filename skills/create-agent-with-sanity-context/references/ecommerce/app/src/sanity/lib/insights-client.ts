@@ -6,7 +6,7 @@ import {createClient} from '@sanity/client'
  */
 export const insightsClient = createClient({
   apiVersion: 'v2025-11-27',
-  token: process.env.SANITY_API_TOKEN,
+  token: process.env.SANITY_ORGANIZATION_TOKEN,
   context: {organizationId: process.env.SANITY_ORGANIZATION_ID},
   useCdn: false,
   useProjectHostname: false,
