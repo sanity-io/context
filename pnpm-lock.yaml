@@ -10,7 +10,7 @@ catalogs:
       specifier: ^8.9.0
       version: 8.9.0
     '@sanity/ui':
-      specifier: ^3
+      specifier: ^3.5.5
       version: 3.5.5
     '@sanity/vision':
       specifier: ^6
@@ -245,7 +245,7 @@ importers:
         specifier: ^5
         version: 5.2.2(react@19.3.0)
       '@sanity/ui':
-        specifier: ^3
+        specifier: ^3.5.5
         version: 3.5.5(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))
       '@sanity/vision':
         specifier: ^6
@@ -3519,6 +3519,7 @@ packages:
   '@sanity/ui@4.2.3':
     resolution: {integrity: sha512-pxIshNSZGE40/YvRpsHmU1B5hSRLDpLfKgvrGkUltKgcb/lgzoksCM6rcbwTPNT/o1A5OQChYlHYklLOsGv5vA==}
     engines: {node: '>=22.12'}
+    deprecated: Class names collide with @sanity/ui 4.4.4 (shipped in sanity@6.19.0) when both load on one page, breaking styles. Upgrade to @sanity/ui@^4.4.4.
     peerDependencies:
       react: ^19.2
       react-dom: ^19.2
