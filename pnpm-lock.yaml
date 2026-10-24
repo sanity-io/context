@@ -105,8 +105,8 @@ importers:
   examples/ecommerce:
     dependencies:
       '@ai-sdk/anthropic':
-        specifier: ^3.0.119
-        version: 3.0.119(zod@4.6.5)
+        specifier: ^3.0.135
+        version: 3.0.135(zod@4.6.5)
       '@sanity/client':
         specifier: ^8.9.0
         version: 8.9.0(vitest@4.1.11)
@@ -236,8 +236,8 @@ importers:
   examples/ecommerce/studio:
     dependencies:
       '@ai-sdk/anthropic':
-        specifier: ^3.0.119
-        version: 3.0.119(zod@4.6.5)
+        specifier: ^3.0.135
+        version: 3.0.135(zod@4.6.5)
       '@sanity/client':
         specifier: ^7.27.0
         version: 7.27.0
@@ -419,8 +419,8 @@ packages:
   '@acemir/cssom@0.9.31':
     resolution: {integrity: sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA==}
 
-  '@ai-sdk/anthropic@3.0.119':
-    resolution: {integrity: sha512-0xLdDTrrNnCeXcXJmzFhMHEcG9h+WX+1rVqI8TQt7qj7Pb3rLRJId95vJeNDP3ciG9VfinqLuC0dOPhqsmaFnw==}
+  '@ai-sdk/anthropic@3.0.135':
+    resolution: {integrity: sha512-lOMoKXRbQ0gQ9ctOBo8aOqqQQ8nZEEf9INT8PpAXLSuwIsZl26Jg0vDqkhUsBWBuS9oPtEx3VFqGt3AuAvkjgg==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
@@ -455,6 +455,12 @@ packages:
     peerDependencies:
       zod: ^3.25.76 || ^4.1.8
 
+  '@ai-sdk/provider-utils@4.0.62':
+    resolution: {integrity: sha512-+FXkZ2e169zASBHP5HAakP0Iai3Eoa8zgh7bnuZExsek3N9HgGt/c7l1Oibdxb79vvsn5Mrg2Sjam80mR6bL8A==}
+    engines: {node: '>=18.17'}
+    peerDependencies:
+      zod: ^3.25.76 || ^4.1.8
+
   '@ai-sdk/provider-utils@5.0.47':
     resolution: {integrity: sha512-NZQ1hMxY6Hd4ZiinjpU5HUOsyCHiTFkHw7AiM1EVN+Cd3kNTi47flZWNvFwGqnBojntB1+2eBRTeHRuVLtPhEg==}
     engines: {node: '>=22'}
@@ -463,6 +469,10 @@ packages:
 
   '@ai-sdk/provider@3.0.16':
     resolution: {integrity: sha512-9Av6kg0t/IN/dcYAAmEJ4B9OPhcEJqwSR+GfHEA8olRkindXpUHadc3p3cyvgFUQFTVm1G5thtsmgZ9yVb2w3A==}
+    engines: {node: '>=18'}
+
+  '@ai-sdk/provider@3.0.19':
+    resolution: {integrity: sha512-5lWq7zSfRaU5ylDESn3sDQjgGl2AI1vjZKO/6JY3aFW70ct4zcP1kN+ZUYOuTXr28fVsYbyu2YFhddLdIgQFZQ==}
     engines: {node: '>=18'}
 
   '@ai-sdk/provider@4.0.18':
@@ -3519,6 +3529,7 @@ packages:
   '@sanity/ui@4.2.3':
     resolution: {integrity: sha512-pxIshNSZGE40/YvRpsHmU1B5hSRLDpLfKgvrGkUltKgcb/lgzoksCM6rcbwTPNT/o1A5OQChYlHYklLOsGv5vA==}
     engines: {node: '>=22.12'}
+    deprecated: Class names collide with @sanity/ui 4.4.4 (shipped in sanity@6.19.0) when both load on one page, breaking styles. Upgrade to @sanity/ui@^4.4.4.
     peerDependencies:
       react: ^19.2
       react-dom: ^19.2
@@ -8363,10 +8374,10 @@ snapshots:
 
   '@acemir/cssom@0.9.31': {}
 
-  '@ai-sdk/anthropic@3.0.119(zod@4.6.5)':
+  '@ai-sdk/anthropic@3.0.135(zod@4.6.5)':
     dependencies:
-      '@ai-sdk/provider': 3.0.16
-      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.5)
+      '@ai-sdk/provider': 3.0.19
+      '@ai-sdk/provider-utils': 4.0.62(zod@4.6.5)
       zod: 4.6.5
 
   '@ai-sdk/anthropic@4.0.63(zod@4.6.5)':
@@ -8405,6 +8416,14 @@ snapshots:
       undici: 6.28.1
       zod: 4.6.5
 
+  '@ai-sdk/provider-utils@4.0.62(zod@4.6.5)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.19
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.1.1
+      undici: 6.28.1
+      zod: 4.6.5
+
   '@ai-sdk/provider-utils@5.0.47(zod@4.6.5)':
     dependencies:
       '@ai-sdk/provider': 4.0.18
@@ -8415,6 +8434,10 @@ snapshots:
       zod: 4.6.5
 
   '@ai-sdk/provider@3.0.16':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@3.0.19':
     dependencies:
       json-schema: 0.4.0
 
