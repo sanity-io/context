@@ -69,7 +69,7 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
 
 ### Manual setup
 
-1. Open the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), create an MCP endpoint with your dataset as its source, and copy the MCP URL. It looks like `https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName`.
+1. Open the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), create an MCP endpoint with your dataset as its source, and copy the MCP URL. It looks like `https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName`.
 
 2. Connect your agent using any MCP-compatible framework. Example with [Vercel AI SDK](https://sdk.vercel.ai/):
 
@@ -106,7 +106,7 @@ See the [package documentation](./packages/context#agent-insights) for setup.
 **Validate the connection** — Test that your token and endpoint work:
 
 ```bash
-curl -X POST https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName \
+curl -X POST https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN" \
   -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \

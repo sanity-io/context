@@ -65,25 +65,19 @@ An endpoint serves one mode. If it has both a dataset source and Knowledge Base 
 **MCP URL:**
 
 ```
-https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName
 ```
 
 The Context app shows the URL once the endpoint is created. Changes to instructions or the filter in the Context app take effect without redeploying the agent. If the agent caches `/initial-context` (recommended below), instruction changes show up when that cache refreshes.
-
-**URL query params** apply per request (useful for testing and development):
-
-- `?instructions=<content>` — Overrides the endpoint's instructions (an empty `?instructions=` gives a blank slate)
-- `?groqFilter=<expression>` — **Narrows** the endpoint's filter. The saved filter always still applies; the two are combined with `&&`
-- `?perspective=drafts|raw|<releaseId>` — Content perspective. Defaults to `published`
 
 **Initial context:**
 
 Always fetch the initial context via the `/initial-context` HTTP endpoint and inject it into the system prompt. This gives a significant latency improvement on the first message—the agent already knows the schema and available tools without needing a tool call. It also enables better prompt caching since the schema prefix is stable across conversations.
 
-Append `/initial-context` to the MCP URL path (before any query params), using the same auth header:
+Append `/initial-context` to the MCP URL path, using the same auth header:
 
 ```bash
-# SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+# SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName
 curl "$SANITY_CONTEXT_MCP_URL/initial-context" \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN"
 ```
@@ -267,7 +261,7 @@ Check the endpoint's GROQ filter in the Context app:
 - Are the document types spelled correctly?
 - Are there published documents matching the filter? The endpoint reads the `published` perspective by default
 
-A filter that matches nothing looks like a broken connection, so check it before debugging the connection. If several Studio workspaces point at the same dataset, the endpoint uses the first one unless `?workspace=<name>` is set, which can serve the wrong schema.
+A filter that matches nothing looks like a broken connection, so check it before debugging the connection. If several Studio workspaces point at the same dataset, the endpoint uses the first one unless the dataset source's **Workspace** setting picks another, which can serve the wrong schema.
 
 ### Tools not appearing
 

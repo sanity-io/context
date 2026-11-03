@@ -34,27 +34,23 @@ The Instructions field you're crafting is the MCP endpoint's **Instructions** fi
 
 You need:
 
-- **The MCP endpoint URL**: `https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName`, shown on the endpoint in the Context app
+- **The production MCP endpoint URL**: `https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName`, shown on the endpoint in the Context app
+- **A draft endpoint** to tune against, so the production agent is never touched during the session (see Step 1)
 - **An organization API token** with Context access (Viewer is enough for this session)
 
-You test everything through URL query params on the endpoint, so the production agent is never touched during the session:
+The endpoint serves its saved configuration only: a request that adds a query parameter such as `instructions` or `groqFilter` is refused with `400`. You test instructions and filters by having the user save them on the draft endpoint in the Context app. They take effect on the next connection. You never write the endpoint configuration yourself.
 
-- `?instructions=<URL-encoded>` replaces the endpoint's instructions for that request. An empty `?instructions=` gives a blank slate (don't write `?instructions=""`: that sends two quote characters as the instructions)
-- `?groqFilter=<URL-encoded>` **narrows** the endpoint's saved filter: the two are combined with `&&`. It can't widen what the saved filter allows
-
-Saving the result happens in the Context app, by the user. You never write the endpoint configuration yourself.
-
-**Calling the tools.** If you don't have the endpoint connected as an MCP server, call it over HTTP. Put the query params on the URL:
+**Calling the tools.** If you don't have the draft endpoint connected as an MCP server, call it over HTTP, with `DRAFT_MCP_URL` set to the draft endpoint's URL:
 
 ```bash
-curl -X POST "$SANITY_CONTEXT_MCP_URL?instructions=" \
+curl -X POST "$DRAFT_MCP_URL" \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN" \
   -H "Accept: application/json, text/event-stream" \
   -H "Content-Type: application/json" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"groq_query","arguments":{"query":"*[0...3]._type"}}}'
 ```
 
-Read the initial context (schema plus instructions) with `GET $SANITY_CONTEXT_MCP_URL/initial-context` (same auth header, same query params).
+Read the initial context (schema plus instructions) with `GET $DRAFT_MCP_URL/initial-context` (same auth header).
 
 ## Critical rules
 
@@ -72,14 +68,11 @@ Read the initial context (schema plus instructions) with `GET $SANITY_CONTEXT_MC
 
 Get the MCP endpoint URL and an organization token from the user (see [Prerequisites](#prerequisites)).
 
-**Decide whether you need a draft endpoint.** Because `?groqFilter=` can only narrow, ask the user what the endpoint's saved GROQ filter is (it's shown on the endpoint in the Context app):
+**Create a draft endpoint.** Ask the user to create one in the Context app (**New MCP endpoint**) with the same dataset source as production, a name like `tuning-draft`, and no instructions or GROQ filter. Match the dataset source's workspace, perspective, and semantic search settings to production's, so the draft serves what production serves. Creating it needs the Administrator or Developer role in the organization and on the dataset's project (the project role is the same one Step 7 needs to change the filter). Run the session against the draft's URL. The production endpoint stays untouched.
 
-- **No saved filter, or a saved filter you only expect to narrow further:** work against the existing endpoint with URL params. Nothing else to set up.
-- **A saved filter you may need to widen:** ask the user to create a draft endpoint in the Context app (**New MCP endpoint**) with the same dataset source, a name like `tuning-draft`, and no GROQ filter. Creating it needs the Administrator or Developer role in the organization and on the dataset's project (the project role is the same one Step 7 needs to change the filter). Run the session against the draft's URL. The production endpoint stays untouched.
+Leave the draft's instructions empty until you're testing draft instructions, so existing instructions don't mask what the schema alone gets wrong.
 
-Use an empty `?instructions=` on every call until you're testing draft instructions, so existing instructions don't mask what the schema alone gets wrong.
-
-Check if the endpoint already has instructions (ask the user to copy them from the Context app, or fetch `/initial-context` without the `instructions` param and look for the `Context Instructions` section):
+Check if the production endpoint already has instructions (ask the user to copy them from the Context app, or fetch the production endpoint's `/initial-context` and look for the `Context Instructions` section):
 
 - If yes, present the existing instructions to the user verbatim
 - Ask: "Do you want to keep any of this, or start fresh?"
@@ -88,7 +81,7 @@ Check if the endpoint already has instructions (ask the user to copy them from t
 
 Verify you can query the dataset by running a simple GROQ query like `*[0...3]._type` to confirm access.
 
-**Output:** Confirmed MCP access, safe working environment established (URL params, plus a draft endpoint if needed), any existing instructions surfaced to user.
+**Output:** Confirmed MCP access to the draft endpoint, any existing instructions surfaced to user.
 
 ### Step 2: Schema Dialogue
 
@@ -133,7 +126,7 @@ Based on the conversation, propose a filter:
 >
 > This means the agent won't see `siteSettings`, `redirect`, `migration`, etc. Does that sound right?
 
-**Apply the filter immediately.** Once the user agrees, add `?groqFilter=<URL-encoded expression>` to all subsequent MCP calls.
+**Apply the filter immediately.** Once the user agrees, ask them to save it as the draft endpoint's GROQ filter in the Context app, then confirm it's active by running a query for a type it excludes.
 
 All exploration from this point forward should use the agreed filter.
 
@@ -228,7 +221,7 @@ Write the Instructions as short, declarative statements organized by category:
 - `relatedArticles` is manually curated and often empty for older content
 ```
 
-**Keep it tight.** Each line should pass this test: "Would an agent with the schema alone get this wrong?" If you're unsure, test it — try answering 2-3 questions with an empty `?instructions=` and see what the model gets wrong on its own. That's your empirical baseline for what actually needs to be here. If no, cut it.
+**Keep it tight.** Each line should pass this test: "Would an agent with the schema alone get this wrong?" If you're unsure, test it — try answering 2-3 questions with the draft endpoint's instructions empty and see what the model gets wrong on its own. That's your empirical baseline for what actually needs to be here. If no, cut it.
 
 **Do not include:**
 
@@ -286,14 +279,14 @@ The user saves the configuration in the Context app. Give them exactly what to p
 
 1. Open the **Context** app in the Sanity Dashboard and select the **production** endpoint
 2. **Instructions** field: [final instructions block]
-3. **GROQ filter** field: [final GROQ expression]. The new value replaces the saved one. If you tuned with `?groqFilter=` on an endpoint that already had a filter, the filter you tested was `(<saved filter>) && (<your filter>)`, so paste that combined expression. If the user wants to drop the old filter, that widens scope beyond what you tested: re-test on a draft endpoint (Step 1) before saving
+3. **GROQ filter** field: [final GROQ expression], exactly as saved on the draft endpoint. The new value replaces the saved one
 4. Save. Changes take effect on the next connection, with no redeploy of the agent. If the agent caches `/initial-context`, instruction changes show up when that cache refreshes
 
 Changing the GROQ filter also needs the Administrator or Developer role on every attached dataset's project. If the user gets a 403 on save, someone with that role has to make the change.
 
 Paste into the production endpoint rather than pointing the agent at the draft: the endpoint name is part of the URL and can't be renamed, so switching endpoints means changing the agent's configuration.
 
-**After saving, verify:** fetch `/initial-context` from the production endpoint **without** any `instructions` or `groqFilter` params, and confirm the `Context Instructions` section matches. Run one of the expected questions to confirm the filter is active. If a `tuning-draft` endpoint was created, remind the user they can delete it in the Context app.
+**After saving, verify:** fetch `/initial-context` from the production endpoint and confirm the `Context Instructions` section matches. Run one of the expected questions to confirm the filter is active. Remind the user they can delete the `tuning-draft` endpoint in the Context app.
 
 **Output:** Instructions and filter live in production, verified working.
 
@@ -307,10 +300,10 @@ Throughout the session, maintain a mental model of:
 
 ```
 - [ ] MCP access verified
-- [ ] Working environment set up (URL params, plus a draft endpoint if needed)
+- [ ] Draft endpoint created
 - [ ] Existing instructions reviewed (if any)
 - [ ] Schema discussed with user
-- [ ] Filter agreed and applied
+- [ ] Filter agreed and saved on the draft endpoint
 - [ ] Expected questions collected
 - [ ] Questions explored and findings tracked
 - [ ] Draft instructions written
