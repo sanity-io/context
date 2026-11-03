@@ -6,7 +6,7 @@ Guidelines for AI coding assistants working in this repository.
 
 This is a monorepo for Sanity Context—tools for building AI agents with structured access to Sanity content. The system has three main parts:
 
-1. **Context MCP** (external service) - Hosted MCP server. Endpoints are configured per organization in the Context app in the Sanity Dashboard and expose tools to AI agents
+1. **Context MCP** (external service) - Hosted MCP server. Endpoints are configured per organization, in the Context app in the Sanity Dashboard or with the Sanity CLI (`sanity context mcp`), and expose tools to AI agents
 2. **Agent Implementation** - Your app that connects to Context MCP and uses the tools
 3. **`@sanity/context`** - Insights (conversation telemetry and classification) for agent implementations, plus a deprecated Studio plugin
 
@@ -65,7 +65,7 @@ pnpm dev
 
 ### MCP Endpoints
 
-Created and managed in the Context app in the Sanity Dashboard, owned by the organization. Fields:
+Created and managed in the Context app in the Sanity Dashboard or with the Sanity CLI (`sanity context mcp create`, `update`), owned by the organization. Fields:
 
 | Field          | Purpose                                                                                  |
 | -------------- | ---------------------------------------------------------------------------------------- |

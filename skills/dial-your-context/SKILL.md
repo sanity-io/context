@@ -18,7 +18,7 @@ The Sanity Context MCP server already provides the agent with:
 - A GROQ query tutorial in the `groq_query` tool description
 - Tool descriptions for GROQ queries, semantic search, etc.
 
-The Instructions field you're crafting is the MCP endpoint's **Instructions** field in the Context app. It appears under a `Context Instructions` heading at the top of the initial context, ahead of the efficiency, accuracy, tools, and schema sections. It should contain **only what the schema doesn't make obvious**:
+The Instructions field you're crafting is the MCP endpoint's **Instructions** field, set in the Context app or with `sanity context mcp update --instructions`. It appears under a `Context Instructions` heading at the top of the initial context, ahead of the efficiency, accuracy, tools, and schema sections. It should contain **only what the schema doesn't make obvious**:
 
 - Counter-intuitive field names (e.g., `body` is actually a slug, `hero` is a reference to `mediaAsset`)
 - Second-order reference chains the schema doesn't connect (e.g., "to find products with Dolby Atmos, chain `product → productFeature` and match on the feature's `id` field — the schema shows each hop but not the full path")
@@ -34,11 +34,22 @@ The Instructions field you're crafting is the MCP endpoint's **Instructions** fi
 
 You need:
 
-- **The production MCP endpoint URL**: `https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName`, shown on the endpoint in the Context app
-- **A draft endpoint** to tune against, so the production agent is never touched during the session (see Step 1)
-- **An organization API token** with Context access (Viewer is enough for this session)
+- **The production MCP endpoint's name**, the last segment of its URL: `https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName`
+- **The Sanity CLI, logged in as the user** (`npx sanity@latest login`). The user needs the Administrator or Developer role in the organization and on the dataset's project to create and update endpoints
+- **An organization API token** with Context access (Viewer is enough for this session), for calling the endpoint
 
-The endpoint serves its saved configuration only: a request that adds a query parameter such as `instructions` or `groqFilter` is refused with `400`. You test instructions and filters by having the user save them on the draft endpoint in the Context app. They take effect on the next connection. You never write the endpoint configuration yourself.
+An endpoint serves its saved configuration only: a request that adds a query parameter such as `instructions` or `groqFilter` is refused with `400`. You tune on a draft endpoint instead, and change its configuration yourself with the CLI. A change takes effect on the next connection:
+
+```bash
+# Read an endpoint's configuration and URL
+npx sanity@latest context mcp get tuning-draft --json
+
+# Save draft instructions or a filter ("" removes either)
+npx sanity@latest context mcp update tuning-draft --instructions "$(cat draft-instructions.md)"
+npx sanity@latest context mcp update tuning-draft --groq-filter '_type in ["article", "author"]'
+```
+
+Add `--organization <id>` if the CLI asks which organization to use. Never update the production endpoint before Step 7, when the user has approved the final configuration.
 
 **Calling the tools.** If you don't have the draft endpoint connected as an MCP server, call it over HTTP, with `DRAFT_MCP_URL` set to the draft endpoint's URL:
 
@@ -66,13 +77,20 @@ Read the initial context (schema plus instructions) with `GET $DRAFT_MCP_URL/ini
 
 **Goal:** Establish MCP access, set up a safe working environment.
 
-Get the MCP endpoint URL and an organization token from the user (see [Prerequisites](#prerequisites)).
+Get the production endpoint's name and an organization token from the user (see [Prerequisites](#prerequisites)).
 
-**Create a draft endpoint.** Ask the user to create one in the Context app (**New MCP endpoint**) with the same dataset source as production, a name like `tuning-draft`, and no instructions or GROQ filter. Match the dataset source's workspace, perspective, and semantic search settings to production's, so the draft serves what production serves. Creating it needs the Administrator or Developer role in the organization and on the dataset's project (the project role is the same one Step 7 needs to change the filter). Run the session against the draft's URL. The production endpoint stays untouched.
+**Create a draft endpoint.** Read the production endpoint with `npx sanity@latest context mcp get <name> --json`, then create a draft that serves the same dataset with the same settings, and no instructions or GROQ filter:
+
+```bash
+npx sanity@latest context mcp create tuning-draft --title "Tuning draft" \
+  --project <projectId> --dataset <dataset> --perspective <perspective> --workspace <workspace>
+```
+
+Copy production's dataset source settings: leave out `--perspective` or `--workspace` where production's is `null`, and add `--no-semantic-search` if its `semanticSearch` is `false`, so the draft serves what production serves. Run the session against the draft's URL, which `mcp get tuning-draft` shows. The production endpoint stays untouched.
 
 Leave the draft's instructions empty until you're testing draft instructions, so existing instructions don't mask what the schema alone gets wrong.
 
-Check if the production endpoint already has instructions (ask the user to copy them from the Context app, or fetch the production endpoint's `/initial-context` and look for the `Context Instructions` section):
+Check if the production endpoint already has instructions (they're in its `mcp get --json` output):
 
 - If yes, present the existing instructions to the user verbatim
 - Ask: "Do you want to keep any of this, or start fresh?"
@@ -126,7 +144,7 @@ Based on the conversation, propose a filter:
 >
 > This means the agent won't see `siteSettings`, `redirect`, `migration`, etc. Does that sound right?
 
-**Apply the filter immediately.** Once the user agrees, ask them to save it as the draft endpoint's GROQ filter in the Context app, then confirm it's active by running a query for a type it excludes.
+**Apply the filter immediately.** Once the user agrees, save it on the draft with `npx sanity@latest context mcp update tuning-draft --groq-filter '<expression>'`, then confirm it's active by running a query for a type it excludes.
 
 All exploration from this point forward should use the agreed filter.
 
@@ -230,7 +248,9 @@ Write the Instructions as short, declarative statements organized by category:
 - Response formatting guidance (that belongs in the system prompt; see the `shape-your-agent` skill)
 - Anything the agent would figure out on its own
 
-**Output:** A draft Instructions block, typically 10-40 lines depending on dataset complexity.
+**Test it on the draft.** Save the block with `npx sanity@latest context mcp update tuning-draft --instructions "$(cat draft-instructions.md)"` and rerun the expected questions it should fix.
+
+**Output:** A draft Instructions block, typically 10-40 lines depending on dataset complexity, saved on the draft endpoint.
 
 ### Step 6: Verify Claims
 
@@ -275,18 +295,20 @@ Present the final Instructions content and filter to the user for one last revie
 >
 > Ready to deploy?
 
-The user saves the configuration in the Context app. Give them exactly what to paste:
+Once the user says yes, save it on the production endpoint, with the filter exactly as saved on the draft:
 
-1. Open the **Context** app in the Sanity Dashboard and select the **production** endpoint
-2. **Instructions** field: [final instructions block]
-3. **GROQ filter** field: [final GROQ expression], exactly as saved on the draft endpoint. The new value replaces the saved one
-4. Save. Changes take effect on the next connection, with no redeploy of the agent. If the agent caches `/initial-context`, instruction changes show up when that cache refreshes
+```bash
+npx sanity@latest context mcp update <production-name> \
+  --instructions "$(cat final-instructions.md)" --groq-filter '<final expression>'
+```
 
-Changing the GROQ filter also needs the Administrator or Developer role on every attached dataset's project. If the user gets a 403 on save, someone with that role has to make the change.
+The new values replace the saved ones. Changes take effect on the next connection, with no redeploy of the agent. If the agent caches `/initial-context`, instruction changes show up when that cache refreshes.
 
-Paste into the production endpoint rather than pointing the agent at the draft: the endpoint name is part of the URL and can't be renamed, so switching endpoints means changing the agent's configuration.
+Changing the GROQ filter needs the Administrator or Developer role on the dataset's project. If the update gets a 403, someone with that role has to run it.
 
-**After saving, verify:** fetch `/initial-context` from the production endpoint and confirm the `Context Instructions` section matches. Run one of the expected questions to confirm the filter is active. Remind the user they can delete the `tuning-draft` endpoint in the Context app.
+Update the production endpoint rather than pointing the agent at the draft: the endpoint name is part of the URL and can't be renamed, so switching endpoints means changing the agent's configuration.
+
+**After saving, verify:** fetch `/initial-context` from the production endpoint and confirm the `Context Instructions` section matches. Run one of the expected questions to confirm the filter is active. Then ask the user whether to delete the draft, and if they agree, run `npx sanity@latest context mcp delete tuning-draft --yes`.
 
 **Output:** Instructions and filter live in production, verified working.
 
@@ -308,7 +330,7 @@ Throughout the session, maintain a mental model of:
 - [ ] Questions explored and findings tracked
 - [ ] Draft instructions written
 - [ ] Each claim verified with evidence
-- [ ] Instructions and filter saved in the Context app
+- [ ] Instructions and filter saved on the production endpoint
 - [ ] Production deployment verified
 ```
 

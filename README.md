@@ -16,7 +16,7 @@ flowchart LR
   B --> C["Your content in Sanity"]
 ```
 
-You create an MCP endpoint in the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard). The endpoint controls what content your agent can access and gets its own MCP URL. Your agent connects to that URL with an organization API token. An endpoint serves either your live dataset (GROQ mode) or [Knowledge Bases](https://www.sanity.io/docs/ai/sanity-context-knowledge-bases) built ahead of time from datasets, websites, and files (Knowledge Base mode, beta).
+You create an MCP endpoint in the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), or with the Sanity CLI. The endpoint controls what content your agent can access and gets its own MCP URL. Your agent connects to that URL with an organization API token. An endpoint serves either your live dataset (GROQ mode) or [Knowledge Bases](https://www.sanity.io/docs/ai/sanity-context-knowledge-bases) built ahead of time from datasets, websites, and files (Knowledge Base mode, beta).
 
 The endpoint gives your agent tools to read your schema and run [GROQ](https://www.sanity.io/docs/groq) queries with optional semantic search (GROQ mode), or to search and read Knowledge Base entries (Knowledge Base mode). See [Context MCP tools](https://www.sanity.io/docs/ai/sanity-context-mcp-tools) for the current list.
 
@@ -69,7 +69,7 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
 
 ### Manual setup
 
-1. Open the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), create an MCP endpoint with your dataset as its source, and copy the MCP URL. It looks like `https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName`.
+1. Open the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), create an MCP endpoint with your dataset as its source, and copy the MCP URL. Or let your coding agent do it: `npx sanity@latest context mcp create <name> --project <projectId> --dataset <dataset>`, then `npx sanity@latest context mcp get <name>` for the URL. It looks like `https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName`.
 
 2. Connect your agent using any MCP-compatible framework. Example with [Vercel AI SDK](https://sdk.vercel.ai/):
 
@@ -113,7 +113,7 @@ curl -X POST https://api.sanity.io/v2026-11-03/context/organizations/:organizati
   -d '{"jsonrpc": "2.0", "method": "tools/list", "id": 1}'
 ```
 
-If this returns a list of tools, you're connected. The full MCP URL is shown on the endpoint in the Context app.
+If this returns a list of tools, you're connected. The full MCP URL is shown on the endpoint in the Context app and by `sanity context mcp get <name>`.
 
 **401 Unauthorized** — The token is missing or malformed, or it belongs to a different organization than the one in the URL. Check that it's sent as `Authorization: Bearer <token>` and that the organization ID is right.
 
