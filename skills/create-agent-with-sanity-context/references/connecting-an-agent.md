@@ -39,7 +39,7 @@ Plain Node doesn't load `.env` files on its own: run with `node --env-file=.env 
 
 ## Fetching Initial Context
 
-The snippets below inline the initial context and drop the `initial_context` tool only when the fetch succeeded; if it failed, the model still has the tool. Append `/initial-context` to the MCP URL **path** (before any query params). Same auth header, same query params:
+The snippets below inline the initial context and drop the `initial_context` tool only when the fetch succeeded; if it failed, the model still has the tool. Append `/initial-context` to the MCP URL **path**, with the same auth header:
 
 ```ts
 async function fetchInitialContext(mcpUrl: string, token: string): Promise<string | null> {

@@ -6,7 +6,7 @@ Guidelines for AI coding assistants working in this repository.
 
 This is a monorepo for Sanity Context—tools for building AI agents with structured access to Sanity content. The system has three main parts:
 
-1. **Context MCP** (external service) - Hosted MCP server. Endpoints are configured per organization in the Context app in the Sanity Dashboard and expose tools to AI agents
+1. **Context MCP** (external service) - Hosted MCP server. Endpoints are configured per organization, in the Context app in the Sanity Dashboard or with the Sanity CLI (`sanity context mcp`), and expose tools to AI agents
 2. **Agent Implementation** - Your app that connects to Context MCP and uses the tools
 3. **`@sanity/context`** - Insights (conversation telemetry and classification) for agent implementations, plus a deprecated Studio plugin
 
@@ -65,7 +65,7 @@ pnpm dev
 
 ### MCP Endpoints
 
-Created and managed in the Context app in the Sanity Dashboard, owned by the organization. Fields:
+Created and managed in the Context app in the Sanity Dashboard or with the Sanity CLI (`sanity context mcp create`, `update`), owned by the organization. Fields:
 
 | Field          | Purpose                                                                                  |
 | -------------- | ---------------------------------------------------------------------------------------- |
@@ -85,12 +85,10 @@ A GROQ filter expression (the part inside `*[...]`) that scopes what content an 
 _type in ["product", "category"]
 ```
 
-A `?groqFilter=` URL param narrows the saved filter (combined with `&&`); it never replaces it.
-
 ### MCP URL
 
 ```
-https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName
 ```
 
 Agents connect via HTTP transport with a Bearer token: an **organization** API token with Context access (Viewer to read; Editor to also record Insights). Project tokens are refused with HTTP 403 (`-32007` `contextGrantRequired` on dataset endpoints, `-32006` `knowledgeBaseAccessDenied` on Knowledge Base endpoints).

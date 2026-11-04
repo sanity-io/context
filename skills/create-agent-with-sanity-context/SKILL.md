@@ -1,6 +1,6 @@
 ---
 name: create-agent-with-sanity-context
-description: Build AI agents with structured access to Sanity content via Sanity Context. Use when setting up a Sanity-powered chatbot, connecting an AI assistant to Sanity content, or adding client-side tools to an agent. Covers MCP endpoint setup in the Context app (GROQ mode over a dataset, or Knowledge Base mode), agent implementation, Insights, and advanced patterns. Always use this skill when users mention building a chatbot with Sanity, creating an AI assistant for their content, setting up the Sanity Context MCP server, integrating Sanity with Claude/GPT/any LLM, making content searchable by AI, implementing semantic search over Sanity data, or connecting their CMS to an AI agent.
+description: Build AI agents with structured access to Sanity content via Sanity Context. Use when setting up a Sanity-powered chatbot, connecting an AI assistant to Sanity content, or adding client-side tools to an agent. Covers MCP endpoint setup in the Context app or with the Sanity CLI (GROQ mode over a dataset, or Knowledge Base mode), agent implementation, Insights, and advanced patterns. Always use this skill when users mention building a chatbot with Sanity, creating an AI assistant for their content, setting up the Sanity Context MCP server, integrating Sanity with Claude/GPT/any LLM, making content searchable by AI, implementing semantic search over Sanity data, or connecting their CMS to an AI agent.
 ---
 
 # Build an Agent with Sanity Context
@@ -21,7 +21,7 @@ Sanity Context gives agents your schema and teaches them GROQ, but it can't know
 
 | Value                                                    | Where to get it                                                                                                                                                                                                                                                                                         |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **MCP endpoint URL** (`SANITY_CONTEXT_MCP_URL`)          | Shown on the endpoint in the Context app once it's created ([Step 1](#step-1-create-the-mcp-endpoint))                                                                                                                                                                                                  |
+| **MCP endpoint URL** (`SANITY_CONTEXT_MCP_URL`)          | Shown on the endpoint in the Context app, or by `sanity context mcp get <name>`, once it's created ([Step 1](#step-1-create-the-mcp-endpoint))                                                                                                                                                          |
 | **Organization API token** (`SANITY_ORGANIZATION_TOKEN`) | [Manage](https://www.sanity.io/manage/org/api/tokens) → organization → API → Tokens → **Add API token**, then under **Organization permissions** check **Context**. Choose **Viewer** for an agent that only reads; choose **Editor** if it also records Insights (Step 3). Project tokens do not work. |
 | **LLM API key**                                          | From your LLM provider (Anthropic, OpenAI, etc.) — any provider works                                                                                                                                                                                                                                   |
 
@@ -52,7 +52,7 @@ The Sanity Context MCP server gives AI agents structured, read-only access to Sa
 
 An endpoint serves one mode. If it has both a dataset source and Knowledge Base sources, the dataset wins and the Knowledge Bases are ignored, with no error. Ask the user which fits; GROQ mode is the default for content that lives in a Sanity dataset.
 
-**MCP endpoints** are created in the **Context app** in the Sanity Dashboard. Each endpoint has these fields:
+**MCP endpoints** are created and changed in the **Context app** in the Sanity Dashboard, or with the Sanity CLI (`sanity context mcp create`, `update`, `get`). Each endpoint has these fields:
 
 | Field              | Purpose                                                                                                   |
 | ------------------ | --------------------------------------------------------------------------------------------------------- |
@@ -65,25 +65,19 @@ An endpoint serves one mode. If it has both a dataset source and Knowledge Base 
 **MCP URL:**
 
 ```
-https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName
 ```
 
-The Context app shows the URL once the endpoint is created. Changes to instructions or the filter in the Context app take effect without redeploying the agent. If the agent caches `/initial-context` (recommended below), instruction changes show up when that cache refreshes.
-
-**URL query params** apply per request (useful for testing and development):
-
-- `?instructions=<content>` — Overrides the endpoint's instructions (an empty `?instructions=` gives a blank slate)
-- `?groqFilter=<expression>` — **Narrows** the endpoint's filter. The saved filter always still applies; the two are combined with `&&`
-- `?perspective=drafts|raw|<releaseId>` — Content perspective. Defaults to `published`
+The Context app and `sanity context mcp get <name>` show the URL once the endpoint is created. Changes to instructions or the filter take effect without redeploying the agent. If the agent caches `/initial-context` (recommended below), instruction changes show up when that cache refreshes.
 
 **Initial context:**
 
 Always fetch the initial context via the `/initial-context` HTTP endpoint and inject it into the system prompt. This gives a significant latency improvement on the first message—the agent already knows the schema and available tools without needing a tool call. It also enables better prompt caching since the schema prefix is stable across conversations.
 
-Append `/initial-context` to the MCP URL path (before any query params), using the same auth header:
+Append `/initial-context` to the MCP URL path, using the same auth header:
 
 ```bash
-# SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v1/context/organizations/:organizationId/mcp/:endpointName
+# SANITY_CONTEXT_MCP_URL=https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName
 curl "$SANITY_CONTEXT_MCP_URL/initial-context" \
   -H "Authorization: Bearer $SANITY_ORGANIZATION_TOKEN"
 ```
@@ -114,12 +108,12 @@ Don't hardcode the tool list. The set grows over time, so take it from the MCP c
 
 A complete integration has **four distinct components** that may live in different places:
 
-| Component                   | What it is                                                                                           | Examples                                                                                                                                                                            |
-| --------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1. MCP Endpoint**         | A deployed schema (GROQ mode) or a built Knowledge Base, plus an endpoint created in the Context app | Studio (v5.1.0+) for the schema deploy, Context app in the Sanity Dashboard for Knowledge Bases and the endpoint                                                                    |
-| **2. Agent Implementation** | Code that connects to Sanity Context and handles LLM interactions                                    | Next.js API route, Express server, Python service, or any MCP-compatible client                                                                                                     |
-| **3. Frontend**             | UI for users to interact with the agent                                                              | Chat widget, search interface, CLI—or none for backend services                                                                                                                     |
-| **4. Functions**            | Scheduled classification via Sanity Blueprints (only with Insights, Step 3)                          | `sanity.blueprint.ts` + `functions/` directory — has its own placement constraints (see [Insights: Project Structure](references/conversation-classification.md#project-structure)) |
+| Component                   | What it is                                                                                                           | Examples                                                                                                                                                                            |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1. MCP Endpoint**         | A deployed schema (GROQ mode) or a built Knowledge Base, plus an endpoint created in the Context app or with the CLI | Studio (v5.1.0+) for the schema deploy, Context app in the Sanity Dashboard for Knowledge Bases and the endpoint                                                                    |
+| **2. Agent Implementation** | Code that connects to Sanity Context and handles LLM interactions                                                    | Next.js API route, Express server, Python service, or any MCP-compatible client                                                                                                     |
+| **3. Frontend**             | UI for users to interact with the agent                                                                              | Chat widget, search interface, CLI—or none for backend services                                                                                                                     |
+| **4. Functions**            | Scheduled classification via Sanity Blueprints (only with Insights, Step 3)                                          | `sanity.blueprint.ts` + `functions/` directory — has its own placement constraints (see [Insights: Project Structure](references/conversation-classification.md#project-structure)) |
 
 An MCP endpoint is always required, backed by a deployed schema (GROQ mode, Studio v5.1.0+) or a built Knowledge Base: the agent has nothing to connect to without them. Frontend depends on the use case (many agents run as backend services or integrate into existing UIs).
 
@@ -139,7 +133,7 @@ An MCP endpoint is always required, backed by a deployed schema (GROQ mode, Stud
 
 **Always present the full workflow.** Even if the user's request seems narrow, inform them of all four steps — you don't have to implement everything, but they should know what's available. Step 3 is optional and Step 4 is recommended once the agent works; make sure the user knows both exist, then let them decide. Walk the user through the steps, explaining what each unlocks:
 
-1. **Create the MCP Endpoint** — Deploy the schema or build a Knowledge Base, then create an endpoint in the Context app
+1. **Create the MCP Endpoint** — Deploy the schema or build a Knowledge Base, then create an endpoint with the CLI or in the Context app
 2. **Build the Agent** — Get a working chatbot connected to their content
 3. **Conversation Insights** (optional) — Track and classify conversations to see where the agent succeeds and struggles
 4. **Tune the Agent** — Refine instructions and system prompt using the tuning skills
@@ -164,7 +158,23 @@ Confirm the retrieval mode with the user first (see [Two retrieval modes](#how-s
 
 For details on sources, issues, and keeping it current, point the user to [Create a Knowledge Base](https://www.sanity.io/docs/ai/sanity-context-create-knowledge-base).
 
-**Create the endpoint in the Context app.** The user does this in the Sanity Dashboard; it needs the Administrator or Developer role in the organization. Attaching a dataset also needs the Administrator or Developer role on the dataset's project, with unrestricted read access to that dataset. Tell them what to enter:
+**Create the endpoint.** It needs the Administrator or Developer role in the organization. Attaching a dataset also needs the Administrator or Developer role on the dataset's project, with unrestricted read access to that dataset.
+
+Create it yourself with the Sanity CLI, logged in as the user (`npx sanity@latest login`):
+
+```bash
+# GROQ mode
+npx sanity@latest context mcp create product-assistant --title "Product Assistant" \
+  --project <projectId> --dataset <dataset>
+
+# Knowledge Base mode (repeat --knowledge-base to serve several)
+npx sanity@latest context mcp create product-assistant --title "Product Assistant" \
+  --knowledge-base <knowledgeBaseId>
+```
+
+The name becomes part of the URL and can't be changed later, so agree on it with the user first. To scope a dataset, add `--groq-filter '_type in ["product", "category"]'`; start broad, since the `dial-your-context` skill helps narrow it. Leave instructions empty for now; Step 4 covers them. The command prints the endpoint URL; `npx sanity@latest context mcp get product-assistant` shows it again. Pass `--organization <organizationId>` to each command unless it runs in a Sanity project directory whose CLI config sets one; without it, the CLI stops with an error.
+
+If the user would rather use the Context app, tell them what to enter:
 
 1. Open the **Context** app in the Sanity Dashboard and select **New MCP endpoint**
 2. **Title**: something readable, e.g. "Product Assistant"
@@ -219,7 +229,7 @@ Telemetry without classification just stores raw conversations. Classification i
 
 Once the production agent works:
 
-1. **Tune the Instructions field** using the `dial-your-context` skill — an interactive session where you explore the user's dataset together, verify findings, and produce concise Instructions that teach the production agent what the schema alone doesn't make obvious: counter-intuitive field names, second-order reference chains, data quality issues, required filters, and query patterns. The skill can also help configure the endpoint's GROQ filter to scope what content the production agent sees. The user pastes the results into the endpoint's Instructions and GROQ filter fields in the Context app.
+1. **Tune the Instructions field** using the `dial-your-context` skill — an interactive session where you explore the user's dataset together, verify findings, and produce concise Instructions that teach the production agent what the schema alone doesn't make obvious: counter-intuitive field names, second-order reference chains, data quality issues, required filters, and query patterns. The skill can also help configure the endpoint's GROQ filter to scope what content the production agent sees. It tunes on a draft endpoint and saves the results on the production endpoint with the CLI once the user approves them.
 
    **Knowledge Base mode:** `dial-your-context` targets GROQ mode. For a Knowledge Base, answers improve in the Context app by resolving issues and fixing sources; see [Resolve Knowledge Base issues](https://www.sanity.io/docs/ai/sanity-context-resolve-issues).
 
@@ -243,7 +253,7 @@ On the MCP route both come back as JSON-RPC `-32001` with that message. `/initia
 
 ### "404": MCP endpoint not found
 
-HTTP 404 with JSON-RPC `-32001` and the message "MCP endpoint not found: <name>". The endpoint name or organization ID in the URL is wrong. Copy the URL from the endpoint in the Context app; the name is lowercase and can't be changed. (`-32001` is also used for the 401 above, so check the HTTP status.)
+HTTP 404 with JSON-RPC `-32001` and the message "MCP endpoint not found: <name>". The endpoint name or organization ID in the URL is wrong. Copy the URL from the endpoint in the Context app or from `sanity context mcp get <name>`; the name is lowercase and can't be changed. (`-32001` is also used for the 401 above, so check the HTTP status.)
 
 ### "403 Forbidden": JSON-RPC `-32007` (`contextGrantRequired`) or `-32006` (`knowledgeBaseAccessDenied`)
 
@@ -257,17 +267,17 @@ The schema isn't deployed for the endpoint's project and dataset. Deploy it from
 
 ### `-32005`: 'Mode is set to "knowledge_base" but no knowledge bases are configured'
 
-The endpoint has no dataset source and no Knowledge Base it can serve. For GROQ mode, edit the endpoint in the Context app and choose the **Dataset** tab as its content source. For Knowledge Base mode, check that at least one Knowledge Base is selected on the endpoint.
+The endpoint has no dataset source and no Knowledge Base it can serve. For GROQ mode, add a dataset with `npx sanity@latest context mcp update <name> --project <projectId> --dataset <dataset>`, or choose the **Dataset** tab on the endpoint in the Context app. For Knowledge Base mode, check that at least one Knowledge Base is selected on the endpoint.
 
 ### "No documents found" / Empty results
 
-Check the endpoint's GROQ filter in the Context app:
+Check the endpoint's GROQ filter, in `sanity context mcp get <name>` or the Context app:
 
 - Is the GROQ filter correct?
 - Are the document types spelled correctly?
 - Are there published documents matching the filter? The endpoint reads the `published` perspective by default
 
-A filter that matches nothing looks like a broken connection, so check it before debugging the connection. If several Studio workspaces point at the same dataset, the endpoint uses the first one unless `?workspace=<name>` is set, which can serve the wrong schema.
+A filter that matches nothing looks like a broken connection, so check it before debugging the connection. If several Studio workspaces point at the same dataset, the endpoint uses the first one unless the dataset source's **Workspace** setting picks another, which can serve the wrong schema.
 
 ### Tools not appearing
 
