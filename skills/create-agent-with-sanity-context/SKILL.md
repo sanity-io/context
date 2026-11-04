@@ -172,7 +172,7 @@ npx sanity@latest context mcp create product-assistant --title "Product Assistan
   --knowledge-base <knowledgeBaseId>
 ```
 
-The name becomes part of the URL and can't be changed later, so agree on it with the user first. To scope a dataset, add `--groq-filter '_type in ["product", "category"]'`; start broad, since the `dial-your-context` skill helps narrow it. Leave instructions empty for now; Step 4 covers them. Get the endpoint URL with `npx sanity@latest context mcp get product-assistant`. Add `--organization <id>` to any of these if the CLI asks which organization to use.
+The name becomes part of the URL and can't be changed later, so agree on it with the user first. To scope a dataset, add `--groq-filter '_type in ["product", "category"]'`; start broad, since the `dial-your-context` skill helps narrow it. Leave instructions empty for now; Step 4 covers them. The command prints the endpoint URL; `npx sanity@latest context mcp get product-assistant` shows it again. Pass `--organization <organizationId>` to each command unless it runs in a Sanity project directory whose CLI config sets one; without it, the CLI stops with an error.
 
 If the user would rather use the Context app, tell them what to enter:
 

@@ -38,7 +38,7 @@ You need:
 - **The Sanity CLI, logged in as the user** (`npx sanity@latest login`). The user needs the Administrator or Developer role in the organization and on the dataset's project to create and update endpoints
 - **An organization API token** with Context access (Viewer is enough for this session), for calling the endpoint
 
-An endpoint serves its saved configuration only: a request that adds a query parameter such as `instructions` or `groqFilter` is refused with `400`. You tune on a draft endpoint instead, and change its configuration yourself with the CLI. A change takes effect on the next connection:
+An endpoint serves its saved configuration only: a request that overrides it with a query parameter such as `instructions` or `groqFilter` is refused with `400`. You tune on a draft endpoint instead, and change its configuration yourself with the CLI. A change takes effect on the next connection:
 
 ```bash
 # Read an endpoint's configuration and URL
@@ -49,7 +49,7 @@ npx sanity@latest context mcp update tuning-draft --instructions "$(cat draft-in
 npx sanity@latest context mcp update tuning-draft --groq-filter '_type in ["article", "author"]'
 ```
 
-Add `--organization <id>` if the CLI asks which organization to use. Never update the production endpoint before Step 7, when the user has approved the final configuration.
+Pass `--organization <organizationId>`, taken from the endpoint URL, to each command unless it runs in a Sanity project directory whose CLI config sets one; without it, the CLI stops with an error. Never update the production endpoint before Step 7, when the user has approved the final configuration.
 
 **Calling the tools.** If you don't have the draft endpoint connected as an MCP server, call it over HTTP, with `DRAFT_MCP_URL` set to the draft endpoint's URL:
 

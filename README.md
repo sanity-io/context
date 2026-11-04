@@ -69,7 +69,7 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
 
 ### Manual setup
 
-1. Open the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), create an MCP endpoint with your dataset as its source, and copy the MCP URL. Or let your coding agent do it: `npx sanity@latest context mcp create <name> --project <projectId> --dataset <dataset>`, then `npx sanity@latest context mcp get <name>` for the URL. It looks like `https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName`.
+1. Open the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), create an MCP endpoint with your dataset as its source, and copy the MCP URL. Or create it with the Sanity CLI, which prints the URL: `npx sanity@latest context mcp create <name> --title "<title>" --organization <organizationId> --project <projectId> --dataset <dataset>`. It looks like `https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:endpointName`.
 
 2. Connect your agent using any MCP-compatible framework. Example with [Vercel AI SDK](https://sdk.vercel.ai/):
 
