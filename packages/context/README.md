@@ -12,15 +12,14 @@ Requires `@sanity/client` ^8.4.0 as a peer dependency, which comes automatically
 
 ## Exports
 
-| Entry point                | Purpose                                     |
-| -------------------------- | ------------------------------------------- |
-| `@sanity/context/studio`   | Deprecated Studio plugin (legacy documents) |
-| `@sanity/context/ai-sdk`   | AI SDK telemetry integration for Insights   |
-| `@sanity/context/insights` | Lower-level APIs for custom workflows       |
+| Entry point                | Purpose                                   |
+| -------------------------- | ----------------------------------------- |
+| `@sanity/context/ai-sdk`   | AI SDK telemetry integration for Insights |
+| `@sanity/context/insights` | Lower-level APIs for custom workflows     |
 
-## Studio Plugin (deprecated)
+## Studio plugin (removed)
 
-Context configuration has moved to the Context app in the Sanity Dashboard. The plugin only keeps existing Sanity Context documents editable in Studio. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
+The Studio plugin was removed in 3.0.0. Context configuration lives in the Context app in the Sanity Dashboard. To keep editing legacy Context documents in Studio, stay on `@sanity/context@2`. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
 
 ## Agent Insights
 
