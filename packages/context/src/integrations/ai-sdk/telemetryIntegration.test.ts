@@ -154,6 +154,43 @@ describe('sanityInsightsIntegration', () => {
     ])
   })
 
+  it('keeps failed provider-executed tool results from assistant content', async () => {
+    const {save, onStart, onFinish} = makeIntegration()
+
+    onStart({messages: []})
+    await onFinish({
+      response: {
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              {type: 'tool-call', toolName: 'web_search', providerExecuted: true, input: {q: 'x'}},
+              {type: 'tool-result', toolName: 'web_search', output: {type: 'json', value: {}}},
+              {
+                type: 'tool-result',
+                toolName: 'web_search',
+                output: {type: 'error-text', value: 'rate limited'},
+              },
+              {type: 'text', text: "I couldn't search."},
+            ],
+          },
+        ],
+      },
+    })
+
+    expect(savedMessages(save)).toEqual([
+      {role: 'assistant', content: "I couldn't search."},
+      {role: 'tool', toolName: 'web_search', toolType: 'call', content: '{"q":"x"}'},
+      {
+        role: 'tool',
+        toolName: 'web_search',
+        toolType: 'result',
+        content: null,
+        error: 'rate limited',
+      },
+    ])
+  })
+
   it('normalizes odd input: unknown roles, null content, oversized and null tool args', async () => {
     const {save, onStart, onFinish} = makeIntegration()
 

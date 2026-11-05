@@ -204,10 +204,13 @@ function collectMessages(rawMessages: ModelMessage[]): Message[] {
     // Array content: split tool calls from text parts
     const textParts: string[] = []
     const toolCalls: Record<string, unknown>[] = []
+    const toolResults: Record<string, unknown>[] = []
 
     for (const part of raw.content) {
       if (isObject(part) && 'toolName' in part && !isToolResult(part)) {
         toolCalls.push(part)
+      } else if (isObject(part) && isToolResult(part)) {
+        toolResults.push(part)
       } else if (typeof part === 'string') {
         textParts.push(part)
       } else if (isObject(part) && part['type'] === 'text' && typeof part['text'] === 'string') {
@@ -230,6 +233,8 @@ function collectMessages(rawMessages: ModelMessage[]): Message[] {
         content: serializeContent(args),
       })
     }
+
+    messages.push(...toolResults.flatMap(failedToolResult))
   }
 
   return messages
