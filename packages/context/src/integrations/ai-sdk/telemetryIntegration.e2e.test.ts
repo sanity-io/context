@@ -93,6 +93,38 @@ describe('sanityInsightsIntegration end-to-end', () => {
     })
   })
 
+  it('saves only text and tool calls when an AI SDK v7 provider adds custom and reasoning parts', async () => {
+    const {client, save} = makeClientStub()
+    save.mockResolvedValue({threadId: 't'})
+    const messageStart = {
+      type: 'custom' as const,
+      kind: 'anthropic.message_start' as const,
+      providerMetadata: {anthropic: {}},
+    }
+    const reasoning = {type: 'reasoning' as const, text: 'Check the returns policy'}
+    const toolStep = callTool('lookup')
+    const answerStep = reply('45 days')
+    const steps = [
+      {...toolStep, content: [messageStart, reasoning, ...toolStep.content]},
+      {...answerStep, content: [messageStart, ...answerStep.content]},
+    ]
+
+    await generateTextV7({
+      model: new MockLanguageModelV4({doGenerate: async () => steps.shift()!}),
+      messages: [{role: 'user', content: 'How long do I have to return an item?'}],
+      stopWhen: isStepCount(3),
+      tools: {lookup: toolV7({inputSchema: z.object({}), execute: async () => ({ok: true})})},
+      telemetry: {integrations: [sanityInsightsIntegration({client, threadId: 't'})]},
+    })
+    await vi.waitFor(() => expect(save).toHaveBeenCalled())
+
+    expect(save.mock.calls[0]![0].messages).toEqual([
+      {role: 'user', content: 'How long do I have to return an item?'},
+      {role: 'tool', toolName: 'lookup', toolType: 'call', content: '{}'},
+      {role: 'assistant', content: '45 days'},
+    ])
+  })
+
   it.each([
     {
       version: 'v6',

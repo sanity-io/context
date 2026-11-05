@@ -93,10 +93,10 @@ describe('sanityInsightsIntegration', () => {
     )
   })
 
-  it('joins array content from string and {text} parts', async () => {
+  it('joins array content from string and text parts', async () => {
     const {save, onStart, onFinish} = makeIntegration()
 
-    onStart({messages: [{role: 'user', content: ['Hello', {text: 'World'}]}]})
+    onStart({messages: [{role: 'user', content: ['Hello', {type: 'text', text: 'World'}]}]})
     await onFinish({response: {messages: []}})
 
     expect(savedMessages(save)).toEqual([{role: 'user', content: 'Hello\nWorld'}])
@@ -111,7 +111,10 @@ describe('sanityInsightsIntegration', () => {
         messages: [
           {
             role: 'assistant',
-            content: [{text: 'Let me search'}, {toolName: 'search', args: {q: 'test'}}],
+            content: [
+              {type: 'text', text: 'Let me search'},
+              {toolName: 'search', args: {q: 'test'}},
+            ],
           },
         ],
       },
