@@ -19,11 +19,11 @@ Sanity Context gives agents your schema and teaches them GROQ, but it can't know
 
 **The agent code needs only three values:**
 
-| Value                                                    | Where to get it                                                                                                                                                                                                                                                                                         |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **MCP endpoint URL** (`SANITY_CONTEXT_MCP_URL`)          | Shown on the endpoint in the Context app, or by `sanity context mcp get <name>`, once it's created ([Step 1](#step-1-create-the-mcp-endpoint))                                                                                                                                                          |
-| **Organization API token** (`SANITY_ORGANIZATION_TOKEN`) | [Manage](https://www.sanity.io/manage/org/api/tokens) → organization → API → Tokens → **Add API token**, then under **Organization permissions** check **Context**. Choose **Viewer** for an agent that only reads; choose **Editor** if it also records Insights (Step 3). Project tokens do not work. |
-| **LLM API key**                                          | From your LLM provider (Anthropic, OpenAI, etc.) — any provider works                                                                                                                                                                                                                                   |
+| Value                                                    | Where to get it                                                                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **MCP endpoint URL** (`SANITY_CONTEXT_MCP_URL`)          | Shown on the endpoint in the Context app, or by `sanity context mcp get <name>`, once it's created ([Step 1](#step-1-create-the-mcp-endpoint))                                                                                                                                                                                                                                |
+| **Organization API token** (`SANITY_ORGANIZATION_TOKEN`) | `npx sanity@latest tokens create "<label>" --organization <organizationId> --grant context=viewer`. Use `context=editor` if the agent also records Insights (Step 3). Or in [Manage](https://www.sanity.io/manage/org/api/tokens) → organization → API → Tokens → **Add API token**, with **Context** checked under **Organization permissions**. Project tokens do not work. |
+| **LLM API key**                                          | From your LLM provider (Anthropic, OpenAI, etc.) — any provider works                                                                                                                                                                                                                                                                                                         |
 
 **Setup also involves:**
 
@@ -45,22 +45,22 @@ The Sanity Context MCP server gives AI agents structured, read-only access to Sa
 4. **Tool Discovery**: Get available tools from MCP client, pass to LLM
 5. **System Prompt**: Tell the production agent its role, tone, and boundaries
 
-**Two retrieval modes.** The endpoint's content source decides which one it serves:
+**Two retrieval modes.** The endpoint's content sources decide which it serves:
 
 - **GROQ mode** (a dataset source): the agent queries the live dataset with GROQ, guided by the schema. Fits structured, consistent content where the schema tells the agent where to look: catalogs, articles, FAQs. For in-between content (a catalog with useful details in prose fields), enable [dataset embeddings](https://www.sanity.io/docs/content-lake/dataset-embeddings) and stay in GROQ mode.
 - **Knowledge Base mode** (Knowledge Base sources, beta): the agent reads a pre-built index built ahead of time from datasets, websites, and files. Fits answers spread across prose from several places, where finding the answer is the hard part. See [Context retrieval modes](https://www.sanity.io/docs/ai/sanity-context-retrieval-modes).
 
-An endpoint serves one mode. If it has both a dataset source and Knowledge Base sources, the dataset wins and the Knowledge Bases are ignored, with no error. Ask the user which fits; GROQ mode is the default for content that lives in a Sanity dataset.
+An endpoint with both a dataset source and Knowledge Base sources serves both: the agent gets the tools of both modes. Ask the user which fits; GROQ mode is the default for content that lives in a Sanity dataset.
 
 **MCP endpoints** are created and changed in the **Context app** in the Sanity Dashboard, or with the Sanity CLI (`sanity context mcp create`, `update`, `get`). Each endpoint has these fields:
 
-| Field              | Purpose                                                                                                   |
-| ------------------ | --------------------------------------------------------------------------------------------------------- |
-| **Title**          | Human-readable label. The agent also sees it as the heading of its initial context                        |
-| **Name**           | URL identifier (lowercase, numbers, hyphens). Unique in the organization and **immutable** after creation |
-| **Content source** | What the endpoint serves: a dataset (GROQ mode) or one or more Knowledge Bases (Knowledge Base mode)      |
-| **Instructions**   | Domain-specific guidance for the agent, injected into the initial context                                 |
-| **GROQ filter**    | A GROQ filter expression scoping which documents the agent can read. GROQ mode only                       |
+| Field              | Purpose                                                                                                     |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| **Title**          | Human-readable label. The agent also sees it as the heading of its initial context                          |
+| **Name**           | URL identifier (lowercase, numbers, hyphens). Unique in the organization and **immutable** after creation   |
+| **Content source** | What the endpoint serves: a dataset (GROQ mode), one or more Knowledge Bases (Knowledge Base mode), or both |
+| **Instructions**   | Domain-specific guidance for the agent, injected into the initial context                                   |
+| **GROQ filter**    | A GROQ filter expression scoping which documents the agent can read. Dataset sources only                   |
 
 **MCP URL:**
 
@@ -98,7 +98,7 @@ The endpoint's mode decides which tools it serves:
 - **GROQ mode:** tools to read the schema, run GROQ queries (with optional semantic search), and read large array fields. Queries are always subject to the endpoint's GROQ filter.
 - **Knowledge Base mode:** tools to search and read Knowledge Base entries.
 
-Both modes serve `initial_context`: the schema overview (GROQ mode) or the Knowledge Base outline, plus the endpoint's Instructions. It's the same payload as the `/initial-context` HTTP endpoint.
+An endpoint with both sources serves both sets. Every endpoint serves `initial_context`: the schema overview for a dataset, the outline for each Knowledge Base, plus the endpoint's Instructions. It's the same payload as the `/initial-context` HTTP endpoint.
 
 Don't hardcode the tool list. The set grows over time, so take it from the MCP client (`mcpClient.tools()` or `tools/list`). For what each tool does, see [Context MCP tools](https://www.sanity.io/docs/ai/sanity-context-mcp-tools).
 
@@ -110,7 +110,7 @@ A complete integration has **four distinct components** that may live in differe
 
 | Component                   | What it is                                                                                                           | Examples                                                                                                                                                                            |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1. MCP Endpoint**         | A deployed schema (GROQ mode) or a built Knowledge Base, plus an endpoint created in the Context app or with the CLI | Studio (v5.1.0+) for the schema deploy, Context app in the Sanity Dashboard for Knowledge Bases and the endpoint                                                                    |
+| **1. MCP Endpoint**         | A deployed schema (GROQ mode) or a built Knowledge Base, plus an endpoint created in the Context app or with the CLI | Studio (v5.1.0+) for the schema deploy, Sanity CLI or the Context app for Knowledge Bases and the endpoint                                                                          |
 | **2. Agent Implementation** | Code that connects to Sanity Context and handles LLM interactions                                                    | Next.js API route, Express server, Python service, or any MCP-compatible client                                                                                                     |
 | **3. Frontend**             | UI for users to interact with the agent                                                                              | Chat widget, search interface, CLI—or none for backend services                                                                                                                     |
 | **4. Functions**            | Scheduled classification via Sanity Blueprints (only with Insights, Step 3)                                          | `sanity.blueprint.ts` + `functions/` directory — has its own placement constraints (see [Insights: Project Structure](references/conversation-classification.md#project-structure)) |
@@ -150,11 +150,27 @@ Confirm the retrieval mode with the user first (see [Two retrieval modes](#how-s
 - **Sanity-hosted Studio:** `npx sanity deploy` also works, but the user then has to open the deployed Studio in the browser once to trigger the schema deployment
 - **Externally hosted Studio** (Sanity CLI v5.8.0+): `npx sanity deploy --external --schema-required` registers the external URL and fails fast if the schema deploy fails
 
-**Knowledge Base mode: create and build the Knowledge Base.** The user does this in the Context app (organization Administrator or Developer role). At a high level:
+**Knowledge Base mode: create and build the Knowledge Base.** It needs the Administrator or Developer role in the organization. Write the purpose with the user first: it decides which sources are kept and how entries are organized, so a specific purpose produces a better build. Use three lines:
 
-1. Select **New knowledge base** and give it a **Title** and a **Purpose**: one or two sentences on who it serves and what it helps with. A specific purpose produces a better build
-2. **Add source**: a dataset, a website, or files. Start with a focused set of current material
-3. Select **Build entries** and wait for **Entries up to date**, then skim **Entries** and **Issues**
+```text
+Answer setup and troubleshooting questions from developers using our API.
+Focus on: configuration steps, error references, and known issues.
+Leave out: marketing pages, pricing, and release notes.
+```
+
+Then run the CLI yourself:
+
+```bash
+npx sanity@latest context create --organization <organizationId> --title "Support docs" --description "<purpose>"
+# Add sources, one import each: --url (crawl a website), --file, --text with --title,
+# or --sanity-project, --sanity-dataset and --query for a dataset
+npx sanity@latest context imports create <knowledgeBaseId> --url https://example.com/docs
+npx sanity@latest context build <knowledgeBaseId> --watch
+```
+
+Start with a focused set of current material. `build --watch` waits for the imports and the build, and exits non-zero if the build fails. Then skim the entries and issues in the Context app.
+
+The user can do the same in the Context app instead: **New knowledge base** with a **Title** and **Purpose**, **Add source**, then **Build entries** and wait for **Entries up to date**.
 
 For details on sources, issues, and keeping it current, point the user to [Create a Knowledge Base](https://www.sanity.io/docs/ai/sanity-context-create-knowledge-base).
 
@@ -182,11 +198,11 @@ If the user would rather use the Context app, tell them what to enter:
 4. **Content source**:
    - GROQ mode: choose the **Dataset** tab, then pick the project and dataset. Projects where the user lacks that role are disabled
    - Knowledge Base mode: choose the **Knowledge bases** tab and check the Knowledge Bases to serve
-5. **GROQ filter** (GROQ mode, optional): a filter expression such as `_type in ["product", "category"]`. Start broad; the `dial-your-context` skill helps narrow it
+5. **GROQ filter** (dataset sources, optional): a filter expression such as `_type in ["product", "category"]`. Start broad; the `dial-your-context` skill helps narrow it
 6. **Instructions**: leave empty for now; Step 4 covers them
 7. Select **Create endpoint**, and copy the endpoint URL from its detail page
 
-**Get the organization token** if the user doesn't have one yet (see [What You'll Need](#what-youll-need)). Store it as `SANITY_ORGANIZATION_TOKEN` next to the agent's other secrets.
+**Get the organization token** if the user doesn't have one yet: `npx sanity@latest tokens create` (see [What You'll Need](#what-youll-need)). Store it as `SANITY_ORGANIZATION_TOKEN` next to the agent's other secrets.
 
 **Validate the endpoint:**
 
@@ -259,15 +275,15 @@ HTTP 404 with JSON-RPC `-32001` and the message "MCP endpoint not found: <name>"
 
 The token is not an organization API token with Context access. `-32007` comes from the check on endpoints with a dataset source; `-32006` ("No access to knowledge base 'kb…'") comes from the check on each Knowledge Base an endpoint serves. A project token is the most common first-run failure: it is refused however broad its permissions. Create an organization token as described in [What You'll Need](#what-youll-need).
 
-The `-32007` message reads "This requires an organization API token with Context access ('sanity.knowledge-base.read')…". On `/initial-context` the same failure shows the code `contextGrantRequired`.
+The `-32007` message reads "Serving a dataset requires an organization API token with Context access ('sanity.knowledge-base.read'). Create one under your organization's API settings in Manage." On `/initial-context` the same failure shows the code `contextGrantRequired`.
 
 ### `-32004`: "Only datasets with deployed Studio applications are supported"
 
 The schema isn't deployed for the endpoint's project and dataset. Deploy it from a Studio on v5.1.0+ (see [Step 1](#step-1-create-the-mcp-endpoint)), then reconnect.
 
-### `-32005`: 'Mode is set to "knowledge_base" but no knowledge bases are configured'
+### `-32005`: "No knowledge bases to serve: the endpoint has none, or none of them could be found."
 
-The endpoint has no dataset source and no Knowledge Base it can serve. For GROQ mode, add a dataset with `npx sanity@latest context mcp update <name> --project <projectId> --dataset <dataset>`, or choose the **Dataset** tab on the endpoint in the Context app. For Knowledge Base mode, check that at least one Knowledge Base is selected on the endpoint.
+The endpoint has no Knowledge Base it can serve: it has no sources at all, or every Knowledge Base on it was deleted (this fails even with a dataset source). Remove deleted ones with `npx sanity@latest context mcp update <name> --remove-knowledge-base <knowledgeBaseId>`, add one with `--add-knowledge-base`, or give an endpoint with no sources a dataset with `--project <projectId> --dataset <dataset>`. The Context app can do the same.
 
 ### "No documents found" / Empty results
 

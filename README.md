@@ -16,7 +16,7 @@ flowchart LR
   B --> C["Your content in Sanity"]
 ```
 
-You create an MCP endpoint in the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), or with the Sanity CLI. The endpoint controls what content your agent can access and gets its own MCP URL. Your agent connects to that URL with an organization API token. An endpoint serves either your live dataset (GROQ mode) or [Knowledge Bases](https://www.sanity.io/docs/ai/sanity-context-knowledge-bases) built ahead of time from datasets, websites, and files (Knowledge Base mode, beta).
+You create an MCP endpoint in the Context app in the [Sanity Dashboard](https://www.sanity.io/docs/dashboard), or with the Sanity CLI. The endpoint controls what content your agent can access and gets its own MCP URL. Your agent connects to that URL with an organization API token. An endpoint serves your live dataset (GROQ mode), [Knowledge Bases](https://www.sanity.io/docs/ai/sanity-context-knowledge-bases) built ahead of time from datasets, websites, and files (Knowledge Base mode, beta), or both.
 
 The endpoint gives your agent tools to read your schema and run [GROQ](https://www.sanity.io/docs/groq) queries with optional semantic search (GROQ mode), or to search and read Knowledge Base entries (Knowledge Base mode). See [Context MCP tools](https://www.sanity.io/docs/ai/sanity-context-mcp-tools) for the current list.
 
@@ -87,7 +87,7 @@ Other skills help you refine: `dial-your-context` (tune the Instructions field) 
    })
    ```
 
-Using the deprecated Studio plugin? See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
+The Studio plugin was removed in 3.0.0. See the [migration guide](https://www.sanity.io/docs/ai/context-migration-guide).
 
 ## Agent Insights
 

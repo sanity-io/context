@@ -8,7 +8,7 @@ This is a monorepo for Sanity Context—tools for building AI agents with struct
 
 1. **Context MCP** (external service) - Hosted MCP server. Endpoints are configured per organization, in the Context app in the Sanity Dashboard or with the Sanity CLI (`sanity context mcp`), and expose tools to AI agents
 2. **Agent Implementation** - Your app that connects to Context MCP and uses the tools
-3. **`@sanity/context`** - Insights (conversation telemetry and classification) for agent implementations, plus a deprecated Studio plugin
+3. **`@sanity/context`** - Insights (conversation telemetry and classification) for agent implementations
 
 This repo contains the `@sanity/context` package, agent skills for building and optimizing integrations, and a demo app.
 
@@ -17,13 +17,11 @@ This repo contains the `@sanity/context` package, agent skills for building and 
 ```
 .
 ├── packages/
-│   └── context/              # @sanity/context npm package (Insights + deprecated Studio plugin)
+│   └── context/              # @sanity/context npm package (Insights)
 ├── skills/
 │   ├── create-agent-with-sanity-context/  # Build an agent with Sanity Context
 │   ├── dial-your-context/                 # Tune Instructions field content for Sanity Context
 │   └── shape-your-agent/                  # Craft a system prompt for your agent (optional)
-├── sandboxes/
-│   └── dev-studio/           # Development sandbox for testing the deprecated plugin
 ├── examples/
 │   └── ecommerce/            # Demo Next.js app with AI chat (source of truth for skill references)
 └── package.json              # Root workspace config
@@ -38,8 +36,6 @@ import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 import {classifyConversations} from '@sanity/context/insights'
 ```
 
-The deprecated Studio plugin lives in `src/studio/` (`@sanity/context/studio`). It only keeps legacy documents editable; don't extend it or point docs or skills at it.
-
 ## Development
 
 ```bash
@@ -49,16 +45,6 @@ pnpm build        # Build all packages
 pnpm test:unit    # Run tests
 pnpm check:types  # TypeScript checking
 pnpm check:lint   # ESLint
-```
-
-### Testing deprecated plugin changes
-
-`sandboxes/dev-studio` exists only for the deprecated plugin. Run `pnpm dev` in the root, then in another terminal:
-
-```bash
-cd sandboxes/dev-studio
-cp .env.example .env  # Add your project credentials
-pnpm dev
 ```
 
 ## Key Concepts
@@ -75,7 +61,7 @@ Created and managed in the Context app in the Sanity Dashboard or with the Sanit
 | `instructions` | Domain guidance for the agent, injected into the initial context                         |
 | `groqFilter`   | GROQ filter expression scoping which documents the agent can read (dataset sources only) |
 
-An endpoint with a dataset source serves GROQ mode and needs a deployed schema from Studio v5.1.0+. One whose sources are all Knowledge Bases serves Knowledge Base mode. With both, the dataset wins and the Knowledge Bases are ignored.
+An endpoint with a dataset source serves GROQ mode and needs a deployed schema from Studio v5.1.0+. One whose sources are all Knowledge Bases serves Knowledge Base mode. With both, it serves both.
 
 ### GROQ Filter
 
