@@ -6,12 +6,12 @@ interface ClientStub {
   fetch: Mock
   save: Mock
   classify: Mock
-  get: Mock
 }
 
 /**
- * A stub `@sanity/client` for insights tests: `config()` carries the org id
- * and every `client.context` method is a `vi.fn()` handed back for assertions.
+ * A stub `@sanity/client` for insights tests: `config()` carries the org id,
+ * and `context.fetch` plus the conversation `PUT` and `PATCH` requests are
+ * `vi.fn()`s handed back for assertions, called with `{threadId, ...body}`.
  */
 export function makeClientStub(overrides?: {organizationId?: string | undefined}): ClientStub {
   const organizationId =
@@ -19,10 +19,18 @@ export function makeClientStub(overrides?: {organizationId?: string | undefined}
   const fetch = vi.fn()
   const save = vi.fn()
   const classify = vi.fn()
-  const get = vi.fn()
+  const routes: Record<string, Mock> = {
+    'PUT /organizations/{organizationId}/conversations/{threadId}': save,
+    'PATCH /organizations/{organizationId}/conversations/{threadId}': classify,
+  }
+  const request = (route: string, init: {params: {threadId: string}; body: object}) => {
+    const handler = routes[route]
+    if (!handler) throw new Error(`makeClientStub: no mock for route ${route}`)
+    return handler({threadId: init.params.threadId, ...init.body})
+  }
   const client = {
     config: () => ({context: {organizationId}}),
-    context: {fetch, conversations: {save, classify, get}},
+    context: {fetch, request},
   } as unknown as SanityClient
-  return {client, fetch, save, classify, get}
+  return {client, fetch, save, classify}
 }

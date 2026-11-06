@@ -81,4 +81,14 @@ describe('getConversationsToClassify', () => {
       getConversationsToClassify({client: {} as unknown as SanityClient}),
     ).rejects.toThrow('options.client must be a configured Sanity client')
   })
+
+  it('rejects a client older than 8.15', async () => {
+    const {client, fetch} = makeClientStub()
+    delete (client.context as {request?: unknown}).request
+
+    await expect(getConversationsToClassify({client})).rejects.toThrow(
+      'getConversationsToClassify: @sanity/context needs @sanity/client 8.15 or later',
+    )
+    expect(fetch).not.toHaveBeenCalled()
+  })
 })

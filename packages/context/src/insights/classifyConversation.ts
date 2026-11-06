@@ -122,8 +122,14 @@ export async function classifyConversation(
     throw new Error('classifyConversation: threadId must be a non-empty string')
   }
 
-  const messages =
-    options.messages ?? (await client.context.conversations.get({threadId}))?.messages
+  const organizationId = client.config().context?.organizationId
+  const conversation = options.messages
+    ? undefined
+    : await client.context.fetch<{messages?: TranscriptMessage[]} | null>(
+        '*[_type == "sanity.context.conversation" && organizationId == $organizationId && threadId == $threadId][0]{messages}',
+        {organizationId, threadId},
+      )
+  const messages = options.messages ?? conversation?.messages
 
   if (!messages || messages.length === 0) {
     throw new Error(`Conversation has no messages: ${threadId}`)
@@ -151,10 +157,10 @@ ${formatMessagesForPrompt(messages)}
       throw new Error('Model returned no output')
     }
 
-    const updated = await client.context.conversations.classify({
-      threadId,
-      coreMetrics: result.output.coreMetrics,
-    })
+    const updated = await client.context.request(
+      'PATCH /organizations/{organizationId}/conversations/{threadId}',
+      {params: {threadId}, body: {coreMetrics: result.output.coreMetrics}},
+    )
 
     return {
       coreMetrics: result.output.coreMetrics,
@@ -166,10 +172,10 @@ ${formatMessagesForPrompt(messages)}
     // Record the failure so the conversation leaves the pending queue instead
     // of being retried forever against a transcript the model cannot classify.
     try {
-      await client.context.conversations.classify({
-        threadId,
-        classificationError: errorMessage.slice(0, MAX_ERROR_LENGTH),
-      })
+      await client.context.request(
+        'PATCH /organizations/{organizationId}/conversations/{threadId}',
+        {params: {threadId}, body: {classificationError: errorMessage.slice(0, MAX_ERROR_LENGTH)}},
+      )
     } catch (storageError) {
       console.error('[classifyConversation] Failed to record classification error:', storageError)
     }
