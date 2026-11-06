@@ -2,10 +2,9 @@
 
 ## [3.0.1](https://github.com/sanity-io/context/compare/context-v3.0.0...context-v3.0.1) (2026-11-06)
 
-
 ### Bug Fixes
 
-* **context:** use client.context.request for conversations ([#286](https://github.com/sanity-io/context/issues/286)) ([8d277d5](https://github.com/sanity-io/context/commit/8d277d55d12ef1da999efdc22dc45e99b83722e8))
+- **context:** use client.context.request for conversations ([#286](https://github.com/sanity-io/context/issues/286)) ([8d277d5](https://github.com/sanity-io/context/commit/8d277d55d12ef1da999efdc22dc45e99b83722e8))
 
 ## [3.0.0](https://github.com/sanity-io/context/compare/context-v2.2.0...context-v3.0.0) (2026-11-06)
 
