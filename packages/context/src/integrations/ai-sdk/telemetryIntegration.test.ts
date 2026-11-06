@@ -250,6 +250,20 @@ describe('sanityInsightsIntegration', () => {
     )
   })
 
+  it('reports a client older than 8.15 instead of saving', async () => {
+    const {client, save} = makeClientStub()
+    delete (client.context as {request?: unknown}).request
+    const {onStart, onFinish} = sanityInsightsIntegration({client, threadId: 'thread-1'})
+
+    onStart({messages: [{role: 'user', content: 'test'}]})
+    await onFinish({response: {messages: [{role: 'assistant', content: 'reply'}]}})
+
+    expect(save).not.toHaveBeenCalled()
+    expect(console.error).toHaveBeenCalledExactlyOnceWith(
+      '[sanity-insights] Failed to save conversation: @sanity/context needs @sanity/client 8.15 or later',
+    )
+  })
+
   it('saves the transcript via the v7 onEnd hook with responseMessages and usage', async () => {
     const {save, onStart, onEnd} = makeIntegration()
 

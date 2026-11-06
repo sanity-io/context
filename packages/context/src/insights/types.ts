@@ -61,5 +61,8 @@ export function requireClient(fnName: string, options: ContextInsightsOptions): 
   if (!options.client.config().context?.organizationId) {
     throw new Error(`${fnName}: the client must be configured with context.organizationId`)
   }
+  if (typeof options.client.context?.request !== 'function') {
+    throw new Error(`${fnName}: @sanity/context needs @sanity/client 8.15 or later`)
+  }
   return options.client
 }

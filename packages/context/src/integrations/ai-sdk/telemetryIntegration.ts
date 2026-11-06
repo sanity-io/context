@@ -273,6 +273,12 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): SanityIn
 
   async function save(messages: Message[], event: OnFinishEvent = {}): Promise<void> {
     if (messages.length === 0) return
+    if (typeof config.client.context?.request !== 'function') {
+      console.error(
+        '[sanity-insights] Failed to save conversation: @sanity/context needs @sanity/client 8.15 or later',
+      )
+      return
+    }
 
     const threadId = typeof config.threadId === 'function' ? config.threadId() : config.threadId
 
