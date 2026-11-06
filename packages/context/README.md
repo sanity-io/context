@@ -8,7 +8,7 @@ npm install @sanity/context
 
 ### Compatibility
 
-Requires `@sanity/client` ^8.4.0 as a peer dependency, which comes automatically with `sanity` 6.12 or later.
+Requires `@sanity/client` ^8.15.0 as a peer dependency.
 
 ## Exports
 
@@ -25,7 +25,7 @@ The Studio plugin was removed in 3.0.0. Context configuration lives in the Conte
 
 Track and classify your AI agent conversations automatically. Insights saves every conversation transcript to your organization's Context store, and a classification step you run with your own AI SDK model extracts success scores, sentiment, and content gaps. Results are surfaced in Insights in the Context app in the Sanity Dashboard.
 
-Everything rides on `@sanity/client` (^8.4.0) and its `client.context` namespace. Create one org-scoped client and pass it to the telemetry integration and the insights functions:
+Everything rides on `@sanity/client` (^8.15.0) and its `client.context` namespace. Create one org-scoped client and pass it to the telemetry integration and the insights functions:
 
 ```ts
 import {createClient} from '@sanity/client'
@@ -140,16 +140,18 @@ For custom workflows, use the lower-level primitives directly:
 | `getConversationsToClassify` | Query the pending classification queue (GROQ)       |
 | `getPreviousContentGaps`     | Query known content gaps ranked by frequency        |
 
-All take the same `{client}` option. Saving a transcript without the AI SDK integration is `client.context.conversations.save` from `@sanity/client` directly:
+All take the same `{client}` option. Saving a transcript without the AI SDK integration is a `client.context.request` call from `@sanity/client` directly:
 
 ```ts
-await client.context.conversations.save({
-  threadId: 'thread-123',
-  messages: [
-    {role: 'user', content: 'Hello!'},
-    {role: 'assistant', content: 'Hi there! How can I help?'},
-  ],
-  metadata: {mcpEndpoints: 'support-agent'},
+await client.context.request('PUT /organizations/{organizationId}/conversations/{threadId}', {
+  params: {threadId: 'thread-123'},
+  body: {
+    messages: [
+      {role: 'user', content: 'Hello!'},
+      {role: 'assistant', content: 'Hi there! How can I help?'},
+    ],
+    metadata: {mcpEndpoints: 'support-agent'},
+  },
 })
 ```
 

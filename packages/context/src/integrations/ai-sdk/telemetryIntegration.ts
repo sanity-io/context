@@ -24,7 +24,7 @@ export interface SanityInsightsConfig {
    * key groups conversations by MCP endpoint name in Insights in the Context app;
    * your own keys ride along for querying.
    */
-  metadata?: Context.SaveConversationParams['metadata']
+  metadata?: Context.Body<'PUT /organizations/{organizationId}/conversations/{threadId}'>['metadata']
 
   /**
    * Opt-in to share telemetry with Sanity. Want to help improve Sanity
@@ -293,15 +293,20 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): SanityIn
         : undefined
 
     try {
-      await config.client.context.conversations.save({
-        threadId,
-        messages,
-        ...(config.metadata !== undefined && {metadata: config.metadata}),
-        ...(config.sharing !== undefined && {sharing: config.sharing}),
-        ...(modelProvider !== undefined && {modelProvider}),
-        ...(modelId !== undefined && {modelId}),
-        ...(tokenUsage !== undefined && {tokenUsage}),
-      })
+      await config.client.context.request(
+        'PUT /organizations/{organizationId}/conversations/{threadId}',
+        {
+          params: {threadId},
+          body: {
+            messages,
+            ...(config.metadata !== undefined && {metadata: config.metadata}),
+            ...(config.sharing !== undefined && {sharing: config.sharing}),
+            ...(modelProvider !== undefined && {modelProvider}),
+            ...(modelId !== undefined && {modelId}),
+            ...(tokenUsage !== undefined && {tokenUsage}),
+          },
+        },
+      )
     } catch (err) {
       console.error('[sanity-insights] Failed to save conversation:', err)
     }

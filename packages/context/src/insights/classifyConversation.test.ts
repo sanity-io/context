@@ -64,13 +64,16 @@ describe('classifyConversation', () => {
   })
 
   it('fetches the transcript when messages are not provided and prompts with it', async () => {
-    const {client, classify, get} = makeClientStub()
-    get.mockResolvedValue({threadId: 't1', messages: defaultMessages})
+    const {client, classify, fetch} = makeClientStub()
+    fetch.mockResolvedValue({messages: defaultMessages})
     classify.mockResolvedValue({classifiedAt: '2026-08-24T10:00:00Z'})
 
     await classifyConversation({client, threadId: 't1', model, previousContentGaps: ['billing']})
 
-    expect(get).toHaveBeenCalledWith({threadId: 't1'})
+    expect(fetch).toHaveBeenCalledWith(expect.any(String), {
+      organizationId: 'org-123',
+      threadId: 't1',
+    })
     const args = mockGenerateText.mock.calls[0]![0] as {prompt: string; system: string}
     expect(args.prompt).toContain('[User]: Hello')
     expect(args.prompt).toContain('[Assistant]: Hi there!')
@@ -97,8 +100,8 @@ describe('classifyConversation', () => {
   })
 
   it('throws without classifying when the transcript is missing or empty', async () => {
-    const {client, classify, get} = makeClientStub()
-    get.mockResolvedValue(null)
+    const {client, classify, fetch} = makeClientStub()
+    fetch.mockResolvedValue(null)
 
     await expect(classifyConversation({client, threadId: 't1', model})).rejects.toThrow(
       'Conversation has no messages: t1',

@@ -84,7 +84,7 @@ Agents connect via HTTP transport with a Bearer token: an **organization** API t
 Conversation tracking and classification system. Two parts:
 
 1. **Telemetry integration** (`@sanity/context/ai-sdk`) — saves conversations from chat routes via AI SDK telemetry integrations (`telemetry` on ai v7, `experimental_telemetry` on v6)
-2. **Insights primitives** (`@sanity/context/insights`) — classification primitives that run the customer's own AI SDK model and record verdicts through `client.context`; transcript saving itself is `client.context.conversations.save` from `@sanity/client`
+2. **Insights primitives** (`@sanity/context/insights`) — classification primitives that run the customer's own AI SDK model and record verdicts through `client.context`; transcript saving itself is a `client.context.request` `PUT` on the conversation route from `@sanity/client`
 
 Key files:
 
@@ -97,7 +97,7 @@ Key files:
 | `src/insights/types.ts`                           | Shared insights options and message types            |
 | `src/integrations/ai-sdk/telemetryIntegration.ts` | AI SDK telemetry integration                         |
 
-Every insights function takes a `@sanity/client` (v8.4+) configured with `context: {organizationId}` and a server-side token; writes go through `client.context.conversations` and reads are GROQ over the org's Context document store via `client.context.fetch`. The pending queue is a query (no verdict, no recorded failure, non-empty, settled past a caller-owned cooldown, 10 minutes by default). Classification runs customer-side with their model and LLM key. `classifyConversations` (plural) is the recommended entry point — it orchestrates `getConversationsToClassify`, `getPreviousContentGaps`, and `classifyConversation` with bounded concurrency.
+Every insights function takes a `@sanity/client` (v8.15+) configured with `context: {organizationId}` and a server-side token; writes go through `client.context.request` on the conversation route and reads are GROQ over the org's Context document store via `client.context.fetch`. The pending queue is a query (no verdict, no recorded failure, non-empty, settled past a caller-owned cooldown, 10 minutes by default). Classification runs customer-side with their model and LLM key. `classifyConversations` (plural) is the recommended entry point — it orchestrates `getConversationsToClassify`, `getPreviousContentGaps`, and `classifyConversation` with bounded concurrency.
 
 ### Skill References Syncing
 

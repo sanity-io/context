@@ -13,7 +13,7 @@ The Insights system has two parts that work together:
 
 **Set up both parts.** Telemetry alone just stores raw conversations. Classification is what produces Insights in the Context app: success scores, sentiment, and content gaps.
 
-Both parts ride on `@sanity/client` (^8.4.0) and its `client.context` namespace. The pending queue is a GROQ query over the org's Context document store: conversations that were never classified, have no recorded failure, are non-empty, and have been idle for `settledForMinutes` (default 10, and you own the setting). Classification itself runs on your side, with your model and your LLM API key.
+Both parts ride on `@sanity/client` (^8.15.0) and its `client.context` namespace. The pending queue is a GROQ query over the org's Context document store: conversations that were never classified, have no recorded failure, are non-empty, and have been idle for `settledForMinutes` (default 10, and you own the setting). Classification itself runs on your side, with your model and your LLM API key.
 
 ## Prerequisites
 
@@ -104,21 +104,23 @@ const result = streamText({
 
 See [ecommerce/app/src/app/api/chat/route.ts](ecommerce/app/src/app/api/chat/route.ts): it takes `id` from the `useChat` request body and uses it as `threadId`.
 
-**Not using AI SDK?** The telemetry integration requires Vercel AI SDK. If using another library, save transcripts with `client.context.conversations.save` from `@sanity/client` directly:
+**Not using AI SDK?** The telemetry integration requires Vercel AI SDK. If using another library, save transcripts with `client.context.request` from `@sanity/client` directly:
 
 ```ts
 // Call this after each conversation turn completes
-await client.context.conversations.save({
-  threadId: chatId,
-  messages: [
-    {role: 'user', content: 'How do I return an item?'},
-    {role: 'assistant', content: 'You can return items within 30 days...'},
-    // Include full conversation history each call: it upserts the transcript
-  ],
-  metadata: {mcpEndpoints: process.env.SANITY_CONTEXT_ENDPOINT_NAME ?? []},
-  modelProvider: 'anthropic',
-  modelId: 'claude-sonnet-5-5',
-  tokenUsage: {inputTokens: 1200, outputTokens: 350, totalTokens: 1550},
+await client.context.request('PUT /organizations/{organizationId}/conversations/{threadId}', {
+  params: {threadId: chatId},
+  body: {
+    messages: [
+      {role: 'user', content: 'How do I return an item?'},
+      {role: 'assistant', content: 'You can return items within 30 days...'},
+      // Include full conversation history each call: it upserts the transcript
+    ],
+    metadata: {mcpEndpoints: process.env.SANITY_CONTEXT_ENDPOINT_NAME ?? []},
+    modelProvider: 'anthropic',
+    modelId: 'claude-sonnet-5-5',
+    tokenUsage: {inputTokens: 1200, outputTokens: 350, totalTokens: 1550},
+  },
 })
 ```
 
@@ -322,7 +324,7 @@ The organization ID or thread ID doesn't resolve. Verify `SANITY_ORGANIZATION_ID
 
 ## Insights API Reference
 
-Every function takes `{client}`: a `@sanity/client` (^8.4.0) created with `createClient({apiVersion: 'v2025-11-27', token, context: {organizationId}, useCdn: false, useProjectHostname: false})`.
+Every function takes `{client}`: a `@sanity/client` (^8.15.0) created with `createClient({apiVersion: 'v2025-11-27', token, context: {organizationId}, useCdn: false, useProjectHostname: false})`.
 
 ### `classifyConversations`
 
@@ -348,14 +350,20 @@ For custom workflows, use the individual primitives directly:
 
 - `getConversationsToClassify({client, limit?, settledForMinutes?, mcpEndpoint?})`: GROQ query for the pending classification queue (summaries only)
 - `getPreviousContentGaps({client})`: GROQ query for known content gaps ranked by frequency
-- `classifyConversation({client, threadId, model, previousContentGaps?, messages?})`: Classify a single conversation; fetches the transcript via the client when `messages` is omitted, and records the verdict or a `classificationError` through `client.context.conversations.classify`. Pass the `getPreviousContentGaps()` result as `previousContentGaps` so content gap names stay consistent across runs; `classifyConversations` does this for you
+- `classifyConversation({client, threadId, model, previousContentGaps?, messages?})`: Classify a single conversation; fetches the transcript via the client when `messages` is omitted, and records the verdict or a `classificationError` with a `PATCH` on the conversation through `client.context.request`. Pass the `getPreviousContentGaps()` result as `previousContentGaps` so content gap names stay consistent across runs; `classifyConversations` does this for you
 
-Reading conversations back uses the same organization-scoped client: `client.context.conversations.get({threadId})` returns one recorded conversation, or `null`. For lists and reports, query the organization's Context store with `client.context.fetch`:
+Reading conversations back is GROQ over the organization's Context store with the same organization-scoped client's `client.context.fetch`, for one thread or for lists and reports:
 
 ```ts
-const conversation = await client.context.conversations.get({threadId: 'thread-123'})
+const organizationId = client.config().context?.organizationId
+
+const conversation = await client.context.fetch(
+  '*[_type == "sanity.context.conversation" && organizationId == $organizationId && threadId == $threadId][0]',
+  {organizationId, threadId: 'thread-123'},
+)
 
 const recent = await client.context.fetch(
-  '*[_type == "sanity.context.conversation"] | order(messagesUpdatedAt desc) [0...50]',
+  '*[_type == "sanity.context.conversation" && organizationId == $organizationId] | order(messagesUpdatedAt desc) [0...50]',
+  {organizationId},
 )
 ```

@@ -18,13 +18,16 @@ export interface ContextInsightsOptions {
  *
  * @public
  */
-export type Message = Context.SaveConversationParams['messages'][number]
+export type Message =
+  Context.Body<'PUT /organizations/{organizationId}/conversations/{threadId}'>['messages'][number]
 
 /** @public */
 export type MessageRole = Message['role']
 
 /** @public */
-export type TokenUsage = NonNullable<Context.SaveConversationParams['tokenUsage']>
+export type TokenUsage = NonNullable<
+  Context.Body<'PUT /organizations/{organizationId}/conversations/{threadId}'>['tokenUsage']
+>
 
 /**
  * A stored transcript message, as read back from the Context document store.
