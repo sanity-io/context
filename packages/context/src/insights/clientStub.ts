@@ -23,8 +23,11 @@ export function makeClientStub(overrides?: {organizationId?: string | undefined}
     'PUT /organizations/{organizationId}/conversations/{threadId}': save,
     'PATCH /organizations/{organizationId}/conversations/{threadId}': classify,
   }
-  const request = (route: string, init: {params: {threadId: string}; body: object}) =>
-    routes[route]!({threadId: init.params.threadId, ...init.body})
+  const request = (route: string, init: {params: {threadId: string}; body: object}) => {
+    const handler = routes[route]
+    if (!handler) throw new Error(`makeClientStub: no mock for route ${route}`)
+    return handler({threadId: init.params.threadId, ...init.body})
+  }
   const client = {
     config: () => ({context: {organizationId}}),
     context: {fetch, request},

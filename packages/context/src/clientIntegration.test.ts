@@ -14,7 +14,7 @@ vi.mock('ai', async (importOriginal) => ({
 import {classifyConversation} from './insights/classifyConversation'
 import {sanityInsightsIntegration} from './integrations/ai-sdk/telemetryIntegration'
 
-type Received = {method: string; path: string; body: unknown}
+type Received = {method: string; path: string; query?: Record<string, string>; body: unknown}
 
 let server: Server
 let received: Received[]
@@ -42,7 +42,13 @@ describe('against the real @sanity/client', () => {
   beforeAll(async () => {
     server = createServer(async (req, res) => {
       const url = new URL(req.url!, 'http://localhost')
-      const entry = {method: req.method!, path: url.pathname, body: await readBody(req)}
+      const query = Object.fromEntries(url.searchParams)
+      const entry = {
+        method: req.method!,
+        path: url.pathname,
+        ...(Object.keys(query).length > 0 && {query}),
+        body: await readBody(req),
+      }
       received.push(entry)
       res.setHeader('content-type', 'application/json')
       res.end(JSON.stringify(respond(entry) ?? {}))
@@ -98,7 +104,19 @@ describe('against the real @sanity/client', () => {
     })
 
     expect(result.classifiedAt).toBe('2026-11-06T10:00:00Z')
-    expect(received.at(-1)).toEqual({
+    expect(received).toHaveLength(2)
+    expect(received[0]).toMatchObject({
+      method: 'GET',
+      path: '/v2026-11-01/context/organizations/org-123/query',
+      query: {
+        query: expect.stringContaining(
+          'organizationId == $organizationId && threadId == $threadId',
+        ),
+        $organizationId: '"org-123"',
+        $threadId: '"thread-1"',
+      },
+    })
+    expect(received[1]).toEqual({
       method: 'PATCH',
       path: '/v2026-11-01/context/organizations/org-123/conversations/thread-1',
       body: {coreMetrics: {successScore: 8, sentiment: 'positive', contentGaps: []}},
