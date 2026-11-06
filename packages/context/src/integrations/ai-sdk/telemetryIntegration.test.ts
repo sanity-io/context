@@ -93,10 +93,10 @@ describe('sanityInsightsIntegration', () => {
     )
   })
 
-  it('joins array content from string and {text} parts', async () => {
+  it('joins array content from string and text parts', async () => {
     const {save, onStart, onFinish} = makeIntegration()
 
-    onStart({messages: [{role: 'user', content: ['Hello', {text: 'World'}]}]})
+    onStart({messages: [{role: 'user', content: ['Hello', {type: 'text', text: 'World'}]}]})
     await onFinish({response: {messages: []}})
 
     expect(savedMessages(save)).toEqual([{role: 'user', content: 'Hello\nWorld'}])
@@ -111,7 +111,10 @@ describe('sanityInsightsIntegration', () => {
         messages: [
           {
             role: 'assistant',
-            content: [{text: 'Let me search'}, {toolName: 'search', args: {q: 'test'}}],
+            content: [
+              {type: 'text', text: 'Let me search'},
+              {toolName: 'search', args: {q: 'test'}},
+            ],
           },
         ],
       },
@@ -148,6 +151,43 @@ describe('sanityInsightsIntegration', () => {
       {role: 'tool', toolName: 'search', toolType: 'result', content: null, error: 'timeout'},
       {role: 'tool', toolName: 'fetch', toolType: 'result', content: null, error: '{"code":503}'},
       {role: 'assistant', content: 'Done'},
+    ])
+  })
+
+  it('keeps failed provider-executed tool results from assistant content', async () => {
+    const {save, onStart, onFinish} = makeIntegration()
+
+    onStart({messages: []})
+    await onFinish({
+      response: {
+        messages: [
+          {
+            role: 'assistant',
+            content: [
+              {type: 'tool-call', toolName: 'web_search', providerExecuted: true, input: {q: 'x'}},
+              {type: 'tool-result', toolName: 'web_search', output: {type: 'json', value: {}}},
+              {
+                type: 'tool-result',
+                toolName: 'web_search',
+                output: {type: 'error-text', value: 'rate limited'},
+              },
+              {type: 'text', text: "I couldn't search."},
+            ],
+          },
+        ],
+      },
+    })
+
+    expect(savedMessages(save)).toEqual([
+      {role: 'assistant', content: "I couldn't search."},
+      {role: 'tool', toolName: 'web_search', toolType: 'call', content: '{"q":"x"}'},
+      {
+        role: 'tool',
+        toolName: 'web_search',
+        toolType: 'result',
+        content: null,
+        error: 'rate limited',
+      },
     ])
   })
 

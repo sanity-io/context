@@ -80,7 +80,7 @@ const client = createClient({
 })
 
 const result = streamText({
-  model: anthropic('claude-sonnet-4-5'),
+  model: anthropic('claude-sonnet-5-5'),
   messages,
   telemetry: {
     integrations: [
@@ -117,7 +117,7 @@ await client.context.conversations.save({
   ],
   metadata: {mcpEndpoints: process.env.SANITY_CONTEXT_ENDPOINT_NAME ?? []},
   modelProvider: 'anthropic',
-  modelId: 'claude-sonnet-4-5',
+  modelId: 'claude-sonnet-5-5',
   tokenUsage: {inputTokens: 1200, outputTokens: 350, totalTokens: 1550},
 })
 ```

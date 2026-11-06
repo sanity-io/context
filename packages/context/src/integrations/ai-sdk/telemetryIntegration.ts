@@ -202,22 +202,25 @@ function collectMessages(rawMessages: ModelMessage[]): Message[] {
     }
 
     // Array content: split tool calls from text parts
-    const textParts: unknown[] = []
+    const textParts: string[] = []
     const toolCalls: Record<string, unknown>[] = []
+    const toolResults: Record<string, unknown>[] = []
 
     for (const part of raw.content) {
       if (isObject(part) && 'toolName' in part && !isToolResult(part)) {
         toolCalls.push(part)
-      } else {
+      } else if (isObject(part) && isToolResult(part)) {
+        toolResults.push(part)
+      } else if (typeof part === 'string') {
         textParts.push(part)
+      } else if (isObject(part) && part['type'] === 'text' && typeof part['text'] === 'string') {
+        textParts.push(part['text'])
       }
     }
 
-    if (textParts.length > 0) {
-      messages.push({
-        role: normalizeRole(raw.role),
-        content: textParts.map(formatTextPart).join('\n'),
-      })
+    const text = textParts.filter((part) => part.trim() !== '').join('\n')
+    if (text !== '') {
+      messages.push({role: normalizeRole(raw.role), content: text})
     }
 
     for (const call of toolCalls) {
@@ -230,6 +233,8 @@ function collectMessages(rawMessages: ModelMessage[]): Message[] {
         content: serializeContent(args),
       })
     }
+
+    messages.push(...toolResults.flatMap(failedToolResult))
   }
 
   return messages

@@ -15,7 +15,7 @@ import {clientTools, type DocumentContext} from '@/lib/client-tools'
 import {client} from '@/sanity/lib/client'
 import {insightsClient} from '@/sanity/lib/insights-client'
 
-const DEFAULT_MODEL = 'claude-sonnet-4-5'
+const DEFAULT_MODEL = 'claude-sonnet-5-5'
 const MAX_STEPS = 20
 
 let cachedInitialContext: string | null = null

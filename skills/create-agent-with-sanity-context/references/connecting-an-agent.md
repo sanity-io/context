@@ -91,7 +91,7 @@ export async function ask(question: string): Promise<string> {
     if (initialContext) delete tools.initial_context
 
     const {text} = await generateText({
-      model: anthropic('claude-sonnet-4-5'),
+      model: anthropic('claude-sonnet-5-5'),
       instructions: initialContext
         ? `${SYSTEM_PROMPT}\n\n# Data reference\n\n${initialContext}`
         : SYSTEM_PROMPT,
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
     if (initialContext) delete tools.initial_context
 
     const result = streamText({
-      model: anthropic('claude-sonnet-4-5'),
+      model: anthropic('claude-sonnet-5-5'),
       instructions: initialContext
         ? `You are a helpful assistant.\n\n# Data reference\n\n${initialContext}`
         : 'You are a helpful assistant.',
