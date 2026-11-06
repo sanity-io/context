@@ -2,14 +2,13 @@
 
 ## [3.0.0](https://github.com/sanity-io/context/compare/context-v2.2.0...context-v3.0.0) (2026-11-06)
 
-
 ### ⚠ BREAKING CHANGES
 
-* **context:** drop Studio plugin, clean transcripts, fix Context skill ([#281](https://github.com/sanity-io/context/issues/281))
+- **context:** drop Studio plugin, clean transcripts, fix Context skill ([#281](https://github.com/sanity-io/context/issues/281))
 
 ### Features
 
-* **context:** drop Studio plugin, clean transcripts, fix Context skill ([#281](https://github.com/sanity-io/context/issues/281)) ([656fbb1](https://github.com/sanity-io/context/commit/656fbb1a9d8f27345bf264186f3b8a961d3d878b))
+- **context:** drop Studio plugin, clean transcripts, fix Context skill ([#281](https://github.com/sanity-io/context/issues/281)) ([656fbb1](https://github.com/sanity-io/context/commit/656fbb1a9d8f27345bf264186f3b8a961d3d878b))
 
 ## [2.2.0](https://github.com/sanity-io/context/compare/context-v2.1.0...context-v2.2.0) (2026-10-01)
 
