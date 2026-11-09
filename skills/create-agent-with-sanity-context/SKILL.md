@@ -162,13 +162,13 @@ Then run the CLI yourself:
 
 ```bash
 npx sanity@latest context create --organization <organizationId> --title "Support docs" --description "<purpose>"
-# Add sources, one import each: --url (crawl a website), --file, --text with --title,
-# or --sanity-project, --sanity-dataset and --query for a dataset
-npx sanity@latest context imports create <knowledgeBaseId> --url https://example.com/docs
+# Add sources, one per command: --url (crawl a website), --file, --text with --title,
+# or --sanity-project-id, --sanity-dataset-id and --query for a dataset
+npx sanity@latest context sources create <knowledgeBaseId> --url https://example.com/docs
 npx sanity@latest context build <knowledgeBaseId> --watch
 ```
 
-Start with a focused set of current material. `build --watch` waits for the imports and the build, and exits non-zero if the build fails. Then skim the entries and issues in the Context app.
+Start with a focused set of current material. `build --watch` waits for the sources and the build, and exits non-zero if the build fails. Then skim the entries and issues in the Context app.
 
 The user can do the same in the Context app instead: **New knowledge base** with a **Title** and **Purpose**, **Add source**, then **Build entries** and wait for **Entries up to date**.
 
