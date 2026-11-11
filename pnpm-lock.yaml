@@ -15,9 +15,6 @@ catalogs:
     typescript:
       specifier: ^5
       version: 5.9.3
-    zod:
-      specifier: ^4.3.6
-      version: 4.6.5
 
 importers:
 
@@ -25,7 +22,7 @@ importers:
     devDependencies:
       '@anthropic-ai/sdk':
         specifier: ^0.78.0
-        version: 0.78.0(zod@4.6.5)
+        version: 0.78.0(zod@4.6.7)
       '@commitlint/cli':
         specifier: ^20.5.3
         version: 20.5.3(@types/node@22.20.4)(conventional-commits-parser@6.4.0)(typescript@5.9.3)
@@ -82,7 +79,7 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^3.0.119
-        version: 3.0.119(zod@4.6.5)
+        version: 3.0.119(zod@4.6.7)
       '@sanity/client':
         specifier: ^8.15.0
         version: 8.15.0(vitest@4.1.11)
@@ -94,7 +91,7 @@ importers:
         version: 1.8.0(@aws-lite/client@0.23.7)(@aws-lite/dynamodb@0.3.9)(@aws-lite/lambda@0.1.5)(@aws-lite/sns@0.0.8)(@aws-lite/sqs@0.2.4)
       ai:
         specifier: ^6.0.287
-        version: 6.0.287(zod@4.6.5)
+        version: 6.0.287(zod@4.6.7)
     devDependencies:
       '@sanity/blueprints':
         specifier: ^0.15.0
@@ -107,13 +104,13 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^4.0.63
-        version: 4.0.63(zod@4.6.5)
+        version: 4.0.63(zod@4.6.6)
       '@ai-sdk/mcp':
         specifier: ^2.0.58
-        version: 2.0.58(zod@4.6.5)
+        version: 2.0.58(zod@4.6.6)
       '@ai-sdk/react':
         specifier: ^4.0.117
-        version: 4.0.117(react@19.3.0)(zod@4.6.5)
+        version: 4.0.117(react@19.3.0)(zod@4.6.6)
       '@radix-ui/react-select':
         specifier: ^2.3.7
         version: 2.3.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -134,7 +131,7 @@ importers:
         version: 2.1.1
       ai:
         specifier: ^7.0.114
-        version: 7.0.114(zod@4.6.5)
+        version: 7.0.114(zod@4.6.6)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -179,7 +176,7 @@ importers:
         version: 7.2.4
       zod:
         specifier: ^4.6.5
-        version: 4.6.5
+        version: 4.6.6
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.3.3
@@ -213,7 +210,7 @@ importers:
     dependencies:
       '@ai-sdk/anthropic':
         specifier: ^3.0.119
-        version: 3.0.119(zod@4.6.5)
+        version: 3.0.119(zod@4.6.6)
       '@sanity/client':
         specifier: ^7.27.0
         version: 7.27.0
@@ -228,7 +225,7 @@ importers:
         version: 6.15.0(@babel/runtime@7.29.7)(@codemirror/lint@6.9.7)(@codemirror/theme-one-dark@6.1.3)(codemirror@5.65.21)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(sanity@6.15.0(@babel/core@7.29.7)(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.7)(@babel/runtime@7.29.7)(rolldown@1.2.9)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(@types/node@26.6.2)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.9)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(terser@5.51.2)(tsx@4.23.15)(typescript@5.9.3)(vitest@4.1.11))(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(vitest@4.1.11)
       ai:
         specifier: ^6.0.287
-        version: 6.0.287(zod@4.6.5)
+        version: 6.0.287(zod@4.6.6)
       easymde:
         specifier: ^2.21.0
         version: 2.21.0
@@ -252,7 +249,7 @@ importers:
         version: 6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       zod:
         specifier: ^4.6.5
-        version: 4.6.5
+        version: 4.6.6
     devDependencies:
       '@types/react':
         specifier: ^19
@@ -317,10 +314,10 @@ importers:
         version: 4.1.11(vitest@4.1.11)
       ai:
         specifier: 'catalog:'
-        version: 6.0.287(zod@4.6.5)
+        version: 6.0.287(zod@4.6.6)
       ai-v7:
         specifier: npm:ai@^7
-        version: ai@7.0.114(zod@4.6.5)
+        version: ai@7.0.114(zod@4.6.6)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -329,7 +326,7 @@ importers:
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
-        version: 4.6.5
+        version: 4.6.6
 
 packages:
 
@@ -570,6 +567,10 @@ packages:
     resolution: {integrity: sha512-brcMGQaVzIeUb+6/bs1Av0f8YuNNjKY2JyvfRCsFuFsdKccEQ5Ges2y74D74NZ1Rz8lKJ9ksJkfqwQFJ/iNEyQ==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/helper-string-parser@7.29.13':
+    resolution: {integrity: sha512-fWegr+WsEsiMVW4KUNdIIzzMTZSzNiqhy0//6+2MRi2d5NFNsL/AYwBQW8eBnRbTBVRnDVzjaJEUqKaCWjMMdQ==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/helper-string-parser@7.29.7':
     resolution: {integrity: sha512-Pb5ijPrZ89GDH8223L4UP8i6QApWxs04RbPQJTeWDV0/keR2E36MeKnyr6LYmUUvqRRI+Iv87SuF1W6ErINzYw==}
     engines: {node: '>=6.9.0'}
@@ -601,6 +602,11 @@ packages:
   '@babel/helpers@7.29.7':
     resolution: {integrity: sha512-1k2lAGRMfHTcwuNYcCNUmaUffmQv8KWMfh2iJUUeRlwlwH4FdNG7mfPI10NPfLHJFThE4Tyr4mv7kTNZOiPuBg==}
     engines: {node: '>=6.9.0'}
+
+  '@babel/parser@7.29.13':
+    resolution: {integrity: sha512-fJM50YYjlTiBhgdkGmC1tBpv+FMAyo4annf2X6Aks+0yRlaiVkYW/3f07xAfVVkYIoZ9fFZp+mEThUFnuybhkQ==}
+    engines: {node: '>=6.0.0'}
+    hasBin: true
 
   '@babel/parser@7.29.9':
     resolution: {integrity: sha512-CjXrNHTnvqBVqHgdBysY3vk2T8tpJHb5/RMeHJBTyVa9xgugCB0CJTx/3oO8RV2QRQP391RWpB7D6hLjm8V9uA==}
@@ -1070,6 +1076,10 @@ packages:
     resolution: {integrity: sha512-I5z7H3bf/41ktsNVLtpN0wAa336HkqIHQ5BuPLEhTkt1jVSyZpeNKIzTgEWmlxjdg81R0IgUCcaE+Ok3NvrfZg==}
     engines: {node: '>=6.9.0'}
 
+  '@babel/types@7.29.11':
+    resolution: {integrity: sha512-WCsemW40Cpc6gouC1SrY6PBaZ+oLRlEVY9XBvZBI7il/HyUrb2nJ505wE1MHEFyDZNnrWDEuy4jL50WVHfTTSQ==}
+    engines: {node: '>=6.9.0'}
+
   '@babel/types@7.29.8':
     resolution: {integrity: sha512-Vj1jF3cPfxg7OAfoI7QnVKLoILlm2JF9pnVHrX8qx7AHMiYWT+NDAA7jChlNgRS4WTLc/fD1lXLmPixluj+3Gg==}
     engines: {node: '>=6.9.0'}
@@ -1102,6 +1112,9 @@ packages:
   '@codemirror/language@6.12.4':
     resolution: {integrity: sha512-1q4PaT+o6PbgpkJt4Q8Fv5XJxTy4FUZ4MWETtyiDw3J0Pyr9E2vqcKL+k9wcvjNTIsauxvE7OfmWj3FRPHQ76A==}
 
+  '@codemirror/language@6.13.1':
+    resolution: {integrity: sha512-zfvU2r3TyylQLMj/te+5CnQ0rSqZi8B1oTCBbQkagcLW4Xc6imab6qN+pEJhsuNOLaJqiRyBXp9UhWA1DhVvDw==}
+
   '@codemirror/lint@6.9.7':
     resolution: {integrity: sha512-28/+iWLYxKxsvGYhSYL7zaCZqLz5+FFFDq9tVsvGv9kv8RY4fFAchJ5WX9M3YrrRlTIsECjsXPqeNgnSmNP2dg==}
 
@@ -1111,11 +1124,17 @@ packages:
   '@codemirror/state@6.7.6':
     resolution: {integrity: sha512-kAz+AncRtKuIknedxT1bq4XwXv4UowhbkHU1myPrtVb/jZtImWuV5BXzv5vK6i3kYACsdiZiQKFQQ5Mq7elW8w==}
 
+  '@codemirror/streamparser@6.0.0':
+    resolution: {integrity: sha512-JTFPF6xrfjt0mnfGPgzcLiMwYmvIyNaoizp8BYzv8FE8KrT6GBGDZ190rtt+O7Wke3gG/MFHyiY9YGNeimof4w==}
+
   '@codemirror/theme-one-dark@6.1.3':
     resolution: {integrity: sha512-NzBdIvEJmx6fjeremiGp3t/okrLPYT0d9orIc7AFun8oZcRk58aejkqhv6spnz4MLAevrKNPMQYXEWMg4s+sKA==}
 
   '@codemirror/view@6.43.13':
     resolution: {integrity: sha512-sihaFrUzAsYBQsL9J2t69y8nfMQGwcYmggAZsk+kjPbjYZMyuf2hU8tUNTZ+P+isb6XRr8JE22TZlJxBoVdH1A==}
+
+  '@codemirror/view@6.43.15':
+    resolution: {integrity: sha512-HHsfpqFeHyXLs983pSRe38Xajs0vFWZQ2BuX0m7Ki8w3jZ5iD8cuR3lBz2/5/X53Dhf32SBHKh6rtSTB6tKeGw==}
 
   '@commitlint/cli@20.5.3':
     resolution: {integrity: sha512-OJdL0EXWD5y9LPa0nr/geOwzaS8BsdaybKkcloB0JgsguGxNv2R+hC2FTPqrAcprg35zF33KOQerY0x8W1aesA==}
@@ -1996,14 +2015,23 @@ packages:
   '@lezer/common@1.5.2':
     resolution: {integrity: sha512-sxQE460fPZyU3sdc8lafxiPwJHBzZRy/udNFynGQky1SePYBdhkBl1kOagA9uT3pxR8K09bOrmTUqA9wb/PjSQ==}
 
+  '@lezer/common@1.5.5':
+    resolution: {integrity: sha512-Pw7PVCndruF1pb3ebCxpSVpkMHSDjwRCLcTRw+RizUKco5QbWylwq2g4lnG/RYN7yTTQDXE9F77MwtkAyphrjg==}
+
   '@lezer/highlight@1.2.3':
     resolution: {integrity: sha512-qXdH7UqTvGfdVBINrgKhDsVTJTxactNNxLk7+UMwZhU13lMHaOBlJe9Vqp907ya56Y3+ed2tlqzys7jDkTmW0g==}
+
+  '@lezer/highlight@1.2.5':
+    resolution: {integrity: sha512-O1GMVKgtf5YspFaRzpmqkVgMtIk2HG9uMAbH6wdAIdNh3TVzCsch/+cRi+6l2//UGDKe6NB9BW3cvuR5ezMQ0w==}
 
   '@lezer/javascript@1.5.5':
     resolution: {integrity: sha512-sWg4yX1J6XW67AaAynVt0iwF0M5c+np36TEu+P2ifAJ8haRYvHnWDV28r1jdwnJehWCwXECutAUy56K4RBZIyg==}
 
   '@lezer/lr@1.4.10':
     resolution: {integrity: sha512-rnCpTIBafOx4mRp43xOxDJbFipJm/c0cia/V5TiGlhmMa+wsSdoGmUN3w5Bqrks/09Q/D4tNAmWaT8p6NRi77A==}
+
+  '@lezer/lr@1.4.12':
+    resolution: {integrity: sha512-On9HU4oMMiHPMkQDgoTnGahjgG5n/MkN38CgG77sMraKLL+3JBbeQNi1FcCXV9QRqwF9/BUXP3caHyJC1fBOTQ==}
 
   '@marijn/find-cluster-break@1.0.4':
     resolution: {integrity: sha512-Wy0V7+SGUjnF9/TkiM1hKVDPj7jKXduPNboMVtHTA8dySMURWqfg/JZ9E2Sq8JgSJmkl7k7Qe9FLeMSrSraWmQ==}
@@ -3432,6 +3460,7 @@ packages:
   '@sanity/ui@4.2.3':
     resolution: {integrity: sha512-pxIshNSZGE40/YvRpsHmU1B5hSRLDpLfKgvrGkUltKgcb/lgzoksCM6rcbwTPNT/o1A5OQChYlHYklLOsGv5vA==}
     engines: {node: '>=22.12'}
+    deprecated: Class names collide with @sanity/ui 4.4.4 (shipped in sanity@6.19.0) when both load on one page, breaking styles. Upgrade to @sanity/ui@^4.4.4.
     peerDependencies:
       react: ^19.2
       react-dom: ^19.2
@@ -4838,8 +4867,8 @@ packages:
   devlop@1.1.0:
     resolution: {integrity: sha512-RWmIqhcFf1lRYBvNmr7qTNuyCt/7/ns2jbpp1+PalgE/rDQcBT0fioSMUpJ93irlUhC5hrg4cYqe6U+0ImW0rA==}
 
-  dialog-closedby-polyfill@1.3.0:
-    resolution: {integrity: sha512-II3pxe/zr5OLhbqrkjQgXDFp61ICPlGZspNIgERwUUCLLHgQzPjv3VTStGD4W+ujwR5zMCZAdcWgu5nTmOIUYQ==}
+  dialog-closedby-polyfill@1.4.0:
+    resolution: {integrity: sha512-ndrASHRWiPhAN1Vu4kzSHFoeqvk04julTtfR4IMP+I7xJvFH9OodurjPAQgK90IvrGZSSIgYLZ3QwPt5oXSH4A==}
 
   diff@8.0.4:
     resolution: {integrity: sha512-DPi0FmjiSU5EvQV0++GFDOJ9ASQUVFh5kD+OzOnYdi7n3Wpm9hWWGfB/O2blfHcMVTL5WkQXSnRiK9makhrcnw==}
@@ -5692,8 +5721,8 @@ packages:
   inline-style-parser@0.2.7:
     resolution: {integrity: sha512-Nb2ctOyNR8DqQoR0OwRG95uNWIC0C1lCgf5Naz5H6Ji72KZ8OcFZLz2P5sNgwlyoJ8Yif11oMuYs5pBQa86csA==}
 
-  interestfor@1.0.8:
-    resolution: {integrity: sha512-qYwTmxzDnrosGZX/1lDEOsAv73aYiFKLniN20SS78588WhRMHj8z7u2uFe9QZPIVmkCyIbJwiMQ/85Up7hrseQ==}
+  interestfor@1.0.12:
+    resolution: {integrity: sha512-c1td//M4fCDefKxTAYdAD3ve7SzKQ9FvRSq27vt6Myto4cw2bCpyMYEb6VHWan96ChJdyFBodnx+22NB+2AF0A==}
 
   internal-slot@1.1.0:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
@@ -8269,8 +8298,11 @@ packages:
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
 
-  zod@4.6.5:
-    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
+  zod@4.6.6:
+    resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
+
+  zod@4.6.7:
+    resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
   zustand@5.0.15:
     resolution: {integrity: sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==}
@@ -8297,56 +8329,77 @@ snapshots:
 
   '@acemir/cssom@0.9.31': {}
 
-  '@ai-sdk/anthropic@3.0.119(zod@4.6.5)':
+  '@ai-sdk/anthropic@3.0.119(zod@4.6.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.16
-      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.5)
-      zod: 4.6.5
+      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.6)
+      zod: 4.6.6
 
-  '@ai-sdk/anthropic@4.0.63(zod@4.6.5)':
-    dependencies:
-      '@ai-sdk/provider': 4.0.18
-      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.5)
-      zod: 4.6.5
-
-  '@ai-sdk/gateway@3.0.197(zod@4.6.5)':
+  '@ai-sdk/anthropic@3.0.119(zod@4.6.7)':
     dependencies:
       '@ai-sdk/provider': 3.0.16
-      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.5)
-      '@vercel/oidc': 3.2.0
-      zod: 4.6.5
+      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.7)
+      zod: 4.6.7
 
-  '@ai-sdk/gateway@4.0.92(zod@4.6.5)':
+  '@ai-sdk/anthropic@4.0.63(zod@4.6.6)':
     dependencies:
       '@ai-sdk/provider': 4.0.18
-      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.5)
-      '@vercel/oidc': 3.2.0
-      zod: 4.6.5
+      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.6)
+      zod: 4.6.6
 
-  '@ai-sdk/mcp@2.0.58(zod@4.6.5)':
+  '@ai-sdk/gateway@3.0.197(zod@4.6.6)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.16
+      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.6)
+      '@vercel/oidc': 3.2.0
+      zod: 4.6.6
+
+  '@ai-sdk/gateway@3.0.197(zod@4.6.7)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.16
+      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.7)
+      '@vercel/oidc': 3.2.0
+      zod: 4.6.7
+
+  '@ai-sdk/gateway@4.0.92(zod@4.6.6)':
     dependencies:
       '@ai-sdk/provider': 4.0.18
-      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.5)
+      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.6)
+      '@vercel/oidc': 3.2.0
+      zod: 4.6.6
+
+  '@ai-sdk/mcp@2.0.58(zod@4.6.6)':
+    dependencies:
+      '@ai-sdk/provider': 4.0.18
+      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.6)
       cross-spawn: 7.0.6
       pkce-challenge: 5.0.1
-      zod: 4.6.5
+      zod: 4.6.6
 
-  '@ai-sdk/provider-utils@4.0.52(zod@4.6.5)':
+  '@ai-sdk/provider-utils@4.0.52(zod@4.6.6)':
     dependencies:
       '@ai-sdk/provider': 3.0.16
       '@standard-schema/spec': 1.1.0
       eventsource-parser: 3.1.1
       undici: 6.28.1
-      zod: 4.6.5
+      zod: 4.6.6
 
-  '@ai-sdk/provider-utils@5.0.47(zod@4.6.5)':
+  '@ai-sdk/provider-utils@4.0.52(zod@4.6.7)':
+    dependencies:
+      '@ai-sdk/provider': 3.0.16
+      '@standard-schema/spec': 1.1.0
+      eventsource-parser: 3.1.1
+      undici: 6.28.1
+      zod: 4.6.7
+
+  '@ai-sdk/provider-utils@5.0.47(zod@4.6.6)':
     dependencies:
       '@ai-sdk/provider': 4.0.18
       '@standard-schema/spec': 1.1.0
       '@workflow/serde': 4.1.0
       eventsource-parser: 3.1.1
       undici: 7.29.1
-      zod: 4.6.5
+      zod: 4.6.6
 
   '@ai-sdk/provider@3.0.16':
     dependencies:
@@ -8356,12 +8409,12 @@ snapshots:
     dependencies:
       json-schema: 0.4.0
 
-  '@ai-sdk/react@4.0.117(react@19.3.0)(zod@4.6.5)':
+  '@ai-sdk/react@4.0.117(react@19.3.0)(zod@4.6.6)':
     dependencies:
-      '@ai-sdk/mcp': 2.0.58(zod@4.6.5)
+      '@ai-sdk/mcp': 2.0.58(zod@4.6.6)
       '@ai-sdk/provider': 4.0.18
-      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.5)
-      ai: 7.0.114(zod@4.6.5)
+      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.6)
+      ai: 7.0.114(zod@4.6.6)
       react: 19.3.0
       swr: 2.5.1(react@19.3.0)
       throttleit: 2.1.0
@@ -8372,11 +8425,11 @@ snapshots:
 
   '@alloc/quick-lru@5.3.0': {}
 
-  '@anthropic-ai/sdk@0.78.0(zod@4.6.5)':
+  '@anthropic-ai/sdk@0.78.0(zod@4.6.7)':
     dependencies:
       json-schema-to-ts: 3.1.1
     optionalDependencies:
-      zod: 4.6.5
+      zod: 4.6.7
 
   '@architect/asap@7.0.10':
     dependencies:
@@ -8605,6 +8658,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@babel/helper-string-parser@7.29.13':
+    optional: true
+
   '@babel/helper-string-parser@7.29.7': {}
 
   '@babel/helper-string-parser@8.0.6': {}
@@ -8629,6 +8685,11 @@ snapshots:
     dependencies:
       '@babel/template': 7.29.7
       '@babel/types': 7.29.8
+
+  '@babel/parser@7.29.13':
+    dependencies:
+      '@babel/types': 7.29.11
+    optional: true
 
   '@babel/parser@7.29.9':
     dependencies:
@@ -9226,6 +9287,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  '@babel/types@7.29.11':
+    dependencies:
+      '@babel/helper-string-parser': 7.29.13
+      '@babel/helper-validator-identifier': 7.29.7
+    optional: true
+
   '@babel/types@7.29.8':
     dependencies:
       '@babel/helper-string-parser': 7.29.7
@@ -9280,6 +9347,16 @@ snapshots:
       '@lezer/lr': 1.4.10
       style-mod: 4.1.4
 
+  '@codemirror/language@6.13.1':
+    dependencies:
+      '@codemirror/state': 6.7.6
+      '@codemirror/streamparser': 6.0.0
+      '@codemirror/view': 6.43.15
+      '@lezer/common': 1.5.5
+      '@lezer/highlight': 1.2.5
+      '@lezer/lr': 1.4.12
+      style-mod: 4.1.4
+
   '@codemirror/lint@6.9.7':
     dependencies:
       '@codemirror/state': 6.7.6
@@ -9296,14 +9373,23 @@ snapshots:
     dependencies:
       '@marijn/find-cluster-break': 1.0.4
 
+  '@codemirror/streamparser@6.0.0': {}
+
   '@codemirror/theme-one-dark@6.1.3':
     dependencies:
-      '@codemirror/language': 6.12.4
+      '@codemirror/language': 6.13.1
       '@codemirror/state': 6.7.6
-      '@codemirror/view': 6.43.13
-      '@lezer/highlight': 1.2.3
+      '@codemirror/view': 6.43.15
+      '@lezer/highlight': 1.2.5
 
   '@codemirror/view@6.43.13':
+    dependencies:
+      '@codemirror/state': 6.7.6
+      crelt: 1.0.7
+      style-mod: 4.1.4
+      w3c-keyname: 2.2.8
+
+  '@codemirror/view@6.43.15':
     dependencies:
       '@codemirror/state': 6.7.6
       crelt: 1.0.7
@@ -10304,9 +10390,15 @@ snapshots:
 
   '@lezer/common@1.5.2': {}
 
+  '@lezer/common@1.5.5': {}
+
   '@lezer/highlight@1.2.3':
     dependencies:
       '@lezer/common': 1.5.2
+
+  '@lezer/highlight@1.2.5':
+    dependencies:
+      '@lezer/common': 1.5.5
 
   '@lezer/javascript@1.5.5':
     dependencies:
@@ -10317,6 +10409,10 @@ snapshots:
   '@lezer/lr@1.4.10':
     dependencies:
       '@lezer/common': 1.5.2
+
+  '@lezer/lr@1.4.12':
+    dependencies:
+      '@lezer/common': 1.5.5
 
   '@marijn/find-cluster-break@1.0.4': {}
 
@@ -11366,7 +11462,7 @@ snapshots:
       react-is: 19.3.0
       semver: 7.8.5
       vite: 8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-      zod: 4.6.5
+      zod: 4.6.6
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
       sanity: 6.15.0(@babel/core@7.29.7)(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.7)(@babel/runtime@7.29.7)(rolldown@1.2.9)(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(@types/node@22.20.4)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.9)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(terser@5.51.2)(tsx@4.23.15)(typescript@5.9.3)(vitest@4.1.11)
@@ -11421,7 +11517,7 @@ snapshots:
       react-is: 19.3.0
       semver: 7.8.5
       vite: 8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-      zod: 4.6.5
+      zod: 4.6.6
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
       sanity: 6.15.0(@babel/core@7.29.7)(@babel/runtime@7.29.7)(@noble/hashes@2.4.0)(@rolldown/plugin-babel@0.2.4(@babel/core@7.29.7)(@babel/runtime@7.29.7)(rolldown@1.2.9)(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)))(@types/node@26.6.2)(@types/react@19.3.0)(babel-plugin-react-compiler@1.0.0)(esbuild@0.28.2)(jiti@2.7.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(rolldown@1.2.9)(styled-components@6.5.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(terser@5.51.2)(tsx@4.23.15)(typescript@5.9.3)(vitest@4.1.11)
@@ -11470,7 +11566,7 @@ snapshots:
       rxjs: 7.8.2
       vite: 8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       wrap-ansi: 9.0.2
-      zod: 4.6.5
+      zod: 4.6.6
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
     transitivePeerDependencies:
@@ -11508,7 +11604,7 @@ snapshots:
       rxjs: 7.8.2
       vite: 8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
       wrap-ansi: 9.0.2
-      zod: 4.6.5
+      zod: 4.6.6
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
     transitivePeerDependencies:
@@ -11590,7 +11686,7 @@ snapshots:
       which: 6.0.1
       wrap-ansi: 9.0.2
       yaml: 2.9.1
-      zod: 4.6.5
+      zod: 4.6.6
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
     transitivePeerDependencies:
@@ -11690,7 +11786,7 @@ snapshots:
       which: 6.0.1
       wrap-ansi: 9.0.2
       yaml: 2.9.1
-      zod: 4.6.5
+      zod: 4.6.6
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
     transitivePeerDependencies:
@@ -11934,7 +12030,7 @@ snapshots:
 
   '@sanity/parse-package-json@2.3.5':
     dependencies:
-      zod: 4.6.5
+      zod: 4.6.6
 
   '@sanity/pkg-utils@10.4.18(@types/babel__core@7.20.5)(@types/node@26.6.2)(babel-plugin-react-compiler@1.0.0)(typescript@5.9.3)':
     dependencies:
@@ -11979,8 +12075,8 @@ snapshots:
       treeify: 1.1.0
       tsx: 4.23.15
       typescript: 5.9.3
-      zod: 4.6.5
-      zod-validation-error: 5.0.0(zod@4.6.5)
+      zod: 4.6.6
+      zod-validation-error: 5.0.0(zod@4.6.6)
     optionalDependencies:
       babel-plugin-react-compiler: 1.0.0
     transitivePeerDependencies:
@@ -12267,8 +12363,8 @@ snapshots:
       '@sanity/icons': 5.2.2(react@19.3.0)
       clsx: 2.1.1
       comment-json: 5.0.0
-      dialog-closedby-polyfill: 1.3.0
-      interestfor: 1.0.8
+      dialog-closedby-polyfill: 1.4.0
+      interestfor: 1.0.12
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
       react-refractor: 4.0.0(react@19.3.0)
@@ -12411,7 +12507,7 @@ snapshots:
       semver: 7.8.5
       tar: 7.5.22
       vite: 8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-      zod: 4.6.5
+      zod: 4.6.6
     transitivePeerDependencies:
       - '@noble/hashes'
       - '@rolldown/plugin-babel'
@@ -12449,7 +12545,7 @@ snapshots:
       semver: 7.8.5
       tar: 7.5.22
       vite: 8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-      zod: 4.6.5
+      zod: 4.6.6
     transitivePeerDependencies:
       - '@noble/hashes'
       - '@rolldown/plugin-babel'
@@ -12682,8 +12778,8 @@ snapshots:
 
   '@types/babel__core@7.20.5':
     dependencies:
-      '@babel/parser': 7.29.9
-      '@babel/types': 7.29.8
+      '@babel/parser': 7.29.13
+      '@babel/types': 7.29.11
       '@types/babel__generator': 7.27.0
       '@types/babel__template': 7.4.4
       '@types/babel__traverse': 7.28.0
@@ -12691,18 +12787,18 @@ snapshots:
 
   '@types/babel__generator@7.27.0':
     dependencies:
-      '@babel/types': 7.29.8
+      '@babel/types': 7.29.11
     optional: true
 
   '@types/babel__template@7.4.4':
     dependencies:
-      '@babel/parser': 7.29.9
-      '@babel/types': 7.29.8
+      '@babel/parser': 7.29.13
+      '@babel/types': 7.29.11
     optional: true
 
   '@types/babel__traverse@7.28.0':
     dependencies:
-      '@babel/types': 7.29.8
+      '@babel/types': 7.29.11
     optional: true
 
   '@types/chai@5.2.3':
@@ -13080,7 +13176,7 @@ snapshots:
       obug: 2.2.1
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.4)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   '@vitest/expect@4.1.11':
     dependencies:
@@ -13098,7 +13194,6 @@ snapshots:
       magic-string: 0.30.21
     optionalDependencies:
       vite: 8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
-    optional: true
 
   '@vitest/mocker@4.1.11(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))':
     dependencies:
@@ -13160,20 +13255,28 @@ snapshots:
 
   agent-base@7.1.4: {}
 
-  ai@6.0.287(zod@4.6.5):
+  ai@6.0.287(zod@4.6.6):
     dependencies:
-      '@ai-sdk/gateway': 3.0.197(zod@4.6.5)
+      '@ai-sdk/gateway': 3.0.197(zod@4.6.6)
       '@ai-sdk/provider': 3.0.16
-      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.5)
+      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.6)
       '@opentelemetry/api': 1.9.1
-      zod: 4.6.5
+      zod: 4.6.6
 
-  ai@7.0.114(zod@4.6.5):
+  ai@6.0.287(zod@4.6.7):
     dependencies:
-      '@ai-sdk/gateway': 4.0.92(zod@4.6.5)
+      '@ai-sdk/gateway': 3.0.197(zod@4.6.7)
+      '@ai-sdk/provider': 3.0.16
+      '@ai-sdk/provider-utils': 4.0.52(zod@4.6.7)
+      '@opentelemetry/api': 1.9.1
+      zod: 4.6.7
+
+  ai@7.0.114(zod@4.6.6):
+    dependencies:
+      '@ai-sdk/gateway': 4.0.92(zod@4.6.6)
       '@ai-sdk/provider': 4.0.18
-      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.5)
-      zod: 4.6.5
+      '@ai-sdk/provider-utils': 5.0.47(zod@4.6.6)
+      zod: 4.6.6
 
   ajv-draft-04@1.0.0(ajv@8.20.0):
     optionalDependencies:
@@ -13382,7 +13485,7 @@ snapshots:
 
   babel-plugin-react-compiler@1.0.0:
     dependencies:
-      '@babel/types': 7.29.8
+      '@babel/types': 7.29.11
     optional: true
 
   bail@2.0.2: {}
@@ -13824,7 +13927,7 @@ snapshots:
     dependencies:
       dequal: 2.0.3
 
-  dialog-closedby-polyfill@1.3.0: {}
+  dialog-closedby-polyfill@1.4.0: {}
 
   diff@8.0.4: {}
 
@@ -14246,8 +14349,8 @@ snapshots:
       '@babel/parser': 7.29.9
       eslint: 9.39.5(jiti@2.7.0)
       hermes-parser: 0.25.1
-      zod: 4.6.5
-      zod-validation-error: 4.0.2(zod@4.6.5)
+      zod: 4.6.7
+      zod-validation-error: 4.0.2(zod@4.6.7)
     transitivePeerDependencies:
       - supports-color
 
@@ -14596,7 +14699,7 @@ snapshots:
     dependencies:
       undici: 7.30.2
     optionalDependencies:
-      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      vitest: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@22.20.4)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   get-latest-version@6.0.1:
     dependencies:
@@ -14877,7 +14980,7 @@ snapshots:
 
   inline-style-parser@0.2.7: {}
 
-  interestfor@1.0.8: {}
+  interestfor@1.0.12: {}
 
   internal-slot@1.1.0:
     dependencies:
@@ -17801,7 +17904,6 @@ snapshots:
       jsdom: 29.1.1(@noble/hashes@2.4.0)
     transitivePeerDependencies:
       - msw
-    optional: true
 
   vitest@4.1.11(@opentelemetry/api@1.9.1)(@types/node@26.6.2)(@vitest/coverage-v8@4.1.11)(jsdom@29.1.1(@noble/hashes@2.4.0))(vite@8.3.0(@types/node@26.6.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
@@ -17993,17 +18095,19 @@ snapshots:
 
   yoctocolors@2.2.0: {}
 
-  zod-validation-error@4.0.2(zod@4.6.5):
+  zod-validation-error@4.0.2(zod@4.6.7):
     dependencies:
-      zod: 4.6.5
+      zod: 4.6.7
 
-  zod-validation-error@5.0.0(zod@4.6.5):
+  zod-validation-error@5.0.0(zod@4.6.6):
     dependencies:
-      zod: 4.6.5
+      zod: 4.6.6
 
   zod@3.25.76: {}
 
-  zod@4.6.5: {}
+  zod@4.6.6: {}
+
+  zod@4.6.7: {}
 
   zustand@5.0.15(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0)):
     optionalDependencies:
