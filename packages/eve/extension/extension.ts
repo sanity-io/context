@@ -4,13 +4,13 @@ import {z} from 'zod'
 export default defineExtension({
   config: z.object({
     /** The Context MCP endpoint URL. */
-    url: z.url(),
+    url: z.url({protocol: /^https?$/}),
     /** An organization API token with Context access. */
     token: z.string().min(1),
     /**
-     * Inline the initial context into the instructions and hide the `initial_context` tool. Set to
-     * `false` to keep the tool instead; the agent then loads the initial context itself by calling it.
+     * What the endpoint's content covers, such as "Acme's product catalog and support articles". The
+     * model reads it to decide when to look here.
      */
-    inlineInitialContext: z.boolean().default(true),
+    description: z.string().min(1),
   }),
 })

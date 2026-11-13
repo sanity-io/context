@@ -36,7 +36,6 @@
     "check:types": "tsc --noEmit"
   },
   "dependencies": {
-    "@sanity/context": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -45,7 +44,7 @@
     "typescript": "catalog:"
   },
   "peerDependencies": {
-    "eve": "^1.0.0-rc.13"
+    "eve": "*"
   },
   "eve": {
     "extension": {

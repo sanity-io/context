@@ -26,11 +26,13 @@ export async function fetchInitialContext({
   target.pathname = `${target.pathname.replace(/\/$/, '')}/initial-context`
 
   let response: Response
+  let text: string
   try {
     response = await fetch(target, {
       headers: {Authorization: `Bearer ${token}`},
       signal: AbortSignal.timeout(timeoutMs),
     })
+    text = await response.text()
   } catch (error) {
     console.warn(
       `[sanity-context] Could not fetch the initial context: ${(error as Error).message}`,
@@ -38,13 +40,13 @@ export async function fetchInitialContext({
     return null
   }
   if (response.status === 401 || response.status === 403) {
-    throw new Error(
-      `Sanity Context rejected the token (${response.status}): ${await response.text()}`,
-    )
+    throw new Error(`Sanity Context rejected the token (${response.status}): ${text}`)
   }
-  if (!response.ok) {
-    console.warn(`[sanity-context] Could not fetch the initial context (${response.status})`)
+  if (!response.ok || !text.trim()) {
+    console.warn(
+      `[sanity-context] Could not fetch the initial context (${response.status}${response.ok ? ', empty response' : ''})`,
+    )
     return null
   }
-  return response.text()
+  return text
 }

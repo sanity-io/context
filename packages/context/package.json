@@ -66,7 +66,6 @@
   "devDependencies": {
     "@langchain/core": "^1.4.0",
     "@langchain/mcp-adapters": "^2.0.3",
-    "@mastra/core": "^1.83.0",
     "@mastra/mcp": "^2.9.0",
     "@repo/eslint-config": "workspace:*",
     "@sanity/client": "catalog:",
@@ -81,9 +80,8 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
-    "@langchain/core": "^1",
+    "@langchain/core": "^1.4.0",
     "@langchain/mcp-adapters": "^2",
-    "@mastra/core": "^1",
     "@mastra/mcp": "^2",
     "@sanity/client": "^8.15.0",
     "ai": "^6.0.175 || ^7",
@@ -95,9 +93,6 @@
       "optional": true
     },
     "@langchain/mcp-adapters": {
-      "optional": true
-    },
-    "@mastra/core": {
       "optional": true
     },
     "@mastra/mcp": {

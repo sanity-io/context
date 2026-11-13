@@ -46,4 +46,24 @@ describe('fetchInitialContext', () => {
     await expect(fetchInitialContext({url, token: 't'})).resolves.toBeNull()
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('fetch failed'))
   })
+
+  it('returns null and warns when reading the body fails', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockFetch(async () => {
+      const response = new Response('# Outline')
+      vi.spyOn(response, 'text').mockRejectedValue(
+        new Error('The operation was aborted due to timeout'),
+      )
+      return response
+    })
+    await expect(fetchInitialContext({url, token: 't'})).resolves.toBeNull()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('aborted due to timeout'))
+  })
+
+  it('returns null and warns on an empty response', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    mockFetch(async () => new Response('  '))
+    await expect(fetchInitialContext({url, token: 't'})).resolves.toBeNull()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('empty response'))
+  })
 })

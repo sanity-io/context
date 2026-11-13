@@ -1,4 +1,3 @@
-import {SystemMessage} from '@langchain/core/messages'
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 const listTools = vi.fn()
@@ -17,76 +16,65 @@ const options = {
   token: 't',
 }
 
-type Request = {tools: {name: string}[]; systemMessage: SystemMessage}
+type Hook = (request: unknown, handler: (request: unknown) => Promise<unknown>) => Promise<unknown>
 
-async function runModelCall(sanity: ReturnType<typeof createSanityContext>) {
-  const handler = vi.fn(async (request: Request) => request)
-  const wrap = sanity.middleware.wrapModelCall as unknown as (
-    request: Request,
-    handler: (request: Request) => Promise<Request>,
-  ) => Promise<Request>
-  await wrap({tools: [], systemMessage: new SystemMessage('Base.')}, handler)
-  const sent = handler.mock.calls[0]![0]
-  return {tools: sent.tools.map((t) => t.name), prompt: sent.systemMessage.content}
+function hooks(sanity: ReturnType<typeof createSanityContext>) {
+  return {
+    wrapModelCall: sanity.middleware.wrapModelCall as unknown as Hook,
+    wrapToolCall: sanity.middleware.wrapToolCall as unknown as Hook,
+  }
 }
 
 beforeEach(() => {
+  listTools.mockReset()
   listTools.mockResolvedValue([{name: 'groq_query'}, {name: 'initial_context'}])
-  vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
 
-afterEach(() => {
-  vi.unstubAllGlobals()
-  vi.restoreAllMocks()
-})
+afterEach(() => vi.restoreAllMocks())
 
 describe('createSanityContext (LangChain)', () => {
-  it('fetches nothing until the agent runs', () => {
-    const fetch = vi.fn()
-    vi.stubGlobal('fetch', fetch)
+  it('connects only when the agent runs', () => {
     createSanityContext(options)
-    expect(fetch).not.toHaveBeenCalled()
     expect(listTools).not.toHaveBeenCalled()
   })
 
-  it('inlines the initial context and hides the tool', async () => {
-    vi.stubGlobal('fetch', async () => new Response('# Schema'))
-    expect(await runModelCall(createSanityContext(options))).toEqual({
-      tools: ['groq_query'],
-      prompt: 'Base.\n\n# Schema',
-    })
+  it("adds the endpoint's current tools to every model call", async () => {
+    const {wrapModelCall} = hooks(createSanityContext(options))
+    const run = () =>
+      wrapModelCall({tools: [{name: 'own'}]}, async (request) => request) as Promise<{
+        tools: {name: string}[]
+      }>
+    expect((await run()).tools.map((t) => t.name)).toEqual(['own', 'groq_query', 'initial_context'])
+    listTools.mockResolvedValue([{name: 'knowledge_base_search'}, {name: 'initial_context'}])
+    expect((await run()).tools.map((t) => t.name)).toEqual([
+      'own',
+      'knowledge_base_search',
+      'initial_context',
+    ])
   })
 
-  it('keeps the tool and leaves the prompt alone when the fetch fails', async () => {
-    vi.stubGlobal('fetch', async () => new Response('', {status: 502}))
-    expect(await runModelCall(createSanityContext(options))).toEqual({
-      tools: ['groq_query', 'initial_context'],
-      prompt: 'Base.',
-    })
-  })
-
-  it('skips the fetch and keeps the tool when inlining is off', async () => {
-    const fetch = vi.fn()
-    vi.stubGlobal('fetch', fetch)
-    expect(
-      await runModelCall(createSanityContext({...options, inlineInitialContext: false})),
-    ).toEqual({
-      tools: ['groq_query', 'initial_context'],
-      prompt: 'Base.',
-    })
-    expect(fetch).not.toHaveBeenCalled()
-  })
-
-  it('provides the implementation for a Sanity tool call', async () => {
-    vi.stubGlobal('fetch', async () => new Response('# Schema'))
-    const sanity = createSanityContext(options)
-    await runModelCall(sanity)
-    const handler = vi.fn(async (request: unknown) => request)
-    const wrap = sanity.middleware.wrapToolCall as unknown as (
-      request: unknown,
-      handler: (request: unknown) => Promise<unknown>,
-    ) => Promise<{tool: {name: string}}>
-    const sent = await wrap({toolCall: {name: 'groq_query'}, tool: undefined}, handler)
+  it('provides the implementation for a Sanity tool call in a fresh process', async () => {
+    const {wrapToolCall} = hooks(createSanityContext(options))
+    const sent = (await wrapToolCall(
+      {toolCall: {name: 'groq_query'}, tool: undefined},
+      async (request) => request,
+    )) as {tool: {name: string}}
     expect(sent.tool.name).toBe('groq_query')
+  })
+
+  it('hands tool errors to the model and lets interrupts through', async () => {
+    const {wrapToolCall} = hooks(createSanityContext(options))
+    const request = {toolCall: {name: 'own', id: 'call_1'}, tool: {name: 'own'}}
+    const result = (await wrapToolCall(request, async () => {
+      throw new Error('own tool failed')
+    })) as {content: string; status: string}
+    expect(result.status).toBe('error')
+    expect(result.content).toContain('own tool failed')
+    const interrupt = Object.assign(new Error('interrupt'), {is_bubble_up: true})
+    await expect(
+      wrapToolCall(request, async () => {
+        throw interrupt
+      }),
+    ).rejects.toBe(interrupt)
   })
 })
