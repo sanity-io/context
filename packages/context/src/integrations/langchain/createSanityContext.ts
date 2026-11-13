@@ -6,13 +6,15 @@ import type {SanityContextOptions} from '../options'
 /** @public */
 export interface SanityContextLangChain {
   /**
-   * Pass to `createAgent({middleware: [...]})` as the first entry: other middleware then sees the
-   * Sanity tools, and a tool filter running before it could make LangChain reject them. Gives every
-   * model call the endpoint's current tools.
-   * Like any middleware that wraps tool calls, it makes LangChain rethrow tool errors; add LangChain's
-   * `toolErrorMiddleware` to send them to the model instead.
+   * Pass to `createAgent({middleware: [...]})` as the first entry, so other middleware sees the
+   * Sanity tools. Every model call gets the endpoint's current tools, and fails if they can't be
+   * listed.
+   *
+   * Like any middleware that wraps tool calls, it makes LangChain rethrow tool errors. Add
+   * LangChain's `toolErrorMiddleware` to send them to the model instead.
    */
   middleware: AgentMiddleware
+  /** Closes the connection, for example when the server shuts down. */
   close: () => Promise<void>
 }
 
@@ -32,13 +34,13 @@ export function createSanityContext({url, token}: SanityContextOptions): SanityC
       return await Promise.race([
         client.listTools(),
         new Promise<never>((_, reject) => {
-          timer = setTimeout(() => {
-            // Later runs would otherwise wait on the same stuck connection attempt.
-            void client.close()
-            reject(new Error('Sanity Context did not list its tools within 10 seconds'))
-          }, 10_000)
+          timer = setTimeout(() => reject(new Error('Timed out after 10 seconds')), 10_000)
         }),
       ])
+    } catch (error) {
+      // The first line is the message; the rest can be a stack trace with node_modules paths.
+      const message = String((error as Error).message ?? error).split('\n')[0]
+      throw new Error(`Could not connect to Sanity Context: ${message}`, {cause: error})
     } finally {
       clearTimeout(timer)
     }

@@ -60,6 +60,7 @@ describe('createSanityContext (LangChain)', () => {
       async (request) => request,
     )) as {tool: {name: string}}
     expect(sent.tool.name).toBe('groq_query')
+    expect(listTools).toHaveBeenCalledTimes(1)
   })
 
   it('skips Sanity tools whose name the agent already uses', async () => {
@@ -90,5 +91,27 @@ describe('createSanityContext (LangChain)', () => {
     const {wrapToolCall} = hooks(createSanityContext(options))
     const request = {toolCall: {name: 'made_up'}, tool: undefined}
     expect(await wrapToolCall(request, async (r) => r)).toBe(request)
+  })
+
+  it('fails the model call with a one-line message when listing fails', async () => {
+    listTools.mockRejectedValue(
+      new Error('Unauthorized (HTTP 401)\n    at classifyHttpError (x.js)'),
+    )
+    const {wrapModelCall} = hooks(createSanityContext(options))
+    await expect(wrapModelCall({tools: []}, async (r) => r)).rejects.toThrow(
+      /^Could not connect to Sanity Context: Unauthorized \(HTTP 401\)$/,
+    )
+  })
+
+  it('fails the model call when listing hangs for 10 seconds', async () => {
+    vi.useFakeTimers()
+    listTools.mockReturnValue(new Promise(() => {}))
+    const {wrapModelCall} = hooks(createSanityContext(options))
+    const call = wrapModelCall({tools: []}, async (r) => r)
+    vi.advanceTimersByTime(10_000)
+    await expect(call).rejects.toThrow(
+      'Could not connect to Sanity Context: Timed out after 10 seconds',
+    )
+    vi.useRealTimers()
   })
 })
