@@ -34,7 +34,7 @@ describe('createSanityContext (Mastra)', () => {
     expect(Object.keys(await sanity.tools())).toEqual(['sanity_knowledge_base_search'])
   })
 
-  it('throws when the connection fails and there is no previous tool list', async () => {
+  it('throws when the connection fails', async () => {
     listToolsWithErrors.mockResolvedValue({tools: {}, errors: {sanity: 'HTTP 401'}})
     await expect(createSanityContext(options).tools()).rejects.toThrow('HTTP 401')
   })

@@ -2,11 +2,10 @@ import {createHash} from 'node:crypto'
 
 import {MCPClient} from '@mastra/mcp'
 
-import type {InitialContextOptions} from '../../initialContext'
-import {keepLastGood} from '../keepLastGood'
+import type {SanityContextOptions} from '../options'
 
 /** @public */
-export type SanityContextMastraOptions = Pick<InitialContextOptions, 'url' | 'token'>
+export type SanityContextMastraOptions = SanityContextOptions
 
 /** @public */
 export interface SanityContextMastra {
@@ -28,12 +27,16 @@ export function createSanityContext({url, token}: SanityContextMastraOptions): S
     servers: {
       sanity: {url: new URL(url), requestInit: {headers: {Authorization: `Bearer ${token}`}}},
     },
+    // The hooks exit the process on SIGTERM, cutting short the host app's own shutdown.
+    registerProcessHooks: false,
   })
-  const tools = keepLastGood('the Sanity Context tools', async () => {
-    const {tools, errors} = await client.listToolsWithErrors()
-    if (errors['sanity'])
-      throw new Error(`Could not connect to Sanity Context: ${errors['sanity']}`)
-    return tools
-  })
-  return {tools, close: () => client.disconnect()}
+  return {
+    tools: async () => {
+      const {tools, errors} = await client.listToolsWithErrors({perServerTimeoutMs: 10_000})
+      if (errors['sanity'])
+        throw new Error(`Could not connect to Sanity Context: ${errors['sanity']}`)
+      return tools
+    },
+    close: () => client.disconnect(),
+  }
 }
