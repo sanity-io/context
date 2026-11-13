@@ -38,6 +38,11 @@
       "import": "./dist/langchain.js",
       "default": "./dist/langchain.js"
     },
+    "./mastra": {
+      "source": "./src/integrations/mastra/index.ts",
+      "import": "./dist/mastra.js",
+      "default": "./dist/mastra.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.js",
@@ -61,6 +66,8 @@
   "devDependencies": {
     "@langchain/core": "^1.4.0",
     "@langchain/mcp-adapters": "^2.0.3",
+    "@mastra/core": "^1.83.0",
+    "@mastra/mcp": "^2.9.0",
     "@repo/eslint-config": "workspace:*",
     "@sanity/client": "catalog:",
     "@sanity/pkg-utils": "^10.4.13",
@@ -75,6 +82,8 @@
   "peerDependencies": {
     "@langchain/core": "^1",
     "@langchain/mcp-adapters": "^2",
+    "@mastra/core": "^1",
+    "@mastra/mcp": "^2",
     "@sanity/client": "^8.15.0",
     "ai": "^6.0.175 || ^7",
     "zod": "^3.20 || ^4"
@@ -84,6 +93,12 @@
       "optional": true
     },
     "@langchain/mcp-adapters": {
+      "optional": true
+    },
+    "@mastra/core": {
+      "optional": true
+    },
+    "@mastra/mcp": {
       "optional": true
     },
     "ai": {
