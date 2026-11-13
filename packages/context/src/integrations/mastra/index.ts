@@ -1,2 +1,2 @@
-export type {SanityContextMastra, SanityContextMastraOptions} from './loadSanityContext'
-export {loadSanityContext} from './loadSanityContext'
+export type {SanityContextMastra, SanityContextMastraOptions} from './createSanityContext'
+export {createSanityContext} from './createSanityContext'
