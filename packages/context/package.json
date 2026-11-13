@@ -33,6 +33,16 @@
       "import": "./dist/ai-sdk.js",
       "default": "./dist/ai-sdk.js"
     },
+    "./langchain": {
+      "source": "./src/integrations/langchain/index.ts",
+      "import": "./dist/langchain.js",
+      "default": "./dist/langchain.js"
+    },
+    "./mastra": {
+      "source": "./src/integrations/mastra/index.ts",
+      "import": "./dist/mastra.js",
+      "default": "./dist/mastra.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.js",
@@ -54,6 +64,9 @@
   },
   "browserslist": "extends @sanity/browserslist-config",
   "devDependencies": {
+    "@langchain/core": "^1.4.0",
+    "@langchain/mcp-adapters": "^2.0.3",
+    "@mastra/mcp": "^2.9.0",
     "@repo/eslint-config": "workspace:*",
     "@sanity/client": "catalog:",
     "@sanity/pkg-utils": "^10.4.13",
@@ -61,17 +74,30 @@
     "@vitest/coverage-v8": "^4.1.11",
     "ai": "catalog:",
     "ai-v7": "npm:ai@^7",
+    "langchain": "^1.6.5",
     "typescript": "catalog:",
     "vitest": "^4.1.11",
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@langchain/mcp-adapters": "^2.0.3",
+    "@mastra/mcp": "^2.6.0",
     "@sanity/client": "^8.15.0",
     "ai": "^6.0.175 || ^7",
+    "langchain": "^1.6.0",
     "zod": "^3.20 || ^4"
   },
   "peerDependenciesMeta": {
+    "@langchain/mcp-adapters": {
+      "optional": true
+    },
+    "@mastra/mcp": {
+      "optional": true
+    },
     "ai": {
+      "optional": true
+    },
+    "langchain": {
       "optional": true
     },
     "zod": {
