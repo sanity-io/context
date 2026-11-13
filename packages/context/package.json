@@ -33,6 +33,11 @@
       "import": "./dist/ai-sdk.js",
       "default": "./dist/ai-sdk.js"
     },
+    "./langchain": {
+      "source": "./src/integrations/langchain/index.ts",
+      "import": "./dist/langchain.js",
+      "default": "./dist/langchain.js"
+    },
     "./package.json": "./package.json"
   },
   "main": "./dist/index.js",
@@ -54,6 +59,8 @@
   },
   "browserslist": "extends @sanity/browserslist-config",
   "devDependencies": {
+    "@langchain/core": "^1.4.0",
+    "@langchain/mcp-adapters": "^2.0.3",
     "@repo/eslint-config": "workspace:*",
     "@sanity/client": "catalog:",
     "@sanity/pkg-utils": "^10.4.13",
@@ -66,11 +73,19 @@
     "zod": "catalog:"
   },
   "peerDependencies": {
+    "@langchain/core": "^1",
+    "@langchain/mcp-adapters": "^2",
     "@sanity/client": "^8.15.0",
     "ai": "^6.0.175 || ^7",
     "zod": "^3.20 || ^4"
   },
   "peerDependenciesMeta": {
+    "@langchain/core": {
+      "optional": true
+    },
+    "@langchain/mcp-adapters": {
+      "optional": true
+    },
     "ai": {
       "optional": true
     },
