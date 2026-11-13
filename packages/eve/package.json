@@ -39,7 +39,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@types/node": "^22.20.4",
+    "@types/node": "^24",
     "eve": "1.0.0-rc.13",
     "typescript": "catalog:"
   },
