@@ -1,0 +1,42 @@
+import {afterEach, describe, expect, it, vi} from 'vitest'
+
+import {fetchInitialContext} from './initialContext'
+
+const url = 'https://api.sanity.io/v2026-11-03/context/organizations/o1/mcp/support/?x=1'
+
+function mockFetch(impl: () => Promise<Response>) {
+  const spy = vi.fn(impl)
+  vi.stubGlobal('fetch', spy)
+  return spy
+}
+
+afterEach(() => vi.unstubAllGlobals())
+
+describe('fetchInitialContext', () => {
+  it('appends /initial-context to the path, keeps the query and sends the token', async () => {
+    const spy = mockFetch(async () => new Response('# Outline'))
+    await expect(fetchInitialContext({url, token: 't'})).resolves.toBe('# Outline')
+    const [target, init] = spy.mock.calls[0] as unknown as [URL, RequestInit]
+    expect(target.href).toBe(
+      'https://api.sanity.io/v2026-11-03/context/organizations/o1/mcp/support/initial-context?x=1',
+    )
+    expect(init.headers).toEqual({Authorization: 'Bearer t'})
+  })
+
+  it.each([401, 403])('throws on %i', async (status) => {
+    mockFetch(async () => new Response('nope', {status}))
+    await expect(fetchInitialContext({url, token: 't'})).rejects.toThrow(`(${status}): nope`)
+  })
+
+  it('returns null on a server error', async () => {
+    mockFetch(async () => new Response('', {status: 500}))
+    await expect(fetchInitialContext({url, token: 't'})).resolves.toBeNull()
+  })
+
+  it('returns null when the request fails', async () => {
+    mockFetch(async () => {
+      throw new TypeError('fetch failed')
+    })
+    await expect(fetchInitialContext({url, token: 't'})).resolves.toBeNull()
+  })
+})

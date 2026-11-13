@@ -1,2 +1,2 @@
-// No root exports yet
-export {}
+export type {InitialContextOptions} from './initialContext'
+export {fetchInitialContext} from './initialContext'
