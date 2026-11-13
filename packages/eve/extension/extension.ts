@@ -4,7 +4,7 @@ import {z} from 'zod'
 export default defineExtension({
   config: z.object({
     /** The Context MCP endpoint URL. */
-    url: z.url({protocol: /^https$/}),
+    url: z.url({protocol: /^https$/, error: 'Must be an https URL'}),
     /** An organization API token with Context access. */
     token: z.string().min(1),
     /**
