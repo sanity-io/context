@@ -32,9 +32,12 @@ export function createSanityContext({url, token}: SanityContextMastraOptions): S
   })
   return {
     tools: async () => {
-      const {tools, errors} = await client.listToolsWithErrors({perServerTimeoutMs: 10_000})
-      if (errors['sanity'])
-        throw new Error(`Could not connect to Sanity Context: ${errors['sanity']}`)
+      const {tools, errors, errorDetails} = await client.listToolsWithErrors({
+        perServerTimeoutMs: 10_000,
+      })
+      // errors[] can include a stack trace; errorDetails[] is just the message.
+      const error = errorDetails?.['sanity']?.message ?? errors['sanity']
+      if (error) throw new Error(`Could not connect to Sanity Context: ${error.split('\n')[0]}`)
       return tools
     },
     close: () => client.disconnect(),
