@@ -7,12 +7,14 @@ import type {SanityContextOptions} from '../options'
 /** @public */
 export interface SanityContextMastra {
   /**
-   * Pass as the agent's `tools`. Lists the endpoint's current tools on every run.
+   * Pass as the agent's `tools`. Lists the endpoint's current tools on every run, prefixed with
+   * `sanity_` (such as `sanity_initial_context`), and fails the run if they can't be listed.
    *
    * Durable agents catch errors from `tools` and run with no tools, so a failure to reach Sanity
    * Context there doesn't fail the run.
    */
   tools: () => Promise<Awaited<ReturnType<MCPClient['listToolsWithErrors']>>['tools']>
+  /** Closes the connection, for example when the server shuts down. */
   close: () => Promise<void>
 }
 

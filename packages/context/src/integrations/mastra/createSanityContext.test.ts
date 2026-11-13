@@ -5,7 +5,6 @@ const listToolsWithErrors = vi.fn()
 vi.mock('@mastra/mcp', () => ({
   MCPClient: class {
     listToolsWithErrors = listToolsWithErrors
-    disconnect = async () => {}
   },
 }))
 
