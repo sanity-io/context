@@ -4,9 +4,6 @@ import {type AgentMiddleware, createMiddleware} from 'langchain'
 import type {SanityContextOptions} from '../options'
 
 /** @public */
-export type SanityContextLangChainOptions = SanityContextOptions
-
-/** @public */
 export interface SanityContextLangChain {
   /**
    * Pass to `createAgent({middleware: [...]})` as the first entry: other middleware then sees the
@@ -24,10 +21,7 @@ export interface SanityContextLangChain {
  *
  * @public
  */
-export function createSanityContext({
-  url,
-  token,
-}: SanityContextLangChainOptions): SanityContextLangChain {
+export function createSanityContext({url, token}: SanityContextOptions): SanityContextLangChain {
   const client = new MCPAdapter({
     prefixToolNameWithServerName: false,
     servers: {sanity: {transport: 'http', url, headers: {Authorization: `Bearer ${token}`}}},

@@ -21,7 +21,6 @@ beforeEach(() => {
   listToolsWithErrors.mockResolvedValue({
     tools: {sanity_groq_query: {}},
     errors: {},
-    errorDetails: {},
   })
 })
 
@@ -37,7 +36,6 @@ describe('createSanityContext (Mastra)', () => {
     listToolsWithErrors.mockResolvedValue({
       tools: {sanity_knowledge_base_search: {}},
       errors: {},
-      errorDetails: {},
     })
     expect(Object.keys(await sanity.tools())).toEqual(['sanity_knowledge_base_search'])
   })
@@ -46,7 +44,6 @@ describe('createSanityContext (Mastra)', () => {
     listToolsWithErrors.mockResolvedValue({
       tools: {},
       errors: {sanity: 'Unauthorized (HTTP 401)\n    at classifyHttpError (file:///x.js)'},
-      errorDetails: {sanity: {message: 'Unauthorized (HTTP 401)', httpStatus: 401}},
     })
     await expect(createSanityContext(options).tools()).rejects.toThrow(
       /^Could not connect to Sanity Context: Unauthorized \(HTTP 401\)$/,
