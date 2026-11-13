@@ -1,4 +1,3 @@
-import {ToolMessage} from '@langchain/core/messages'
 import {MCPAdapter} from '@langchain/mcp-adapters'
 import {type AgentMiddleware, createMiddleware} from 'langchain'
 
@@ -12,6 +11,8 @@ export interface SanityContextLangChain {
   /**
    * Pass to `createAgent({middleware: [...]})`, first in the list so other middleware sees the Sanity
    * tools. Gives every model call the endpoint's current tools.
+   * Like any middleware that wraps tool calls, it makes LangChain rethrow tool errors; add LangChain's
+   * `toolErrorMiddleware` to send them to the model instead.
    */
   middleware: AgentMiddleware
   close: () => Promise<void>
@@ -68,19 +69,7 @@ export function createSanityContext({
     wrapToolCall: async (request, handler) => {
       // Tools are added per model call, so a run resumed in a new process looks them up here.
       const tool = request.tool ?? (await listTools()).find((t) => t.name === request.toolCall.name)
-      try {
-        return await handler(tool ? {...request, tool} : request)
-      } catch (error) {
-        // Middleware that wraps tool calls makes LangChain rethrow tool errors. Hand them to the
-        // model instead, as LangChain does without middleware, but let interrupts through.
-        if ((error as {is_bubble_up?: boolean}).is_bubble_up) throw error
-        return new ToolMessage({
-          name: request.toolCall.name,
-          content: `${error}\n Please fix your mistakes.`,
-          tool_call_id: request.toolCall.id ?? '',
-          status: 'error',
-        })
-      }
+      return handler(tool ? {...request, tool} : request)
     },
   })
 

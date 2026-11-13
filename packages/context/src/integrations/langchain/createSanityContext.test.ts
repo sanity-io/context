@@ -62,22 +62,6 @@ describe('createSanityContext (LangChain)', () => {
     expect(sent.tool.name).toBe('groq_query')
   })
 
-  it('hands tool errors to the model and lets interrupts through', async () => {
-    const {wrapToolCall} = hooks(createSanityContext(options))
-    const request = {toolCall: {name: 'own', id: 'call_1'}, tool: {name: 'own'}}
-    const result = (await wrapToolCall(request, async () => {
-      throw new Error('own tool failed')
-    })) as {content: string; status: string}
-    expect(result.status).toBe('error')
-    expect(result.content).toContain('own tool failed')
-    const interrupt = Object.assign(new Error('interrupt'), {is_bubble_up: true})
-    await expect(
-      wrapToolCall(request, async () => {
-        throw interrupt
-      }),
-    ).rejects.toBe(interrupt)
-  })
-
   it('skips Sanity tools whose name the agent already uses', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const {wrapModelCall} = hooks(createSanityContext(options))
