@@ -46,6 +46,9 @@
   "peerDependencies": {
     "eve": "*"
   },
+  "engines": {
+    "node": ">=24"
+  },
   "eve": {
     "extension": {
       "source": "./extension",
