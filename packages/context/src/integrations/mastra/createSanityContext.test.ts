@@ -29,8 +29,8 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('createSanityContext', () => {
-  it('fetches nothing until used', () => {
+describe('createSanityContext (Mastra)', () => {
+  it('fetches nothing until the agent runs', () => {
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)
     createSanityContext(options)
@@ -38,15 +38,25 @@ describe('createSanityContext', () => {
     expect(listToolsWithErrors).not.toHaveBeenCalled()
   })
 
-  it('drops sanity_initial_context when the initial context is inlined', async () => {
+  it('inlines the initial context and hides the tool', async () => {
     vi.stubGlobal('fetch', async () => new Response('# Schema'))
     const sanity = createSanityContext(options)
+    expect(await sanity.instructions('Base.')()).toBe('Base.\n\n# Schema')
     expect(Object.keys(await sanity.tools())).toEqual(['sanity_groq_query'])
-    expect(await sanity.initialContext()).toBe('# Schema')
   })
 
-  it('keeps sanity_initial_context when the fetch fails', async () => {
+  it('keeps the tool when the fetch fails', async () => {
     vi.stubGlobal('fetch', async () => new Response('', {status: 502}))
+    const sanity = createSanityContext(options)
+    expect(await sanity.instructions('Base.')()).toBe('Base.')
+    expect(Object.keys(await sanity.tools())).toEqual([
+      'sanity_groq_query',
+      'sanity_initial_context',
+    ])
+  })
+
+  it('keeps the tool when our instructions are not used', async () => {
+    vi.stubGlobal('fetch', async () => new Response('# Schema'))
     const sanity = createSanityContext(options)
     expect(Object.keys(await sanity.tools())).toEqual([
       'sanity_groq_query',
@@ -54,22 +64,20 @@ describe('createSanityContext', () => {
     ])
   })
 
-  it('caches a successful fetch and retries a failed one', async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce(new Response('', {status: 502}))
-      .mockResolvedValue(new Response('# Schema'))
+  it('skips the fetch and keeps the tool when inlining is off', async () => {
+    const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)
-    const sanity = createSanityContext(options)
-    expect(await sanity.initialContext()).toBeNull()
-    expect(await sanity.initialContext()).toBe('# Schema')
-    expect(await sanity.initialContext()).toBe('# Schema')
-    expect(fetch).toHaveBeenCalledTimes(2)
+    const sanity = createSanityContext({...options, inlineInitialContext: false})
+    expect(await sanity.instructions('Base.')()).toBe('Base.')
+    expect(Object.keys(await sanity.tools())).toEqual([
+      'sanity_groq_query',
+      'sanity_initial_context',
+    ])
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('throws when the connection fails', async () => {
     listToolsWithErrors.mockResolvedValue({tools: {}, errors: {sanity: 'HTTP 401'}})
-    vi.stubGlobal('fetch', async () => new Response('# Schema'))
     await expect(createSanityContext(options).tools()).rejects.toThrow('HTTP 401')
   })
 })

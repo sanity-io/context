@@ -1,16 +1,20 @@
 import {MCPClient} from '@mastra/mcp'
 
-import {fetchInitialContext, type InitialContextOptions} from '../../initialContext'
+import {createInitialContextCache, type SanityContextOptions} from '../../sanityContextOptions'
 
 /** @public */
-export type SanityContextMastraOptions = InitialContextOptions
+export type SanityContextMastraOptions = SanityContextOptions
 
 /** @public */
 export interface SanityContextMastra {
+  /**
+   * Pass as the agent's `instructions`, with your own instructions as the argument. Adds the initial
+   * context unless `inlineInitialContext` is `false`. If you don't use it, the agent keeps the
+   * `initial_context` tool instead.
+   */
+  instructions: (own: string) => () => Promise<string>
   /** Pass as the agent's `tools`. Lists the endpoint's tools on every call. */
   tools: () => Promise<Awaited<ReturnType<MCPClient['listToolsWithErrors']>>['tools']>
-  /** Use in the agent's `instructions`. Cached after the first successful fetch; `null` if it couldn't be fetched. */
-  initialContext: () => Promise<string | null>
   close: () => Promise<void>
 }
 
@@ -29,32 +33,27 @@ export function createSanityContext(options: SanityContextMastraOptions): Sanity
       },
     },
   })
+  const getInitialContext =
+    options.inlineInitialContext === false ? async () => null : createInitialContextCache(options)
+  // Only hide the tool once our instructions are in use, so the agent never ends up with neither.
+  let instructionsInUse = false
 
-  let cached: Promise<string | null> | undefined
-  const initialContext = () => {
-    cached ??= fetchInitialContext(options).then(
-      (text) => {
-        if (text === null) cached = undefined
-        return text
-      },
-      (error: unknown) => {
-        cached = undefined
-        throw error
-      },
-    )
-    return cached
+  const instructions = (own: string) => async () => {
+    instructionsInUse = true
+    const initialContext = await getInitialContext()
+    return initialContext ? `${own}\n\n${initialContext}` : own
   }
 
   const tools = async () => {
-    const [{tools: listed, errors}, inlined] = await Promise.all([
+    const [{tools: listed, errors}, initialContext] = await Promise.all([
       client.listToolsWithErrors(),
-      initialContext(),
+      instructionsInUse ? getInitialContext() : null,
     ])
     if (errors['sanity'])
       throw new Error(`Could not connect to Sanity Context: ${errors['sanity']}`)
-    if (inlined) delete listed['sanity_initial_context']
+    if (initialContext) delete listed['sanity_initial_context']
     return listed
   }
 
-  return {tools, initialContext, close: () => client.disconnect()}
+  return {instructions, tools, close: () => client.disconnect()}
 }
