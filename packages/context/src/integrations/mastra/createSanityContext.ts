@@ -9,7 +9,12 @@ export type SanityContextMastraOptions = SanityContextOptions
 
 /** @public */
 export interface SanityContextMastra {
-  /** Pass as the agent's `tools`. Lists the endpoint's current tools on every run. */
+  /**
+   * Pass as the agent's `tools`. Lists the endpoint's current tools on every run.
+   *
+   * Durable agents catch errors from `tools` and run with no tools, so a failure to reach Sanity
+   * Context there doesn't fail the run.
+   */
   tools: () => Promise<Awaited<ReturnType<MCPClient['listToolsWithErrors']>>['tools']>
   close: () => Promise<void>
 }
@@ -25,7 +30,12 @@ export function createSanityContext({url, token}: SanityContextMastraOptions): S
     // Mastra replaces any client with the same id but a different config, so include the token.
     id: `sanity-context:${url}:${tokenHash}`,
     servers: {
-      sanity: {url: new URL(url), requestInit: {headers: {Authorization: `Bearer ${token}`}}},
+      sanity: {
+        url: new URL(url),
+        requestInit: {headers: {Authorization: `Bearer ${token}`}},
+        // A cold endpoint can take a few seconds on its first request; Mastra's default is 3.
+        connectTimeout: 10_000,
+      },
     },
     // The hooks exit the process on SIGTERM, cutting short the host app's own shutdown.
     registerProcessHooks: false,
