@@ -10,7 +10,10 @@ function mockFetch(impl: () => Promise<Response>) {
   return spy
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+})
 
 describe('fetchInitialContext', () => {
   it('appends /initial-context to the path, keeps the query and sends the token', async () => {
@@ -28,15 +31,19 @@ describe('fetchInitialContext', () => {
     await expect(fetchInitialContext({url, token: 't'})).rejects.toThrow(`(${status}): nope`)
   })
 
-  it('returns null on a server error', async () => {
+  it('returns null and warns on a server error', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockFetch(async () => new Response('', {status: 500}))
     await expect(fetchInitialContext({url, token: 't'})).resolves.toBeNull()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('(500)'))
   })
 
-  it('returns null when the request fails', async () => {
+  it('returns null and warns when the request fails', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     mockFetch(async () => {
       throw new TypeError('fetch failed')
     })
     await expect(fetchInitialContext({url, token: 't'})).resolves.toBeNull()
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('fetch failed'))
   })
 })

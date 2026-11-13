@@ -31,7 +31,10 @@ export async function fetchInitialContext({
       headers: {Authorization: `Bearer ${token}`},
       signal: AbortSignal.timeout(timeoutMs),
     })
-  } catch {
+  } catch (error) {
+    console.warn(
+      `[sanity-context] Could not fetch the initial context: ${(error as Error).message}`,
+    )
     return null
   }
   if (response.status === 401 || response.status === 403) {
@@ -39,5 +42,9 @@ export async function fetchInitialContext({
       `Sanity Context rejected the token (${response.status}): ${await response.text()}`,
     )
   }
-  return response.ok ? response.text() : null
+  if (!response.ok) {
+    console.warn(`[sanity-context] Could not fetch the initial context (${response.status})`)
+    return null
+  }
+  return response.text()
 }
