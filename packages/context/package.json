@@ -75,6 +75,7 @@
     "@vitest/coverage-v8": "^4.1.11",
     "ai": "catalog:",
     "ai-v7": "npm:ai@^7",
+    "langchain": "^1.6.5",
     "typescript": "catalog:",
     "vitest": "^4.1.11",
     "zod": "catalog:"
@@ -86,6 +87,7 @@
     "@mastra/mcp": "^2",
     "@sanity/client": "^8.15.0",
     "ai": "^6.0.175 || ^7",
+    "langchain": "^1.6.0",
     "zod": "^3.20 || ^4"
   },
   "peerDependenciesMeta": {
@@ -102,6 +104,9 @@
       "optional": true
     },
     "ai": {
+      "optional": true
+    },
+    "langchain": {
       "optional": true
     },
     "zod": {

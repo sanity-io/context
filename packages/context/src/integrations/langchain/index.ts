@@ -1,2 +1,2 @@
-export type {SanityContextLangChain, SanityContextLangChainOptions} from './loadSanityContext'
-export {loadSanityContext} from './loadSanityContext'
+export type {SanityContextLangChain, SanityContextLangChainOptions} from './createSanityContext'
+export {createSanityContext} from './createSanityContext'

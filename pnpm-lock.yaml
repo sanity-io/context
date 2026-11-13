@@ -333,6 +333,9 @@ importers:
       ai-v7:
         specifier: npm:ai@^7
         version: ai@7.0.114(zod@4.6.5)
+      langchain:
+        specifier: ^1.6.5
+        version: 1.6.5(@langchain/core@1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0))(@opentelemetry/api@1.9.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(ws@8.23.0)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -5696,10 +5699,6 @@ packages:
     resolution: {integrity: sha512-EKN1vKAMcZ8MlYMpaNuxN6R9yakzH6uajHcHVTqWJzvu5pWw9DyhbP35HH8MVBQ+dZjAfDxk+A8NiR9KWaXiyQ==}
     engines: {node: '>=18.0.0'}
 
-  eventsource-parser@4.1.1:
-    resolution: {integrity: sha512-zaWNqeSLeyzEAAt2Q6aDBRDRk/VnPmsKqvToyGvv6aahvLv71A4Jw7jG93Hckf11zXurbqgsffvpSgKPoeU1Qw==}
-    engines: {node: '>=22.12'}
-
   eventsource-parser@4.1.3:
     resolution: {integrity: sha512-jZVIVilXZfAx6H20ZKKEj5dabbpD9ETmMj3uHsjMmgBzBHB6tsHrmdWB4mAiy3amtN6MOoVkfXRQu4wf1n88Rw==}
     engines: {node: '>=22.12'}
@@ -6625,6 +6624,12 @@ packages:
   lambda-runtimes@3.0.0:
     resolution: {integrity: sha512-fre88KwPAjsDq8jeenv8GlgkdqbKf4wPGTlnKMXEDA5K12A3IptirNFv1koG47IBcgSykCbWYF9T3wmmKJFJtQ==}
     engines: {node: '>=22'}
+
+  langchain@1.6.5:
+    resolution: {integrity: sha512-UQ0wVYI3mfEEzWK1ZMlnLXRkB6FlEv4uxGz2YufDkbxAJ51fsPb6y1lLB49C+NZfy24atcmhMmCU/KoCJz2riQ==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      '@langchain/core': ^1.4.0
 
   langsmith@0.12.0:
     resolution: {integrity: sha512-fbV0Dya+HOTyCEfH0+jbBuSXBgIj6sfm3VYxD9UmJ5H2W303UEEizxjEWu880P5qS7zRnnsYO5MVLE6pLPQKKQ==}
@@ -11138,6 +11143,18 @@ snapshots:
       - react
       - react-dom
 
+  '@langchain/langgraph@1.7.4(@langchain/core@1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.7)':
+    dependencies:
+      '@langchain/core': 1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0)
+      '@langchain/langgraph-checkpoint': 1.2.2(@langchain/core@1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0))
+      '@langchain/langgraph-sdk': 1.16.0(@langchain/core@1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@langchain/protocol': 0.0.21
+      '@standard-schema/spec': 1.1.0
+      zod: 4.6.7
+    transitivePeerDependencies:
+      - react
+      - react-dom
+
   '@langchain/mcp-adapters@2.0.3(@langchain/core@1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0))(@langchain/langgraph@1.7.4(@langchain/core@1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.5))':
     dependencies:
       '@langchain/core': 1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0)
@@ -15487,8 +15504,6 @@ snapshots:
 
   eventsource-parser@3.1.1: {}
 
-  eventsource-parser@4.1.1: {}
-
   eventsource-parser@4.1.3: {}
 
   eventsource@2.0.2: {}
@@ -15499,7 +15514,7 @@ snapshots:
 
   eventsource@5.1.2:
     dependencies:
-      eventsource-parser: 4.1.1
+      eventsource-parser: 4.1.3
 
   eventsource@5.1.4:
     dependencies:
@@ -16450,6 +16465,22 @@ snapshots:
   kleur@3.0.3: {}
 
   lambda-runtimes@3.0.0: {}
+
+  langchain@1.6.5(@langchain/core@1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0))(@opentelemetry/api@1.9.1)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(ws@8.23.0):
+    dependencies:
+      '@langchain/core': 1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0)
+      '@langchain/langgraph': 1.7.4(@langchain/core@1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(zod@4.6.7)
+      '@langchain/langgraph-checkpoint': 1.2.2(@langchain/core@1.4.0(@opentelemetry/api@1.9.1)(ws@8.23.0))
+      langsmith: 0.12.0(@opentelemetry/api@1.9.1)(ws@8.23.0)
+      zod: 4.6.7
+    transitivePeerDependencies:
+      - '@opentelemetry/api'
+      - '@opentelemetry/exporter-trace-otlp-proto'
+      - '@opentelemetry/sdk-trace-base'
+      - openai
+      - react
+      - react-dom
+      - ws
 
   langsmith@0.12.0(@opentelemetry/api@1.9.1)(ws@8.23.0):
     dependencies:
