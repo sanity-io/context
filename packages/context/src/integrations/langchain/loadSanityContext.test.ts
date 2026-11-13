@@ -1,9 +1,12 @@
 import {afterEach, describe, expect, it, vi} from 'vitest'
 
+const close = vi.fn(async () => {})
+const listTools = vi.fn(async () => [{name: 'groq_query'}, {name: 'initial_context'}])
+
 vi.mock('@langchain/mcp-adapters', () => ({
   MCPAdapter: class {
-    listTools = async () => [{name: 'groq_query'}, {name: 'initial_context'}]
-    close = async () => {}
+    listTools = listTools
+    close = close
   },
 }))
 
@@ -14,7 +17,10 @@ const options = {
   token: 't',
 }
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.clearAllMocks()
+})
 
 describe('loadSanityContext', () => {
   it('drops initial_context when the initial context is inlined', async () => {
@@ -29,5 +35,12 @@ describe('loadSanityContext', () => {
     const {tools, initialContext} = await loadSanityContext(options)
     expect(initialContext).toBeNull()
     expect(tools.map((t) => t.name)).toEqual(['groq_query', 'initial_context'])
+  })
+
+  it('closes the client when connecting fails', async () => {
+    vi.stubGlobal('fetch', async () => new Response('# Schema'))
+    listTools.mockRejectedValueOnce(new Error('HTTP 401'))
+    await expect(loadSanityContext(options)).rejects.toThrow('HTTP 401')
+    expect(close).toHaveBeenCalled()
   })
 })

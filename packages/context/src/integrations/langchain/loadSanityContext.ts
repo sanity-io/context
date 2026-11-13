@@ -23,7 +23,6 @@ export interface SanityContextLangChain {
 export async function loadSanityContext(
   options: SanityContextLangChainOptions,
 ): Promise<SanityContextLangChain> {
-  const initialContext = await fetchInitialContext(options)
   const client = new MCPAdapter({
     prefixToolNameWithServerName: false,
     servers: {
@@ -34,8 +33,18 @@ export async function loadSanityContext(
       },
     },
   })
-  const tools = (await client.listTools()).filter(
-    (tool) => !(initialContext && tool.name === 'initial_context'),
-  )
-  return {tools, initialContext, close: () => client.close()}
+  try {
+    const [initialContext, tools] = await Promise.all([
+      fetchInitialContext(options),
+      client.listTools(),
+    ])
+    return {
+      tools: initialContext ? tools.filter((tool) => tool.name !== 'initial_context') : tools,
+      initialContext,
+      close: () => client.close(),
+    }
+  } catch (error) {
+    await client.close()
+    throw error
+  }
 }
