@@ -77,4 +77,15 @@ describe('createSanityContext (LangChain)', () => {
       }),
     ).rejects.toBe(interrupt)
   })
+
+  it('skips Sanity tools whose name the agent already uses', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const {wrapModelCall} = hooks(createSanityContext(options))
+    const sent = (await wrapModelCall(
+      {tools: [{name: 'initial_context'}]},
+      async (request) => request,
+    )) as {tools: {name: string}[]}
+    expect(sent.tools.map((t) => t.name)).toEqual(['initial_context', 'groq_query'])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"initial_context"'))
+  })
 })
