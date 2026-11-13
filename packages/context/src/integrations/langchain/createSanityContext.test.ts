@@ -72,4 +72,23 @@ describe('createSanityContext (LangChain)', () => {
     expect(sent.tools.map((t) => t.name)).toEqual(['initial_context', 'groq_query'])
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('"initial_context"'))
   })
+
+  it('runs the Sanity tool the model was shown without listing again', async () => {
+    const sanity = createSanityContext(options)
+    const {wrapModelCall, wrapToolCall} = hooks(sanity)
+    await wrapModelCall({tools: []}, async (request) => request)
+    const sent = (await wrapToolCall(
+      {toolCall: {name: 'groq_query'}, tool: undefined},
+      async (request) => request,
+    )) as {tool: {name: string}}
+    expect(sent.tool.name).toBe('groq_query')
+    expect(listTools).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves an unknown tool to LangChain when listing fails', async () => {
+    listTools.mockRejectedValue(new Error('HTTP 502'))
+    const {wrapToolCall} = hooks(createSanityContext(options))
+    const request = {toolCall: {name: 'made_up'}, tool: undefined}
+    expect(await wrapToolCall(request, async (r) => r)).toBe(request)
+  })
 })

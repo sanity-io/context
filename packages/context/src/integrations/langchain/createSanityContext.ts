@@ -9,8 +9,9 @@ export type SanityContextLangChainOptions = SanityContextOptions
 /** @public */
 export interface SanityContextLangChain {
   /**
-   * Pass to `createAgent({middleware: [...]})`, first in the list so other middleware sees the Sanity
-   * tools. Gives every model call the endpoint's current tools.
+   * Pass to `createAgent({middleware: [...]})` as the first entry: other middleware then sees the
+   * Sanity tools, and a tool filter running before it could make LangChain reject them. Gives every
+   * model call the endpoint's current tools.
    * Like any middleware that wraps tool calls, it makes LangChain rethrow tool errors; add LangChain's
    * `toolErrorMiddleware` to send them to the model instead.
    */
@@ -37,10 +38,11 @@ export function createSanityContext({
       return await Promise.race([
         client.listTools(),
         new Promise<never>((_, reject) => {
-          timer = setTimeout(
-            () => reject(new Error('Sanity Context did not list its tools within 10 seconds')),
-            10_000,
-          )
+          timer = setTimeout(() => {
+            // Later runs would otherwise wait on the same stuck connection attempt.
+            void client.close()
+            reject(new Error('Sanity Context did not list its tools within 10 seconds'))
+          }, 10_000)
         }),
       ])
     } finally {
@@ -48,6 +50,7 @@ export function createSanityContext({
     }
   }
   const warnedCollisions = new Set<string>()
+  let shown = new Map<string, Awaited<ReturnType<typeof listTools>>[number]>()
 
   const middleware = createMiddleware({
     name: 'SanityContext',
@@ -64,11 +67,17 @@ export function createSanityContext({
         }
         return false
       })
+      shown = new Map(tools.map((tool) => [tool.name, tool]))
       return handler({...request, tools: [...request.tools, ...tools]})
     },
     wrapToolCall: async (request, handler) => {
-      // Tools are added per model call, so a run resumed in a new process looks them up here.
-      const tool = request.tool ?? (await listTools()).find((t) => t.name === request.toolCall.name)
+      // LangChain only knows the agent's own tools, so run the Sanity tool the model was shown. A run
+      // resumed in a new process has seen no model call yet, so list the tools then.
+      const name = request.toolCall.name
+      const tool =
+        request.tool ??
+        shown.get(name) ??
+        (await listTools().catch(() => [])).find((t) => t.name === name)
       return handler(tool ? {...request, tool} : request)
     },
   })
