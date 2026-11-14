@@ -16,7 +16,7 @@
     "ai": "^6.0.287"
   },
   "devDependencies": {
-    "@sanity/blueprints": "^0.15.0",
+    "@sanity/blueprints": "^0.34.0",
     "dotenv": "^17.4.2"
   }
 }
