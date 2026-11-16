@@ -1,0 +1,70 @@
+{
+  "name": "@sanity/context-langchain",
+  "version": "0.0.0",
+  "description": "Sanity Context for LangChain agents",
+  "keywords": [
+    "sanity",
+    "sanity-context",
+    "langchain",
+    "middleware",
+    "mcp"
+  ],
+  "homepage": "https://www.sanity.io/docs/context/connect-langchain",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/context.git",
+    "directory": "packages/langchain"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "!src/**/*.test.ts"
+  ],
+  "scripts": {
+    "build": "pkg build --strict --clean --check",
+    "check:lint": "eslint .",
+    "check:lint:fix": "eslint . --fix",
+    "check:types": "tsc --noEmit",
+    "dev": "pkg-utils watch",
+    "test": "vitest run --typecheck",
+    "test:unit": "vitest --typecheck",
+    "test:unit:coverage": "vitest run --coverage"
+  },
+  "browserslist": "extends @sanity/browserslist-config",
+  "devDependencies": {
+    "@langchain/core": "^1.4.0",
+    "@langchain/mcp-adapters": "^2.0.3",
+    "@repo/eslint-config": "workspace:*",
+    "@sanity/pkg-utils": "^10.4.13",
+    "@sanity/tsconfig": "^2.2.1",
+    "@vitest/coverage-v8": "^4.1.11",
+    "langchain": "^1.6.5",
+    "typescript": "catalog:",
+    "vitest": "^4.1.11"
+  },
+  "peerDependencies": {
+    "@langchain/mcp-adapters": "^2.0.3",
+    "langchain": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=20.19 <22 || >=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

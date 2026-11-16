@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish to NPM
+        description: Publish the package versions that aren't on npm yet
         required: true
         default: false
         type: boolean
@@ -54,7 +54,7 @@ jobs:
 
       - name: Build
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
-        run: pnpm --filter @sanity/context build
+        run: pnpm --filter @sanity/context --filter @sanity/context-langchain --filter @sanity/context-eve build
 
       - name: Set publishing config
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
@@ -63,16 +63,17 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
       # Release Please has already incremented versions and published tags, so we just
-      # need to publish the new version to npm here
+      # need to publish the new versions to npm here. A recursive publish skips versions
+      # that are already on npm, so a re-run publishes only what's missing.
       - name: Publish to npm
         if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
-        run: pnpm --filter @sanity/context publish
+        run: pnpm -r --filter @sanity/context --filter @sanity/context-langchain --filter @sanity/context-eve publish
         env:
           NPM_CONFIG_PROVENANCE: true
 
       # Create changelog release in Sanity (needs manual review and publish in Studio)
       - name: Create changelog release
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        if: ${{ steps.release.outputs['packages/context--release_created'] == 'true' }}
         run: pnpm release-notes create ${{ steps.release.outputs['packages/context--version'] }} --yes
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}

@@ -1,0 +1,1 @@
+Before you use the Sanity Context connection, make sure you've seen its initial context. It describes the content the connection covers and how to look things up. If it isn't already in your instructions or this conversation, load it first: find the connection's `initial_context` tool with `eve__search` and call it with `eve__tool`.

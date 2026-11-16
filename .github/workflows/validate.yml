@@ -37,3 +37,26 @@ jobs:
 
       - name: Typecheck
         run: pnpm check:types
+
+  build-eve:
+    timeout-minutes: 15
+    # eve needs Node 24, so the eve extension builds in its own job.
+    name: Build eve extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      # The release job installs with --ignore-scripts, so build the same way.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Build
+        run: pnpm --filter @sanity/context-eve build
