@@ -8,16 +8,17 @@ This is a monorepo for Sanity Context—tools for building AI agents with struct
 
 1. **Context MCP** (external service) - Hosted MCP server. Endpoints are configured per organization, in the Context app in the Sanity Dashboard or with the Sanity CLI (`sanity context mcp`), and expose tools to AI agents
 2. **Agent Implementation** - Your app that connects to Context MCP and uses the tools
-3. **`@sanity/context`** - Insights (conversation telemetry and classification) for agent implementations
+3. **`@sanity/context`** - A LangChain integration and Insights (conversation telemetry and classification) for agent implementations
 
-This repo contains the `@sanity/context` package, agent skills for building and optimizing integrations, and a demo app.
+This repo contains the `@sanity/context` and `@sanity/context-eve` packages, agent skills for building and optimizing integrations, and a demo app.
 
 ## Repository Structure
 
 ```
 .
 ├── packages/
-│   └── context/              # @sanity/context npm package (Insights)
+│   ├── context/              # @sanity/context npm package (LangChain integration, Insights)
+│   └── eve/                  # @sanity/context-eve npm package (eve extension)
 ├── skills/
 │   ├── create-agent-with-sanity-context/  # Build an agent with Sanity Context
 │   ├── dial-your-context/                 # Tune Instructions field content for Sanity Context
@@ -30,6 +31,8 @@ This repo contains the `@sanity/context` package, agent skills for building and 
 ## Package: @sanity/context
 
 ```ts
+// Framework integrations: the tools of a Context MCP endpoint
+import {createSanityContext} from '@sanity/context/langchain'
 // Insights: AI SDK telemetry integration
 import {sanityInsightsIntegration} from '@sanity/context/ai-sdk'
 // Insights: classification primitives
@@ -78,6 +81,12 @@ https://api.sanity.io/v2026-11-03/context/organizations/:organizationId/mcp/:end
 ```
 
 Agents connect via HTTP transport with a Bearer token: an **organization** API token with Context access (Viewer to read; Editor to also record Insights). Project tokens are refused with HTTP 403 (`-32007` `contextGrantRequired` on dataset endpoints, `-32006` `knowledgeBaseAccessDenied` on Knowledge Base endpoints).
+
+### Framework integrations
+
+`@sanity/context/langchain` exports `createSanityContext({url, token})`, a middleware that connects a LangChain agent to a Context MCP endpoint through `@langchain/mcp-adapters` and adds the endpoint's current tools to every model call. `packages/eve` (`@sanity/context-eve`) does the same for eve, as an extension with an MCP connection and instructions that tell the model to load the initial context first. Shared code lives in `src/integrations/options.ts` (option checks) and `src/integrations/describeError.ts` (one-line error text from HTTP and MCP failures).
+
+`src/integrations/mastra/` is a Mastra connector kept in the repo but not published: it has no export in `package.json` and is excluded from the package's `files`. It waits on how Mastra wants the integration submitted.
 
 ### Insights
 

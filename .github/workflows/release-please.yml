@@ -7,8 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish to NPM
+        description: Publish @sanity/context to NPM
         required: true
+        default: false
+        type: boolean
+      publish_eve:
+        description: Publish @sanity/context-eve to NPM
+        required: false
         default: false
         type: boolean
 
@@ -36,28 +41,32 @@ jobs:
 
       # Publish to NPM on new releases
       - uses: actions/checkout@v6
-        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' || github.event.inputs.publish_eve == 'true' }}
 
       - uses: pnpm/action-setup@v5
-        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' || github.event.inputs.publish_eve == 'true' }}
 
       - uses: actions/setup-node@v6
-        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' || github.event.inputs.publish_eve == 'true' }}
         with:
           cache: pnpm
           node-version: lts/*
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
-        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' || github.event.inputs.publish_eve == 'true' }}
         run: pnpm install --ignore-scripts
 
       - name: Build
-        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        if: ${{ steps.release.outputs['packages/context--release_created'] == 'true' || github.event.inputs.publish == 'true' }}
         run: pnpm --filter @sanity/context build
 
+      - name: Build eve extension
+        if: ${{ steps.release.outputs['packages/eve--release_created'] == 'true' || github.event.inputs.publish_eve == 'true' }}
+        run: pnpm --filter @sanity/context-eve build
+
       - name: Set publishing config
-        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' || github.event.inputs.publish_eve == 'true' }}
         run: pnpm config set '//registry.npmjs.org/:_authToken' "${NODE_AUTH_TOKEN}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
@@ -65,14 +74,20 @@ jobs:
       # Release Please has already incremented versions and published tags, so we just
       # need to publish the new version to npm here
       - name: Publish to npm
-        if: ${{ steps.release.outputs.releases_created == 'true' || github.event.inputs.publish == 'true' }}
+        if: ${{ steps.release.outputs['packages/context--release_created'] == 'true' || github.event.inputs.publish == 'true' }}
         run: pnpm --filter @sanity/context publish
+        env:
+          NPM_CONFIG_PROVENANCE: true
+
+      - name: Publish eve extension to npm
+        if: ${{ steps.release.outputs['packages/eve--release_created'] == 'true' || github.event.inputs.publish_eve == 'true' }}
+        run: pnpm --filter @sanity/context-eve publish
         env:
           NPM_CONFIG_PROVENANCE: true
 
       # Create changelog release in Sanity (needs manual review and publish in Studio)
       - name: Create changelog release
-        if: ${{ steps.release.outputs.releases_created == 'true' }}
+        if: ${{ steps.release.outputs['packages/context--release_created'] == 'true' }}
         run: pnpm release-notes create ${{ steps.release.outputs['packages/context--version'] }} --yes
         env:
           GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}

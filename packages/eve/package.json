@@ -1,0 +1,61 @@
+{
+  "name": "@sanity/context-eve",
+  "version": "0.0.0",
+  "description": "Sanity Context for eve agents",
+  "keywords": [
+    "sanity",
+    "sanity-context",
+    "eve",
+    "eve-extension",
+    "mcp"
+  ],
+  "homepage": "https://www.sanity.io/docs/context/connect-vercel-eve",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/sanity-io/context.git",
+    "directory": "packages/eve"
+  },
+  "license": "MIT",
+  "author": "Sanity.io <hello@sanity.io>",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.mjs"
+    },
+    "./tools": {
+      "types": "./dist/tools/index.d.ts",
+      "default": "./dist/tools/index.mjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "eve extension build",
+    "check:types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "^24",
+    "eve": "1.0.0",
+    "typescript": "catalog:"
+  },
+  "peerDependencies": {
+    "eve": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "eve": {
+    "extension": {
+      "source": "./extension",
+      "dist": "./dist/extension"
+    }
+  }
+}
