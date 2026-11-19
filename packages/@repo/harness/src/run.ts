@@ -54,6 +54,7 @@ export const SCENARIOS: Record<string, Fault[]> = {
   'reset': [{target: 'groq_query', kind: 'reset'}],
   'list-502': [{target: 'tools/list', nth: 2, kind: '502html'}],
   'bad-token': [{target: '*', kind: '401'}],
+  'ic-fails': [{target: '/initial-context', kind: '502html'}],
 }
 
 const blocks = (body: AnthropicRequest) =>
