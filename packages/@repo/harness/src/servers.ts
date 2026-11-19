@@ -11,7 +11,7 @@ export type Fault = {
   /** A tool name, an MCP method such as `tools/list`, or `*` for every request. */
   target: string
   nth?: number
-  kind: '502html' | 'hang' | '401' | 'reset' | '500json' | '400rpc'
+  kind: '502html' | '401' | 'reset' | '500json' | '400rpc'
 }
 
 export type AnthropicRequest = {
@@ -80,7 +80,7 @@ function toolResultCount(body: AnthropicRequest) {
  */
 export async function startFakeAnthropic(options: {
   dir: string
-  steps: (body: AnthropicRequest) => Step[]
+  steps: Step[]
   forward?: {apiKey: string}
 }) {
   mkdirSync(options.dir, {recursive: true})
@@ -89,11 +89,6 @@ export async function startFakeAnthropic(options: {
     const raw = await read(req)
     const seq = String(++n).padStart(3, '0')
     writeFileSync(join(options.dir, `model-${seq}.json`), raw)
-    if (!req.url?.endsWith('/messages')) {
-      res.writeHead(200, {'content-type': 'application/json'})
-      res.end(JSON.stringify({input_tokens: raw.length}))
-      return
-    }
     const body = JSON.parse(raw.toString()) as AnthropicRequest
 
     if (options.forward) {
@@ -115,7 +110,7 @@ export async function startFakeAnthropic(options: {
       return
     }
 
-    const steps = body.tools?.length ? options.steps(body) : [{text: 'ok'}]
+    const steps = body.tools?.length ? options.steps : [{text: 'ok'}]
     const step = steps[toolResultCount(body)] ?? {text: 'Done.'}
     const block =
       'tool' in step
@@ -192,7 +187,6 @@ export async function startMcpProxy(options: {
 
     if (fault) {
       appendFileSync(log, `${JSON.stringify({...entry, request: message})}\n`)
-      if (fault.kind === 'hang') return
       if (fault.kind === 'reset') return req.socket.destroy()
       if (fault.kind === '401') {
         res.writeHead(401, {'content-type': 'application/json'})

@@ -92,11 +92,10 @@ function server() {
 /** A Context MCP endpoint serving the Stub Shop, with the `/initial-context` route beside it. */
 export async function startStub() {
   const http = createServer(async (req, res) => {
-    const url = new URL(req.url ?? '/', 'http://stub')
-    if (req.method === 'GET' && url.pathname === '/mcp/initial-context') {
-      const offset = Number(url.searchParams.get('heading_offset') ?? 1)
+    if (req.method === 'GET' && req.url?.startsWith('/mcp/initial-context')) {
+      // Like the real route's default heading_offset=1.
       res.writeHead(200, {'content-type': 'text/plain; charset=utf-8'})
-      return res.end(INITIAL_CONTEXT.replace(/^#/gm, `${'#'.repeat(offset)}#`))
+      return res.end(INITIAL_CONTEXT.replace(/^#/gm, '##'))
     }
     if (req.method !== 'POST') return res.writeHead(405).end()
     const chunks: Buffer[] = []

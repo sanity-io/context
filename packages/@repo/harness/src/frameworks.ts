@@ -5,6 +5,11 @@ import {join} from 'node:path'
 import tls from 'node:tls'
 import {promisify} from 'node:util'
 
+import {ChatAnthropic} from '@langchain/anthropic'
+import {createSanityContext} from '@sanity/context-langchain'
+import {Client} from 'eve/client'
+import {createAgent} from 'langchain'
+
 export type Framework = 'eve' | 'langchain'
 
 export interface AgentOptions {
@@ -37,9 +42,6 @@ export const frameworks: Record<Framework, (options: AgentOptions) => Promise<Ag
       ...tls.getCACertificates('default'),
       readFileSync(options.certFile, 'utf8'),
     ])
-    const {ChatAnthropic} = await import('@langchain/anthropic')
-    const {createAgent} = await import('langchain')
-    const {createSanityContext} = await import('@sanity/context-langchain')
     const sanity = createSanityContext({url: options.mcpUrl, token: options.token})
     const agent = createAgent({
       model: new ChatAnthropic({
@@ -58,10 +60,7 @@ export const frameworks: Record<Framework, (options: AgentOptions) => Promise<Ag
           {recursionLimit: 50},
         )
         messages = result.messages
-        const reply = messages.at(-1)?.content ?? ''
-        return typeof reply === 'string'
-          ? reply
-          : reply.map((b) => ('text' in b ? b.text : '')).join('')
+        return messages.at(-1)?.text ?? ''
       },
       close: () => sanity.close(),
     }
@@ -105,7 +104,6 @@ export const frameworks: Record<Framework, (options: AgentOptions) => Promise<Ag
       writeFileSync(join(options.dir, 'eve.log'), logs)
     }
 
-    const {Client} = await import('eve/client')
     const client = new Client({baseUrl: `http://127.0.0.1:${port}`})
     for (let i = 0; ; i++) {
       try {
