@@ -28,5 +28,5 @@ export default defineDynamic(async (ctx) => {
       return null
     }
   })
-  return defineInstructions({content: initialContext ?? LOAD_INITIAL_CONTEXT})
+  return defineInstructions({content: initialContext || LOAD_INITIAL_CONTEXT})
 })
