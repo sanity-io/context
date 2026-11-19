@@ -13,7 +13,8 @@ type Expected = {threw?: string; saw?: string; system?: string}
 
 const EXPECTED: Record<Framework, Record<string, Expected>> = {
   langchain: {
-    'happy': {},
+    'happy': {system: '## Stub Shop: Context & Schema'},
+    'ic-fails': {},
     '400': {
       saw: 'Error calling tool groq_query: HTTP 400: This endpoint has no dataset schema deployed.',
     },
