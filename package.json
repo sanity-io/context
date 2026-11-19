@@ -10,6 +10,7 @@
     "dev": "turbo dev",
     "format:all": "prettier --cache --write .",
     "format:staged": "pretty-quick --staged",
+    "harness": "turbo run build --filter=@repo/harness^... --ui=stream --output-logs=errors-only && pnpm --filter @repo/harness harness",
     "prepare": "husky",
     "release-notes": "dotenv -e scripts/release-notes/.env -- tsx scripts/release-notes/index.ts",
     "sync-skill-example": "tsx scripts/sync-skill-example.ts",

@@ -1,0 +1,31 @@
+{
+  "name": "@repo/harness",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "harness": "tsx src/cli.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@langchain/anthropic": "^1.6.5",
+    "@langchain/core": "^1.4.0",
+    "@langchain/mcp-adapters": "^2.0.3",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@sanity/context-eve": "workspace:*",
+    "@sanity/context-langchain": "workspace:*",
+    "eve": "1.0.0",
+    "langchain": "^1.6.5",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@types/node": "^24",
+    "tsx": "^4.23.15",
+    "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

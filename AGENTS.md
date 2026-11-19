@@ -20,7 +20,8 @@ This repo contains the `@sanity/context`, `@sanity/context-langchain` and `@sani
 ├── packages/
 │   ├── context/              # @sanity/context npm package (Insights)
 │   ├── langchain/            # @sanity/context-langchain npm package (LangChain middleware)
-│   └── eve/                  # @sanity/context-eve npm package (eve extension)
+│   ├── eve/                  # @sanity/context-eve npm package (eve extension)
+│   └── @repo/harness/        # End-to-end runs of the framework packages (not published)
 ├── skills/
 │   ├── create-agent-with-sanity-context/  # Build an agent with Sanity Context
 │   ├── dial-your-context/                 # Tune Instructions field content for Sanity Context
@@ -48,6 +49,7 @@ pnpm build        # Build all packages
 pnpm test:unit    # Run tests
 pnpm check:types  # TypeScript checking
 pnpm check:lint   # ESLint
+pnpm harness check  # Framework packages end to end (Node 24); see packages/@repo/harness
 ```
 
 ## Key Concepts
