@@ -2,14 +2,16 @@ import {existsSync, readFileSync} from 'node:fs'
 import {join} from 'node:path'
 
 import {type Framework} from './frameworks'
-import {modelRequests, run, toolResults} from './run'
+import {modelRequests, run, systemText, toolResults} from './run'
 
 /**
  * What each package decides per scenario: the run throws with `threw`, or completes and the model
- * sees `saw` (default: every tool result the stub sent, intact). Faults the framework handles
+ * sees `saw` (default: every tool result the stub sent, intact). `system` must be in the system prompt. Faults the framework handles
  * itself aren't checked.
  */
-const EXPECTED: Record<Framework, Record<string, {threw?: string; saw?: string}>> = {
+type Expected = {threw?: string; saw?: string; system?: string}
+
+const EXPECTED: Record<Framework, Record<string, Expected>> = {
   langchain: {
     'happy': {},
     '400': {
@@ -23,7 +25,8 @@ const EXPECTED: Record<Framework, Record<string, {threw?: string; saw?: string}>
     'bad-token': {threw: 'Sanity Context rejected the token (HTTP 401: Invalid token).'},
   },
   eve: {
-    'happy': {},
+    'happy': {system: '## Stub Shop: Context & Schema'},
+    'ic-fails': {system: "load it first: find the connection's `initial_context` tool"},
     'bad-token': {saw: 'Error: "sanity-context__sanity" requires authorization'},
   },
 }
@@ -49,6 +52,9 @@ export async function check(only?: Framework): Promise<boolean> {
       const seen = toolResults(modelRequests(result.dir)).map((r) => r.text)
       const problem = problemOf()
       function problemOf() {
+        const system = systemText(modelRequests(result.dir)[0] ?? {messages: []})
+        if (expected.system && !system.includes(expected.system))
+          return `expected the system prompt to include "${expected.system}"`
         if (expected.threw)
           return result.error?.startsWith(expected.threw)
             ? undefined
