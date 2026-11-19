@@ -61,6 +61,29 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
       clearTimeout(timer)
     }
   }
+  const initialContextUrl = new URL(url)
+  initialContextUrl.pathname = `${initialContextUrl.pathname.replace(/\/$/, '')}/initial-context`
+  let warnedInitialContext = false
+  // Fetched on every model call, like the tools, so it's never stale. Null when it can't be: the
+  // `initial_context` tool stays, and its description tells the model to call it first.
+  const fetchInitialContext = async () => {
+    try {
+      const res = await fetch(initialContextUrl, {
+        headers: {Authorization: `Bearer ${token}`},
+        signal: AbortSignal.timeout(10_000),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return (await res.text()) || null
+    } catch (error) {
+      if (!warnedInitialContext) {
+        warnedInitialContext = true
+        console.warn(
+          `[sanity-context] Could not load the initial context, so the model loads it with the initial_context tool: ${(error as Error).message}`,
+        )
+      }
+      return null
+    }
+  }
   const warnedCollisions = new Set<string>()
   let shown: Map<string, Awaited<ReturnType<typeof listTools>>[number]> | undefined
 
@@ -69,7 +92,8 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
     wrapModelCall: async (request, handler) => {
       // LangChain rejects a middleware tool that shares a name with one of the agent's own tools.
       const taken = new Set(request.tools.map((t) => t.name))
-      const tools = (await listTools()).filter((tool) => {
+      const [listed, initialContext] = await Promise.all([listTools(), fetchInitialContext()])
+      const tools = listed.filter((tool) => {
         if (!taken.has(tool.name)) return true
         if (!warnedCollisions.has(tool.name)) {
           warnedCollisions.add(tool.name)
@@ -80,7 +104,13 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
         return false
       })
       shown = new Map(tools.map((tool) => [tool.name, tool]))
-      return handler({...request, tools: [...request.tools, ...tools]})
+      return handler({
+        ...request,
+        tools: [...request.tools, ...tools],
+        ...(initialContext && {
+          systemMessage: request.systemMessage.concat(`\n\n${initialContext}`),
+        }),
+      })
     },
     wrapToolCall: async (request, handler) => {
       // LangChain only knows the agent's own tools, so run the Sanity tool the model was shown. A run
