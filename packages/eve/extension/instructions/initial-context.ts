@@ -12,15 +12,17 @@ export default defineDynamic(async (ctx) => {
         headers: {Authorization: `Bearer ${token}`},
         signal: AbortSignal.any([abortSignal, AbortSignal.timeout(10_000)]),
       })
-      if (res.ok) return await res.text()
-      console.error(`[sanity-context] Could not load the initial context: HTTP ${res.status}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      return await res.text()
     } catch (error) {
       // An interrupted step runs again, so don't save its failure for the rest of the session.
       if (abortSignal.aborted) throw error
-      console.error(`[sanity-context] Could not load the initial context: ${error}`)
+      console.error(
+        `[sanity-context] Could not load the initial context: ${(error as Error).message}`,
+      )
+      // Saved for the session, so a failing endpoint doesn't slow every model call. The model loads it with the tool instead.
+      return null
     }
-    // Saved for the session, so a failing endpoint doesn't slow every model call. The model loads it with the tool instead.
-    return null
   })
   return initialContext
     ? defineInstructions({content: `# Sanity Context initial context\n\n${initialContext}`})
