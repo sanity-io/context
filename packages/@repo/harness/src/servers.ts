@@ -232,12 +232,19 @@ export async function startMcpProxy(options: {
     const target = new URL(options.upstream)
     target.pathname += path
     target.search = incoming.search
-    const upstream = await fetch(target, {
+    // A request still in flight when its run ends reaches a closed stub. Answer it instead of crashing.
+    const forwarded = await fetch(target, {
       method: req.method,
       headers,
       body: raw.length ? new Uint8Array(raw) : undefined,
     })
-    const answer = await upstream.text()
+      .then(async (response) => ({response, answer: await response.text()}))
+      .catch((error: Error) => error)
+    if (forwarded instanceof Error) {
+      res.writeHead(502, {'content-type': 'text/plain'})
+      return res.end(forwarded.message)
+    }
+    const {response: upstream, answer} = forwarded
     appendFileSync(
       log,
       `${JSON.stringify({...entry, status: upstream.status, request: message, response: answer})}\n`,
