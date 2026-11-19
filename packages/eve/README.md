@@ -2,7 +2,7 @@
 
 Sanity Context for [eve](https://eve.dev) agents. This extension connects an eve agent to a Sanity Context MCP endpoint, so it can answer from your Sanity content.
 
-The agent gets the endpoint's current tools on every run, so changes to the endpoint's sources in the Context app reach it without a redeploy. The extension's instructions tell the model to load the initial context before it uses the connection.
+The agent gets the endpoint's current tools on every run, so changes to the endpoint's sources in the Context app reach it without a redeploy. The extension fetches the endpoint's initial context once per session and adds it to the system prompt, so the model doesn't spend a tool call loading it. If that fetch fails, the model loads it with the `initial_context` tool instead.
 
 ## Install
 
