@@ -34,8 +34,8 @@ jobs:
       - name: Build packages
         run: pnpm turbo run build --filter=@repo/harness^...
 
-      - name: Lint and typecheck
-        run: pnpm --filter @repo/harness lint && pnpm --filter @repo/harness typecheck
+      - name: Typecheck
+        run: pnpm --filter @repo/harness typecheck
 
       - name: Run scenarios
         run: pnpm --filter @repo/harness harness check

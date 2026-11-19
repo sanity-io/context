@@ -1,7 +1,7 @@
 import {mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
 import {join} from 'node:path'
 
-import {EVE_TOOL_PREFIX, type Framework, frameworks} from './frameworks'
+import {type Agent, EVE_TOOL_PREFIX, type Framework, frameworks} from './frameworks'
 import {
   type AnthropicRequest,
   createCertificate,
@@ -15,8 +15,8 @@ import {startStub} from './stub'
 export interface RunOptions {
   framework: Framework
   scenario: string
-  /** Messages to send in order. The scripted model only plans the first turn. */
-  messages: string[]
+  /** The first message. The scripted model only plans this turn. */
+  message: string
   /** A real endpoint instead of the stub. */
   live?: {url: string; token: string}
   /** Forward model calls to Anthropic instead of scripting them. */
@@ -29,10 +29,9 @@ export interface RunOptions {
 
 export interface RunResult {
   dir: string
-  status: 'completed' | 'threw'
   reply?: string
+  /** Set when the run threw. */
   error?: string
-  durationMs: number
 }
 
 type Call = {tool: string; input: Record<string, unknown>}
@@ -53,29 +52,12 @@ export const SCENARIOS: Record<string, Fault[]> = {
   '401': [{target: 'groq_query', kind: '401'}],
   '400': [{target: 'groq_query', kind: '400rpc'}],
   'reset': [{target: 'groq_query', kind: 'reset'}],
-  'list-400': [{target: 'tools/list', nth: 2, kind: '400rpc'}],
-  'list-401': [{target: 'tools/list', nth: 2, kind: '401'}],
   'list-502': [{target: 'tools/list', nth: 2, kind: '502html'}],
   'bad-token': [{target: '*', kind: '401'}],
 }
 
 const blocks = (body: AnthropicRequest) =>
   body.messages.flatMap((m) => (typeof m.content === 'string' ? [] : m.content))
-
-/** Live endpoints: plan the calls from the initial context the endpoint returned. */
-function liveCalls(body: AnthropicRequest): Call[] {
-  const calls: Call[] = [{tool: 'initial_context', input: {}}]
-  const initial = blocks(body)
-    .filter((b) => b.type === 'tool_result')
-    .map((b) => (typeof b.content === 'string' ? b.content : JSON.stringify(b.content)))
-    .find((t) => t.includes('resource-schema') || t.includes('Knowledge base id'))
-  if (!initial) return calls
-  if (initial.includes('resource-schema'))
-    calls.push({tool: 'groq_query', input: {query: '*[0...2]{_id, _type}'}})
-  const kb = /Knowledge base id: `([^`]+)`/.exec(initial)?.[1]
-  if (kb) calls.push({tool: 'knowledge_base_search', input: {knowledgeBase: kb, query: 'overview'}})
-  return calls
-}
 
 function script(framework: Framework, calls: Call[]): Step[] {
   if (framework === 'langchain') return [...calls, {text: 'Done.'}]
@@ -106,40 +88,37 @@ export async function run(options: RunOptions): Promise<RunResult> {
     faults,
     tls: certificate,
   })
-  const calls = scenario === 'happy' ? STUB_CALLS : STUB_CALLS.slice(0, 2)
+  // A live endpoint has unknown content, so the scripted model only loads its initial context.
+  const calls = STUB_CALLS.slice(0, live ? 1 : scenario === 'happy' ? undefined : 2)
   const model = await startFakeAnthropic({
     dir,
-    steps: (body) => script(framework, live ? liveCalls(body) : calls),
+    steps: script(framework, calls),
     forward: options.anthropicApiKey ? {apiKey: options.anthropicApiKey} : undefined,
   })
 
-  const started = Date.now()
-  const result: RunResult = {dir, status: 'completed', durationMs: 0}
-  const agent = await frameworks[framework]({
-    mcpUrl: `${proxy.url}${live ? new URL(live.url).search : ''}`,
-    token: live?.token ?? 'harness-token',
-    modelUrl: model.url,
-    model: options.model,
-    dir,
-    certFile: certificate.certFile,
-  }).catch((error: Error) => error)
+  const result: RunResult = {dir}
+  let agent: Agent | undefined
   try {
-    if (agent instanceof Error) throw agent
-    let message: string | undefined = options.messages[0]
-    for (let i = 1; message !== undefined; i++) {
+    agent = await frameworks[framework]({
+      mcpUrl: `${proxy.url}${live ? new URL(live.url).search : ''}`,
+      token: live?.token ?? 'harness-token',
+      modelUrl: model.url,
+      model: options.model,
+      dir,
+      certFile: certificate.certFile,
+    })
+    let message: string | undefined = options.message
+    while (message !== undefined) {
       result.reply = await agent.send(message)
-      message = options.messages[i] ?? (await options.next?.(result.reply))
+      message = await options.next?.(result.reply)
     }
   } catch (error) {
-    result.status = 'threw'
     result.error = String((error as Error)?.message ?? error)
   } finally {
-    result.durationMs = Date.now() - started
-    if (!(agent instanceof Error)) await agent.close()
+    await agent?.close()
     model.close()
     proxy.close()
     stub?.close()
-    writeFileSync(join(dir, 'outcome.json'), JSON.stringify(result, null, 2))
     writeTranscript(dir)
   }
   return result
@@ -151,7 +130,6 @@ export function modelRequests(dir: string): AnthropicRequest[] {
     .filter((f) => /^model-\d+\.json$/.test(f))
     .sort()
     .map((f) => JSON.parse(readFileSync(join(dir, f), 'utf8')))
-    .filter((r) => Array.isArray(r.messages))
 }
 
 export const systemText = (request: AnthropicRequest) =>

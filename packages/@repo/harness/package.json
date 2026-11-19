@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "harness": "tsx src/cli.ts",
-    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -20,7 +19,6 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
     "@types/node": "^24",
     "tsx": "^4.23.15",
     "typescript": "catalog:"

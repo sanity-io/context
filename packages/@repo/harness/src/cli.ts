@@ -34,7 +34,8 @@ const {values, positionals} = parseArgs({
     help: {type: 'boolean', short: 'h'},
   },
 })
-const [command, scenario = 'happy'] = positionals
+const [command, arg] = positionals
+const scenario = arg ?? 'happy'
 
 function env(name: string, flag: string) {
   const value = process.env[name]
@@ -45,8 +46,7 @@ function env(name: string, flag: string) {
 if (values.help || !command) {
   console.log(USAGE)
 } else if (command === 'check') {
-  const only = scenario === 'happy' ? undefined : scenario
-  process.exitCode = (await check(only as Framework | undefined)) ? 0 : 1
+  process.exitCode = (await check(arg as Framework | undefined)) ? 0 : 1
 } else if (command in frameworks) {
   const framework = command as Framework
   const live = values.live
@@ -78,7 +78,7 @@ if (values.help || !command) {
       const result = await run({
         ...options,
         label: 'chat',
-        messages: [first],
+        message: first,
         next: async (reply) => {
           console.log(`\nagent> ${reply}\n`)
           return ask()
@@ -92,11 +92,11 @@ if (values.help || !command) {
     const questions: string[] = JSON.parse(readFileSync(values.questions, 'utf8'))
     const rows = await Promise.all(
       questions.map(async (question, i) => {
-        const result = await run({...options, label: `q${i}`, messages: [question]})
+        const result = await run({...options, label: `q${i}`, message: question})
         const calls = toolCalls(modelRequests(result.dir))
         return {
           question: question.slice(0, 50),
-          status: result.status,
+          error: result.error ?? '-',
           steps: modelRequests(result.dir).length,
           initial_context: calls.includes('initial_context') ? 'called' : '-',
           calls: calls.join(', '),
@@ -105,8 +105,8 @@ if (values.help || !command) {
     )
     console.table(rows)
   } else {
-    const result = await run({...options, messages: [values.question]})
-    console.log(result.status === 'completed' ? `Reply: ${result.reply}` : `Threw: ${result.error}`)
+    const result = await run({...options, message: values.question})
+    console.log(result.error ? `Threw: ${result.error}` : `Reply: ${result.reply}`)
     console.log(`Transcript: ${join(result.dir, 'transcript.md')}`)
   }
 } else {
