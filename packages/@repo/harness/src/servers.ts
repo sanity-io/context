@@ -100,7 +100,15 @@ export async function startFakeAnthropic(options: {
           'anthropic-version': '2023-06-01',
         },
         body: new Uint8Array(raw),
-      })
+      }).catch((error: Error) => error)
+      // A 502 fails only this request, and the SDK retries it, instead of crashing the harness.
+      if (upstream instanceof Error) {
+        res.writeHead(502, {'content-type': 'application/json'})
+        res.end(
+          JSON.stringify({type: 'error', error: {type: 'api_error', message: upstream.message}}),
+        )
+        return
+      }
       const answer = Buffer.from(await upstream.arrayBuffer())
       writeFileSync(join(options.dir, `model-${seq}.response`), answer)
       res.writeHead(upstream.status, {
