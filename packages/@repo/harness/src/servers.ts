@@ -92,7 +92,7 @@ export async function startFakeAnthropic(options: {
     const body = JSON.parse(raw.toString()) as AnthropicRequest
 
     if (options.forward) {
-      const upstream = await fetch('https://api.anthropic.com/v1/messages', {
+      const upstream = await fetch(`https://api.anthropic.com${req.url}`, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',

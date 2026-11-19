@@ -1,4 +1,4 @@
-import {readFileSync} from 'node:fs'
+import {existsSync, readFileSync} from 'node:fs'
 import {join} from 'node:path'
 
 import {type Framework} from './frameworks'
@@ -47,13 +47,6 @@ export async function check(only?: Framework): Promise<boolean> {
         message: 'How do I return the "Classic" coffee cup?',
       })
       const seen = toolResults(modelRequests(result.dir)).map((r) => r.text)
-      // eve prefixes error results with `Error: `, so a result only has to contain what was sent.
-      const sent = readFileSync(join(result.dir, 'mcp.jsonl'), 'utf8')
-        .trim()
-        .split('\n')
-        .map((line) => JSON.parse(line))
-        .filter((e) => e.rpc === 'tools/call' && e.response)
-        .map((e) => JSON.parse(e.response).result.content[0].text as string)
       const problem = problemOf()
       function problemOf() {
         if (expected.threw)
@@ -65,6 +58,15 @@ export async function check(only?: Framework): Promise<boolean> {
           return seen.some((s) => s.startsWith(expected.saw!))
             ? undefined
             : `expected the model to see "${expected.saw}", it saw ${JSON.stringify(seen.at(-1))}`
+        const log = join(result.dir, 'mcp.jsonl')
+        if (!existsSync(log)) return 'no request reached the endpoint'
+        const sent = readFileSync(log, 'utf8')
+          .trim()
+          .split('\n')
+          .map((line) => JSON.parse(line))
+          .filter((e) => e.rpc === 'tools/call' && e.response)
+          .map((e) => JSON.parse(e.response).result.content[0].text as string)
+        // eve prefixes error results with `Error: `, so a result only has to contain what was sent.
         const missing = sent.find((text) => !seen.some((s) => s.includes(text)))
         return missing === undefined ? undefined : `the model didn't see ${JSON.stringify(missing)}`
       }
