@@ -8,8 +8,9 @@ import {type SanityContextOptions, validateOptions} from './options'
 export interface SanityContextLangChain {
   /**
    * Pass to `createAgent({middleware: [...]})` as the first entry, so other middleware sees the
-   * Sanity tools. Before every model call it lists the endpoint's current tools, one request to the
-   * endpoint per step, and the call fails if they can't be listed.
+   * Sanity tools. Before every model call it lists the endpoint's current tools and adds its initial
+   * context to the system prompt, two requests to the endpoint per step. The call fails if the tools
+   * can't be listed. If the initial context can't be fetched, the model loads it with the tool.
    *
    * Errors from the Sanity tools go to the model. Like any middleware that wraps tool calls, it
    * makes LangChain rethrow errors from the agent's own tools; add LangChain's
