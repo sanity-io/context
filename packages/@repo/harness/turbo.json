@@ -1,0 +1,9 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "check:lint": {"dependsOn": []},
+    "check:types": {"dependsOn": []},
+    "test:unit": {"dependsOn": []},
+    "test:unit:coverage": {"dependsOn": []}
+  }
+}
