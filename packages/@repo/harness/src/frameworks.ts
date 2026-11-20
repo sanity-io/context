@@ -1,6 +1,5 @@
 import {type ChildProcess, execFile, spawn} from 'node:child_process'
 import {cpSync, readFileSync, writeFileSync} from 'node:fs'
-import {createServer} from 'node:net'
 import {join} from 'node:path'
 import tls from 'node:tls'
 import {promisify} from 'node:util'
@@ -88,10 +87,9 @@ export const frameworks: Record<Framework, (options: AgentOptions) => Promise<Ag
       NODE_EXTRA_CA_CERTS: options.certFile,
     }
     await promisify(execFile)(eve, ['build'], {cwd: app, env})
-    const port = await freePort()
     let logs = ''
     // EVE_DEV lets eve's default localDev() auth accept the harness, as it does under `eve dev`.
-    const child: ChildProcess = spawn(eve, ['start', '--port', String(port)], {
+    const child: ChildProcess = spawn(eve, ['start', '--host', '127.0.0.1', '--port', '0'], {
       cwd: app,
       env: {...env, EVE_DEV: '1'},
     })
@@ -102,19 +100,16 @@ export const frameworks: Record<Framework, (options: AgentOptions) => Promise<Ag
       writeFileSync(join(options.dir, 'eve.log'), logs)
     }
 
-    const client = new Client({baseUrl: `http://127.0.0.1:${port}`})
-    for (let i = 0; ; i++) {
-      try {
-        await client.health()
-        break
-      } catch (error) {
-        if (i > 60) {
-          await close()
-          throw new Error(`eve did not start:\n${logs}`, {cause: error})
-        }
-        await new Promise((r) => setTimeout(r, 500))
+    // Port 0 lets eve pick a free port, which it logs once it listens.
+    let port: string | undefined
+    for (let i = 0; !(port = /listening at http:\/\/[^:/]+:(\d+)/.exec(logs)?.[1]); i++) {
+      if (i > 60 || child.exitCode !== null) {
+        await close()
+        throw new Error(`eve did not start:\n${logs}`)
       }
+      await new Promise((r) => setTimeout(r, 500))
     }
+    const client = new Client({baseUrl: `http://127.0.0.1:${port}`})
 
     type Session = Awaited<ReturnType<typeof client.sessions.create>>['session']
     let session: Session | undefined
@@ -131,13 +126,4 @@ export const frameworks: Record<Framework, (options: AgentOptions) => Promise<Ag
       close,
     }
   },
-}
-
-function freePort() {
-  return new Promise<number>((resolve) => {
-    const server = createServer().listen(0, '127.0.0.1', () => {
-      const address = server.address()
-      server.close(() => resolve(typeof address === 'object' && address ? address.port : 0))
-    })
-  })
 }
