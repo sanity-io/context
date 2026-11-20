@@ -19,7 +19,6 @@ export interface AgentOptions {
   /** The fake Anthropic API, which scripts the model or forwards to Anthropic. */
   modelUrl: string
   model: string
-  /** The run's capture directory. */
   dir: string
   /** The proxy's certificate, for processes that can't trust it in-process. */
   certFile: string
@@ -66,7 +65,6 @@ export const frameworks: Record<Framework, (options: AgentOptions) => Promise<Ag
     }
   },
 
-  // eve reads the extension's configuration when it builds the agent, so each run builds its own copy.
   async eve(options) {
     const app = join(options.dir, 'eve-agent')
     cpSync(join(root, 'eve-agent'), app, {recursive: true})

@@ -73,7 +73,6 @@ if (values.help || !command) {
     model: models[0]!,
     anthropicApiKey: realModel ? env('ANTHROPIC_API_KEY', '--model and --chat') : undefined,
   }
-  // eve reads the connection description to decide whether the endpoint covers a question.
   if (live && framework === 'eve')
     console.log(
       `eve connection description: ${process.env.SANITY_CONTEXT_DESCRIPTION ?? "(not set, so the stub's)"}`,
@@ -109,7 +108,6 @@ if (values.help || !command) {
     const runs = questions.flatMap((question, i) =>
       Array.from({length: Number(values.repeat)}, (_, r) => ({question, label: `q${i}r${r}`})),
     )
-    // One model at a time; its runs go in parallel.
     for (const model of models) {
       const rows = await Promise.all(
         runs.map(async ({question, label}) => {

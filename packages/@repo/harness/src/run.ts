@@ -17,7 +17,6 @@ export interface RunOptions {
   scenario: string
   /** The first message. The scripted model only plans this turn. */
   message: string
-  /** A real endpoint instead of the stub. */
   live?: {url: string; token: string}
   /** Forward model calls to Anthropic instead of scripting them. */
   anthropicApiKey?: string
@@ -30,7 +29,6 @@ export interface RunOptions {
 export interface RunResult {
   dir: string
   reply?: string
-  /** Set when the run threw. */
   error?: string
 }
 
@@ -128,7 +126,6 @@ export async function run(options: RunOptions): Promise<RunResult> {
   return result
 }
 
-/** The model requests a run made, in order. */
 export function modelRequests(dir: string): AnthropicRequest[] {
   return readdirSync(dir)
     .filter((f) => /^model-\d+\.json$/.test(f))
@@ -155,7 +152,6 @@ export function toolCalls(requests: AnthropicRequest[]): string[] {
     .map((name) => name.replace(EVE_TOOL_PREFIX, ''))
 }
 
-/** The text of each tool result the model saw, in order. */
 export function toolResults(requests: AnthropicRequest[]) {
   if (!requests.length) return []
   return blocks(finalRequest(requests))
@@ -188,7 +184,6 @@ export function initialContextOf(dir: string): string | undefined {
   return called && JSON.parse(called.response).result?.content?.[0]?.text
 }
 
-/** Size and sections, so an endpoint that answers with less than expected stands out. */
 export function summarizeInitialContext(text: string | undefined): string {
   if (!text) return 'none received'
   const headings = [...text.matchAll(/^(#+) (.+)$/gm)]
