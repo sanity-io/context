@@ -65,7 +65,6 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
   const initialContextUrl = new URL(url)
   initialContextUrl.pathname = `${initialContextUrl.pathname.replace(/\/$/, '')}/initial-context`
   let warnedInitialContext = false
-  // No cache on purpose: endpoint changes reach the next model call.
   const fetchInitialContext = async () => {
     try {
       const res = await fetch(initialContextUrl, {
