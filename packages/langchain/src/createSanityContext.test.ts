@@ -100,7 +100,6 @@ describe('createSanityContext (LangChain)', () => {
   it('adds the initial context to the system prompt and keeps the initial_context tool', async () => {
     fetchMock.mockResolvedValue(new Response('## Shop: Context'))
     const {wrapModelCall} = hooks(createSanityContext(options))
-    // createAgent turns systemPrompt into a message with content blocks.
     const systemMessage = new SystemMessage({
       content: [{type: 'text', text: 'You are a support agent.'}],
     })
