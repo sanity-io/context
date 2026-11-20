@@ -4,9 +4,9 @@ import type {Metadata} from 'next/types'
 
 import {ProductDetails} from '@/components/product-details'
 import {client} from '@/sanity/lib/client'
-import {PRODUCT_QUERY, PRODUCT_SLUGS_QUERY} from '@/sanity/queries'
+import {PRODUCT_QUERY} from '@/sanity/queries'
 
-import type {PRODUCT_QUERY_RESULT, PRODUCT_SLUGS_QUERY_RESULT} from '../../../../sanity.types'
+import type {PRODUCT_QUERY_RESULT} from '../../../../sanity.types'
 
 interface Props {
   params: Promise<{slug: string}>
@@ -19,8 +19,7 @@ type VariantColor = NonNullable<ProductVariant['color']>
 type VariantSize = NonNullable<NonNullable<ProductVariant['sizes']>[number]>
 
 export async function generateStaticParams() {
-  const products: PRODUCT_SLUGS_QUERY_RESULT = await client.fetch(PRODUCT_SLUGS_QUERY)
-  return products.filter((p) => p.slug).map((p) => ({slug: p.slug!}))
+  return []
 }
 
 export async function generateMetadata({params}: Props): Promise<Metadata> {

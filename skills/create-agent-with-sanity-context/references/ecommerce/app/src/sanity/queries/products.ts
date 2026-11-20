@@ -55,13 +55,6 @@ export const PRODUCT_QUERY = defineQuery(/* groq */ `
   }
 `)
 
-// Product slugs for static generation
-export const PRODUCT_SLUGS_QUERY = defineQuery(/* groq */ `
-  *[_type == "product" && defined(slug.current)] {
-    "slug": slug.current
-  }
-`)
-
 // Pagination constants (multiple of 4 for grid layout)
 export const PAGE_SIZE = 48
 
