@@ -241,6 +241,10 @@ export async function startMcpProxy(options: {
       .then(async (response) => ({response, answer: await response.text()}))
       .catch((error: Error) => error)
     if (forwarded instanceof Error) {
+      appendFileSync(
+        log,
+        `${JSON.stringify({...entry, status: 502, request: message, error: forwarded.message})}\n`,
+      )
       res.writeHead(502, {'content-type': 'text/plain'})
       return res.end(forwarded.message)
     }
