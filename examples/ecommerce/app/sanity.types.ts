@@ -547,13 +547,6 @@ export type PRODUCT_QUERY_RESULT = {
 } | null
 
 // Source: src/sanity/queries/products.ts
-// Variable: PRODUCT_SLUGS_QUERY
-// Query: *[_type == "product" && defined(slug.current)] {    "slug": slug.current  }
-export type PRODUCT_SLUGS_QUERY_RESULT = Array<{
-  slug: string | null
-}>
-
-// Source: src/sanity/queries/products.ts
 // Variable: PRODUCTS_COUNT_QUERY
 // Query: count(*[_type == "product" && defined(slug.current)])
 export type PRODUCTS_COUNT_QUERY_RESULT = number
@@ -568,7 +561,6 @@ declare module '@sanity/client' {
     '\n  *[_type == "product" && defined(slug.current)] | order(_createdAt desc) {\n    \n  _id,\n  title,\n  "slug": slug.current,\n  shortDescription,\n  "category": category->{ \n  _id,\n  title,\n  "slug": slug.current\n },\n  "brand": brand->{ \n  _id,\n  title,\n  "slug": slug.current\n },\n  "image": variants[0].images[0] { \n  asset->{\n    _id,\n    url,\n    metadata { lqip, dimensions }\n  },\n  alt\n },\n  price { \n  amount,\n  compareAtPrice\n }\n\n  }\n': PRODUCTS_QUERY_RESULT
     '\n  *[_type == "product" && defined(slug.current)] | order(_createdAt desc) [0...8] {\n    \n  _id,\n  title,\n  "slug": slug.current,\n  shortDescription,\n  "category": category->{ \n  _id,\n  title,\n  "slug": slug.current\n },\n  "brand": brand->{ \n  _id,\n  title,\n  "slug": slug.current\n },\n  "image": variants[0].images[0] { \n  asset->{\n    _id,\n    url,\n    metadata { lqip, dimensions }\n  },\n  alt\n },\n  price { \n  amount,\n  compareAtPrice\n }\n\n  }\n': FEATURED_PRODUCTS_QUERY_RESULT
     '\n  *[_type == "product" && slug.current == $slug][0] {\n    _id,\n    title,\n    "slug": slug.current,\n    sku,\n    shortDescription,\n    description,\n    features,\n    careInstructions,\n    "category": category->{ \n  _id,\n  title,\n  "slug": slug.current\n },\n    "brand": brand->{ \n  _id,\n  title,\n  "slug": slug.current\n },\n    price { \n  amount,\n  compareAtPrice\n },\n    "materials": materials[]->{ _id, title },\n    "variants": variants[] { \n  _key,\n  sku,\n  available,\n  "color": color->{ _id, title, hex },\n  "sizes": sizes[]->{ _id, title, code, sortOrder },\n  "images": images[] { \n  asset->{\n    _id,\n    url,\n    metadata { lqip, dimensions }\n  },\n  alt\n }\n }\n  }\n': PRODUCT_QUERY_RESULT
-    '\n  *[_type == "product" && defined(slug.current)] {\n    "slug": slug.current\n  }\n': PRODUCT_SLUGS_QUERY_RESULT
     '\n  count(*[_type == "product" && defined(slug.current)])\n': PRODUCTS_COUNT_QUERY_RESULT
   }
 }
