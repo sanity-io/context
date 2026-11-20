@@ -7,6 +7,8 @@ pnpm harness langchain          # stub endpoint, scripted model
 pnpm harness eve 502            # a fault scenario
 pnpm harness check              # every scenario with its expected outcome (CI runs this)
 pnpm harness eve --chat         # chat in the terminal, with a real model
+pnpm harness eve --live --model claude-haiku-5-5,claude-sonnet-5-5 --questions q.json --repeat 2
+                                # compare models: tools called, steps, and the initial context received
 pnpm harness --help             # all options
 ```
 
