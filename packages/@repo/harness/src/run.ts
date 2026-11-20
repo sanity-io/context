@@ -1,4 +1,4 @@
-import {mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
+import {existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
 import {join} from 'node:path'
 
 import {type Agent, EVE_TOOL_PREFIX, type Framework, frameworks} from './frameworks'
@@ -76,7 +76,10 @@ export async function run(options: RunOptions): Promise<RunResult> {
   const {framework, scenario, live} = options
   const faults = SCENARIOS[scenario]
   if (!faults) throw new Error(`Unknown scenario "${scenario}"`)
-  const name = [options.label ?? (live ? 'live' : 'stub'), framework, scenario].join('-')
+  const realModel = options.anthropicApiKey && options.model
+  const name = [options.label ?? (live ? 'live' : 'stub'), framework, scenario, realModel]
+    .filter(Boolean)
+    .join('-')
   const dir = join(import.meta.dirname, '..', 'captures', name)
   rmSync(dir, {recursive: true, force: true})
   mkdirSync(dir, {recursive: true})
@@ -166,6 +169,41 @@ export function toolResults(requests: AnthropicRequest[]) {
               .map((c) => (c.type === 'text' ? c.text : `[${c.type}]`))
               .join(''),
     }))
+}
+
+/**
+ * The initial context the run received: the `/initial-context` answer when the package inlined it,
+ * otherwise the `initial_context` tool's result.
+ */
+export function initialContextOf(dir: string): string | undefined {
+  const log = join(dir, 'mcp.jsonl')
+  if (!existsSync(log)) return undefined
+  const entries = readFileSync(log, 'utf8')
+    .trim()
+    .split('\n')
+    .map((line) => JSON.parse(line))
+  const inlined = entries.find((e) => e.path === '/initial-context' && e.status === 200)
+  if (inlined?.response) return inlined.response
+  const called = entries.find((e) => e.tool === 'initial_context' && e.response)
+  return called && JSON.parse(called.response).result?.content?.[0]?.text
+}
+
+/** Size and sections, so an endpoint that answers with less than expected stands out. */
+export function summarizeInitialContext(text: string | undefined): string {
+  if (!text) return 'none received'
+  const headings = [...text.matchAll(/^(#+) (.+)$/gm)]
+  const level = headings[0]?.[1]?.length ?? 1
+  const sections = headings.filter((h) => h[1]!.length === level + 1).map((h) => h[2])
+  const types = text.match(/^- \w+ \(/gm)?.length ?? 0
+  const entries = [...text.matchAll(/^(\d+) entries\.?$/gm)].reduce((n, m) => n + Number(m[1]), 0)
+  return [
+    `${text.length.toLocaleString('en')} characters`,
+    sections.join(', '),
+    types && `${types} schema types`,
+    entries && `${entries} knowledge base entries`,
+  ]
+    .filter(Boolean)
+    .join('; ')
 }
 
 /** Writes the run's longest model request, the one with the whole conversation, as markdown. */

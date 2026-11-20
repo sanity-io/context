@@ -5,7 +5,14 @@ import {parseArgs} from 'node:util'
 
 import {check} from './check'
 import {type Framework, frameworks} from './frameworks'
-import {modelRequests, run, SCENARIOS, toolCalls} from './run'
+import {
+  initialContextOf,
+  modelRequests,
+  run,
+  SCENARIOS,
+  summarizeInitialContext,
+  toolCalls,
+} from './run'
 
 const USAGE = `Usage:
   pnpm harness <eve|langchain> [scenario]   Run one scenario with a scripted model
@@ -14,9 +21,10 @@ const USAGE = `Usage:
 
 Options:
   --live                Use the endpoint in .env instead of the stub
-  --model <id>          Use a real Anthropic model (needs ANTHROPIC_API_KEY)
+  --model <ids>         Use real Anthropic models, comma-separated (needs ANTHROPIC_API_KEY)
   --question <text>     The first message (default: a returns question)
-  --questions <file>    Run each question in a JSON array, one run each, and print a table
+  --questions <file>    Run each question in a JSON array, one run each, and print a table per model
+  --repeat <n>          With --questions, run each question n times (default 1)
 
 Scenarios: ${Object.keys(SCENARIOS).join(', ')}`
 
@@ -30,6 +38,7 @@ const {values, positionals} = parseArgs({
     model: {type: 'string'},
     question: {type: 'string', default: 'How do I return the "Classic" coffee cup?'},
     questions: {type: 'string'},
+    repeat: {type: 'string', default: '1'},
     chat: {type: 'boolean'},
     help: {type: 'boolean', short: 'h'},
   },
@@ -56,13 +65,19 @@ if (values.help || !command) {
       }
     : undefined
   const realModel = Boolean(values.model || values.chat)
+  const models = (values.model ?? 'claude-sonnet-5-5').split(',')
   const options = {
     framework,
     scenario,
     live,
-    model: values.model ?? 'claude-sonnet-5-5',
+    model: models[0]!,
     anthropicApiKey: realModel ? env('ANTHROPIC_API_KEY', '--model and --chat') : undefined,
   }
+  // eve reads the connection description to decide whether the endpoint covers a question.
+  if (live && framework === 'eve')
+    console.log(
+      `eve connection description: ${process.env.SANITY_CONTEXT_DESCRIPTION ?? "(not set, so the stub's)"}`,
+    )
 
   if (values.chat) {
     // The iterator buffers lines, so piped input works too. An empty line or end of input ends the chat.
@@ -85,28 +100,44 @@ if (values.help || !command) {
         },
       })
       if (result.error) console.error(result.error)
-      console.log(`\nTranscript: ${join(result.dir, 'transcript.md')}`)
+      console.log(`\nInitial context: ${summarizeInitialContext(initialContextOf(result.dir))}`)
+      console.log(`Transcript: ${join(result.dir, 'transcript.md')}`)
     }
     rl.close()
   } else if (values.questions) {
     const questions: string[] = JSON.parse(readFileSync(values.questions, 'utf8'))
-    const rows = await Promise.all(
-      questions.map(async (question, i) => {
-        const result = await run({...options, label: `q${i}`, message: question})
-        const calls = toolCalls(modelRequests(result.dir))
-        return {
-          question: question.slice(0, 50),
-          error: result.error ?? '-',
-          steps: modelRequests(result.dir).length,
-          initial_context: calls.includes('initial_context') ? 'called' : '-',
-          calls: calls.join(', '),
-        }
-      }),
+    const runs = questions.flatMap((question, i) =>
+      Array.from({length: Number(values.repeat)}, (_, r) => ({question, label: `q${i}r${r}`})),
     )
-    console.table(rows)
+    // One model at a time; its runs go in parallel.
+    for (const model of models) {
+      const rows = await Promise.all(
+        runs.map(async ({question, label}) => {
+          const result = await run({...options, model, label, message: question})
+          const calls = toolCalls(modelRequests(result.dir))
+          return {
+            question: question.slice(0, 50),
+            error: result.error ?? '-',
+            steps: modelRequests(result.dir).length,
+            initial_context: calls.includes('initial_context') ? 'called' : '-',
+            calls: calls.join(', '),
+            dir: result.dir,
+          }
+        }),
+      )
+      console.table(rows.map(({dir: _, ...row}) => row))
+      const called = rows.filter((r) => r.initial_context === 'called').length
+      const steps = rows.reduce((n, r) => n + r.steps, 0) / rows.length
+      const errors = rows.filter((r) => r.error !== '-').length
+      console.log(
+        `${model}: initial_context called in ${called} of ${rows.length} runs, ${steps.toFixed(1)} model steps on average, ${errors} errors.`,
+      )
+      console.log(`Initial context: ${summarizeInitialContext(initialContextOf(rows[0]!.dir))}\n`)
+    }
   } else {
     const result = await run({...options, message: values.question})
     console.log(result.error ? `Threw: ${result.error}` : `Reply: ${result.reply}`)
+    console.log(`Initial context: ${summarizeInitialContext(initialContextOf(result.dir))}`)
     console.log(`Transcript: ${join(result.dir, 'transcript.md')}`)
   }
 } else {
