@@ -127,3 +127,5 @@ storybook-static
 dist
 
 .pnpm-store
+# Harness run output
+packages/@repo/harness/captures/
