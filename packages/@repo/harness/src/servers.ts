@@ -168,7 +168,7 @@ export async function startFakeAnthropic(options: {
 
 /**
  * An https proxy in front of a Context MCP endpoint. Logs every request and raw response to
- * `mcp.jsonl`, and replaces the nth request to a tool or method with a fault.
+ * `mcp.jsonl`, and replaces matching requests with faults.
  */
 export async function startMcpProxy(options: {
   upstream: string
