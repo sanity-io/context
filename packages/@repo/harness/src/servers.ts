@@ -8,7 +8,7 @@ import {join} from 'node:path'
 export type Step = {tool: string; input: Record<string, unknown>} | {text: string}
 
 export type Fault = {
-  /** A tool name, an MCP method such as `tools/list`, or `*` for every request. */
+  /** A tool name, an MCP method such as `tools/list`, a path such as `/initial-context`, or `*`. */
   target: string
   /** Only the nth request to the target. Without it, every request. */
   nth?: number
@@ -186,7 +186,7 @@ export async function startMcpProxy(options: {
     const path = incoming.pathname.replace(/^\/mcp/, '')
     const tool: string | undefined =
       message?.method === 'tools/call' ? message.params?.name : undefined
-    const key: string | undefined = tool ?? message?.method
+    const key: string | undefined = tool ?? message?.method ?? (path || undefined)
     const nth = key ? (counts.get(key) ?? 0) + 1 : 0
     if (key) counts.set(key, nth)
     const fault = options.faults.find(
