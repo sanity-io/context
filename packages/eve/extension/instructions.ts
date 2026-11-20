@@ -2,7 +2,6 @@ import {defineDynamic, defineInstructions} from 'eve/instructions'
 
 import extension from './extension'
 
-// Only when the fetch failed: next to an inlined initial context, models follow this and load it again.
 const LOAD_INITIAL_CONTEXT =
   "Before you use the Sanity Context connection, make sure you've seen its initial context. It describes the content the connection covers and how to look things up. If it isn't already in your instructions or this conversation, load it first: find the connection's `initial_context` tool with `eve__search` and call it with `eve__tool`."
 
@@ -26,7 +25,6 @@ export default defineDynamic(async (ctx) => {
       console.warn(
         `[sanity-context] Could not load the initial context: ${(error as Error).message}`,
       )
-      // Saved for the session, so a failing endpoint doesn't slow every model call.
       return null
     }
   })
