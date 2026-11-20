@@ -17,16 +17,18 @@ export default defineDynamic(async (ctx) => {
         signal: AbortSignal.any([abortSignal, AbortSignal.timeout(10_000)]),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return await res.text()
+      const text = await res.text()
+      if (!text) throw new Error('empty response')
+      return text
     } catch (error) {
       // An interrupted step runs again, so don't save its failure for the rest of the session.
       if (abortSignal.aborted) throw error
-      console.error(
+      console.warn(
         `[sanity-context] Could not load the initial context: ${(error as Error).message}`,
       )
       // Saved for the session, so a failing endpoint doesn't slow every model call.
       return null
     }
   })
-  return defineInstructions({content: initialContext || LOAD_INITIAL_CONTEXT})
+  return defineInstructions({content: initialContext ?? LOAD_INITIAL_CONTEXT})
 })
