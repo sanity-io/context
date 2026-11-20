@@ -93,7 +93,7 @@ function server() {
 export async function startStub() {
   const http = createServer(async (req, res) => {
     if (req.method === 'GET' && req.url?.startsWith('/mcp/initial-context')) {
-      // Like the real route's default heading_offset=1.
+      // The real route shifts headings down one level.
       res.writeHead(200, {'content-type': 'text/plain; charset=utf-8'})
       return res.end(INITIAL_CONTEXT.replace(/^#/gm, '##'))
     }
