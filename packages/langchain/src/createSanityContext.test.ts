@@ -1,6 +1,7 @@
 import {afterEach, beforeEach, describe, expect, it, vi} from 'vitest'
 
 const listTools = vi.fn()
+const fetchMock = vi.fn()
 const adapterConfigs: unknown[] = []
 
 vi.mock('@langchain/mcp-adapters', () => ({
@@ -15,7 +16,7 @@ vi.mock('@langchain/mcp-adapters', () => ({
 }))
 
 import {BaseChatModel} from '@langchain/core/language_models/chat_models'
-import {AIMessage, ToolMessage} from '@langchain/core/messages'
+import {AIMessage, SystemMessage, ToolMessage} from '@langchain/core/messages'
 import {DynamicStructuredTool} from '@langchain/core/tools'
 import {ToolException} from '@langchain/mcp-adapters'
 import {createAgent} from 'langchain'
@@ -58,9 +59,16 @@ function hooks(sanity: ReturnType<typeof createSanityContext>) {
 beforeEach(() => {
   listTools.mockReset()
   listTools.mockResolvedValue([{name: 'groq_query'}, {name: 'initial_context'}])
+  fetchMock.mockReset()
+  fetchMock.mockRejectedValue(new Error('offline'))
+  vi.stubGlobal('fetch', fetchMock)
+  vi.spyOn(console, 'warn').mockImplementation(() => {})
 })
 
-afterEach(() => vi.restoreAllMocks())
+afterEach(() => {
+  vi.restoreAllMocks()
+  vi.unstubAllGlobals()
+})
 
 describe('createSanityContext (LangChain)', () => {
   it('refuses a URL that would send the token in clear text', () => {
@@ -87,6 +95,48 @@ describe('createSanityContext (LangChain)', () => {
       'knowledge_base_search',
       'initial_context',
     ])
+  })
+
+  it('adds the initial context to the system prompt and keeps the initial_context tool', async () => {
+    fetchMock.mockResolvedValue(new Response('## Shop: Context'))
+    const {wrapModelCall} = hooks(createSanityContext(options))
+    const systemMessage = new SystemMessage({
+      content: [{type: 'text', text: 'You are a support agent.'}],
+    })
+    const sent = (await wrapModelCall({tools: [], systemMessage}, async (request) => request)) as {
+      tools: {name: string}[]
+      systemMessage: SystemMessage
+    }
+    expect(sent.systemMessage.text).toBe('You are a support agent.\n\n## Shop: Context')
+    expect(sent.tools.map((t) => t.name)).toContain('initial_context')
+    const [url, init] = fetchMock.mock.calls[0]!
+    expect(String(url)).toBe(`${options.url}/initial-context`)
+    expect(init.headers).toEqual({Authorization: 'Bearer t'})
+  })
+
+  it('leaves the system prompt alone when the initial context fails to load', async () => {
+    fetchMock.mockResolvedValue(new Response('nope', {status: 502}))
+    const systemMessage = new SystemMessage('You are a support agent.')
+    const {wrapModelCall} = hooks(createSanityContext(options))
+    const sent = (await wrapModelCall({tools: [], systemMessage}, async (request) => request)) as {
+      systemMessage: SystemMessage
+    }
+    expect(sent.systemMessage).toBe(systemMessage)
+  })
+
+  it('warns again when the initial context fails after it had recovered', async () => {
+    const {wrapModelCall} = hooks(createSanityContext(options))
+    const call = () =>
+      wrapModelCall({tools: [], systemMessage: new SystemMessage('')}, async (request) => request)
+    fetchMock.mockResolvedValueOnce(new Response('', {status: 502}))
+    fetchMock.mockResolvedValueOnce(new Response('', {status: 502}))
+    fetchMock.mockResolvedValueOnce(new Response('## Shop: Context'))
+    fetchMock.mockResolvedValueOnce(new Response(''))
+    for (let i = 0; i < 4; i++) await call()
+    expect(console.warn).toHaveBeenCalledTimes(2)
+    expect(console.warn).toHaveBeenLastCalledWith(
+      '[sanity-context] Could not load the initial context: empty response',
+    )
   })
 
   it('provides the implementation for a Sanity tool call in a fresh process', async () => {
