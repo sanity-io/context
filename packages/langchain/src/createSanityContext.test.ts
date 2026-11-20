@@ -100,11 +100,15 @@ describe('createSanityContext (LangChain)', () => {
   it('adds the initial context to the system prompt and keeps the initial_context tool', async () => {
     fetchMock.mockResolvedValue(new Response('## Shop: Context'))
     const {wrapModelCall} = hooks(createSanityContext(options))
-    const sent = (await wrapModelCall(
-      {tools: [], systemMessage: new SystemMessage('You are a support agent.')},
-      async (request) => request,
-    )) as {tools: {name: string}[]; systemMessage: SystemMessage}
-    expect(sent.systemMessage.content).toBe('You are a support agent.\n\n## Shop: Context')
+    // createAgent turns systemPrompt into a message with content blocks.
+    const systemMessage = new SystemMessage({
+      content: [{type: 'text', text: 'You are a support agent.'}],
+    })
+    const sent = (await wrapModelCall({tools: [], systemMessage}, async (request) => request)) as {
+      tools: {name: string}[]
+      systemMessage: SystemMessage
+    }
+    expect(sent.systemMessage.text).toBe('You are a support agent.\n\n## Shop: Context')
     expect(sent.tools.map((t) => t.name)).toContain('initial_context')
     const [url, init] = fetchMock.mock.calls[0]!
     expect(String(url)).toBe(`${options.url}/initial-context`)
@@ -119,6 +123,21 @@ describe('createSanityContext (LangChain)', () => {
       systemMessage: SystemMessage
     }
     expect(sent.systemMessage).toBe(systemMessage)
+  })
+
+  it('warns again when the initial context fails after it had recovered', async () => {
+    const {wrapModelCall} = hooks(createSanityContext(options))
+    const call = () =>
+      wrapModelCall({tools: [], systemMessage: new SystemMessage('')}, async (request) => request)
+    fetchMock.mockResolvedValueOnce(new Response('', {status: 502}))
+    fetchMock.mockResolvedValueOnce(new Response('', {status: 502}))
+    fetchMock.mockResolvedValueOnce(new Response('## Shop: Context'))
+    fetchMock.mockResolvedValueOnce(new Response(''))
+    for (let i = 0; i < 4; i++) await call()
+    expect(console.warn).toHaveBeenCalledTimes(2)
+    expect(console.warn).toHaveBeenLastCalledWith(
+      '[sanity-context] Could not load the initial context: empty response',
+    )
   })
 
   it('provides the implementation for a Sanity tool call in a fresh process', async () => {

@@ -1,6 +1,6 @@
 # @sanity/context-langchain
 
-Sanity Context for [LangChain](https://js.langchain.com) agents. Connect a LangChain agent to a Context MCP endpoint. The agent gets the endpoint's current tools on every run, so changes to the endpoint's sources in the Context app reach it without a restart. Each model call also gets the endpoint's initial context in its system prompt, so the model doesn't spend a tool call loading it. If the initial context can't be fetched, the model loads it with the `initial_context` tool instead.
+Sanity Context for [LangChain](https://js.langchain.com) agents. Connect a LangChain agent to a Context MCP endpoint. The agent gets the endpoint's current tools on every run, so changes to the endpoint's sources in the Context app reach it without a restart. Each model call also gets the endpoint's initial context in its system prompt, so the model doesn't spend a tool call loading it.
 
 It takes the endpoint URL and an organization API token with Context access (Viewer is enough). Keep the token server-side. Create one connector per endpoint and token, and reuse it across runs.
 
@@ -39,6 +39,7 @@ const agent = createAgent({
 
 - A missing URL or token, or a URL that isn't https, throws when you create the connector.
 - When the tools can't be listed, the agent run fails with `Could not connect to Sanity Context: …`, or `Sanity Context rejected the token …` for a 401 or 403.
+- If the initial context can't be loaded, the middleware logs a warning and the model call goes ahead without it. The `initial_context` tool stays available as a safety net.
 - Tool results contain your content, so anyone who can edit that content can influence what the agent does.
 
 See the [Sanity Context guide for LangChain](https://www.sanity.io/docs/context/connect-langchain) for setting up an endpoint and a token.

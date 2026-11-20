@@ -10,7 +10,7 @@ export interface SanityContextLangChain {
    * Pass to `createAgent({middleware: [...]})` as the first entry, so other middleware sees the
    * Sanity tools. Before every model call it lists the endpoint's current tools and adds its initial
    * context to the system prompt, two requests to the endpoint per step. The call fails if the tools
-   * can't be listed. If the initial context can't be fetched, the model loads it with the tool.
+   * can't be listed. The `initial_context` tool stays available as a safety net.
    *
    * Errors from the Sanity tools go to the model. Like any middleware that wraps tool calls, it
    * makes LangChain rethrow errors from the agent's own tools; add LangChain's
@@ -65,8 +65,7 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
   const initialContextUrl = new URL(url)
   initialContextUrl.pathname = `${initialContextUrl.pathname.replace(/\/$/, '')}/initial-context`
   let warnedInitialContext = false
-  // Fetched on every model call, like the tools, so it's never stale. Null when it can't be: the
-  // `initial_context` tool stays, and its description tells the model to call it first.
+  // No cache on purpose: endpoint changes reach the next model call.
   const fetchInitialContext = async () => {
     try {
       const res = await fetch(initialContextUrl, {
@@ -74,12 +73,15 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
         signal: AbortSignal.timeout(10_000),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      return (await res.text()) || null
+      const text = await res.text()
+      if (!text) throw new Error('empty response')
+      warnedInitialContext = false
+      return text
     } catch (error) {
       if (!warnedInitialContext) {
         warnedInitialContext = true
         console.warn(
-          `[sanity-context] Could not load the initial context, so the model loads it with the initial_context tool: ${(error as Error).message}`,
+          `[sanity-context] Could not load the initial context: ${(error as Error).message}`,
         )
       }
       return null
