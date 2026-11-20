@@ -18,7 +18,6 @@ type ProductVariant = NonNullable<Product['variants']>[number]
 type VariantColor = NonNullable<ProductVariant['color']>
 type VariantSize = NonNullable<NonNullable<ProductVariant['sizes']>[number]>
 
-// Each product page renders on its first visit: prerendering thousands at build time hits the API rate limit.
 export async function generateStaticParams() {
   return []
 }
