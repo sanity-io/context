@@ -10,6 +10,7 @@ export type Step = {tool: string; input: Record<string, unknown>} | {text: strin
 export type Fault = {
   /** A tool name, an MCP method such as `tools/list`, a path such as `/initial-context`, or `*`. */
   target: string
+  /** Only the nth request to the target. Without it, every request. */
   nth?: number
   kind: '502html' | '401' | 'reset' | '500json' | '400rpc'
 }
@@ -189,7 +190,7 @@ export async function startMcpProxy(options: {
     const nth = key ? (counts.get(key) ?? 0) + 1 : 0
     if (key) counts.set(key, nth)
     const fault = options.faults.find(
-      (f) => f.target === '*' || (f.target === key && (f.nth ?? 1) === nth),
+      (f) => f.target === '*' || (f.target === key && (f.nth ?? nth) === nth),
     )
     const entry = {method: req.method, path, rpc: message?.method, tool, nth, fault: fault?.kind}
 
