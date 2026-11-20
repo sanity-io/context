@@ -89,7 +89,6 @@ function server() {
   return s
 }
 
-/** A Context MCP endpoint serving the Stub Shop, with the `/initial-context` route beside it. */
 export async function startStub() {
   const http = createServer(async (req, res) => {
     if (req.method === 'GET' && req.url?.startsWith('/mcp/initial-context')) {

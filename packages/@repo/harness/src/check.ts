@@ -5,10 +5,9 @@ import {type Framework} from './frameworks'
 import {modelRequests, run, systemText, toolResults} from './run'
 
 /**
- * What each package decides per scenario: the run throws with `threw`, or completes and the model
+ * What each package decides per scenario. The run throws with `threw`, or completes and the model
  * sees `saw` (default: every tool result the stub sent, intact). The first system prompt includes
- * `system` and leaves out `notSystem`. Faults the framework handles
- * itself aren't checked.
+ * `system` and leaves out `notSystem`. Faults the framework handles itself aren't checked.
  */
 type Expected = {threw?: string; saw?: string; system?: string; notSystem?: string}
 
