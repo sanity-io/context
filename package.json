@@ -28,7 +28,7 @@
   },
   "prettier": "@sanity/prettier-config",
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.78.0",
+    "@anthropic-ai/sdk": "^0.137.0",
     "@commitlint/cli": "^20.5.3",
     "@commitlint/config-conventional": "^20.5.3",
     "@portabletext/markdown": "^1.5.0",
@@ -47,5 +47,5 @@
     "turbo": "^2.11.2",
     "typescript": "^5"
   },
-  "packageManager": "pnpm@10.32.1"
+  "packageManager": "pnpm@10.34.9"
 }
