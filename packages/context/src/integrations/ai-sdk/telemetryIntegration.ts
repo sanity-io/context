@@ -62,6 +62,8 @@ interface OnStepEndEvent {
 }
 
 interface OnFinishEvent {
+  /** In-band stream errors can complete through onFinish/onEnd. */
+  finishReason?: string
   /** Present on AI SDK v7 events, absent on v6. */
   callId?: string
   /** AI SDK v7: response messages from all steps. */
@@ -329,7 +331,12 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): SanityIn
     // response and still saves.
     if (responseMessages === undefined) return
 
-    await save(collectMessages([...(pending?.input ?? []), ...responseMessages]), event)
+    const messages = collectMessages([...(pending?.input ?? []), ...responseMessages])
+    if (event.finishReason === 'error') {
+      // These hooks carry the failure reason but not the provider error itself.
+      messages.push({role: 'assistant', content: null, error: 'Text generation stream failed'})
+    }
+    await save(messages, event)
   }
 
   return {
@@ -369,9 +376,8 @@ function createSanityInsightsIntegration(config: SanityInsightsConfig): SanityIn
     onFinish: onGenerationEnd,
     onEnd: onGenerationEnd,
 
-    // AI SDK v7 fires onAbort / onError instead of onEnd for aborted or
-    // failed generations. v6 has no error hook, so a failed v6 turn goes
-    // unrecorded.
+    // Abort and thrown-error hooks complement terminal finishReason errors.
+    // v6 has no error hook for failures that never reach onFinish.
     onAbort(event: OtherOperationEvent): void {
       takePending(event.callId)
     },

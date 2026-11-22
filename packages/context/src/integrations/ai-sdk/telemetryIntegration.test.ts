@@ -60,6 +60,24 @@ describe('sanityInsightsIntegration', () => {
     })
   })
 
+  it.each(['onFinish', 'onEnd'] as const)(
+    'marks an in-band stream error through %s while keeping partial content',
+    async (hook) => {
+      const integration = makeIntegration()
+      integration.onStart({messages: [{role: 'user', content: 'Question'}]})
+      await integration[hook]({
+        finishReason: 'error',
+        response: {messages: [{role: 'assistant', content: 'Partial answer'}]},
+      })
+      expect(savedMessages(integration.save)).toEqual([
+        {role: 'user', content: 'Question'},
+        {role: 'assistant', content: 'Partial answer'},
+        {role: 'assistant', content: null, error: 'Text generation stream failed'},
+      ])
+      expect(integration.save).toHaveBeenCalledTimes(1)
+    },
+  )
+
   it('prefers the event totalTokens over the computed sum', async () => {
     const {save, onStart, onFinish} = makeIntegration()
 

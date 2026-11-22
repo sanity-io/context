@@ -29,7 +29,7 @@ function initialContextUrl(mcpUrl: string): string {
 }
 
 // Slow on cold start — subsequent calls return the cached result
-async function fetchInitialContext(): Promise<string | null> {
+async function fetchInitialContext(signal?: AbortSignal): Promise<string | null> {
   const mcpUrl = process.env.SANITY_CONTEXT_MCP_URL
   if (!mcpUrl) return null
 
@@ -37,6 +37,7 @@ async function fetchInitialContext(): Promise<string | null> {
   const fetchPromise = isStale
     ? fetch(initialContextUrl(mcpUrl), {
         headers: {Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`},
+        signal,
       })
         .then(async (res) => {
           if (res.ok) {
@@ -133,30 +134,62 @@ export async function POST(req: Request) {
     throw new Error('SANITY_ORGANIZATION_ID is not set')
   }
 
-  let mcpClient: MCPClient | null = null
+  const abort = new AbortController()
+  let mcpPromise: Promise<MCPClient> | undefined
+  let closePromise: Promise<void> | undefined
+  let cancelResponse: ((reason: unknown) => Promise<void>) | undefined
+
+  // Own acquisition from its start: setup may fail before it resolves.
+  const closeMcp = (): Promise<void> => {
+    if (!mcpPromise) return Promise.resolve()
+    closePromise ??= mcpPromise
+      .then(
+        (mcpClient) => mcpClient.close(),
+        () => {}, // Failed acquisition created no client to close.
+      )
+      .catch((error: unknown) => {
+        console.error('Failed to close MCP client:', error)
+      })
+    return closePromise
+  }
+  const onRequestAbort = (): void => {
+    abort.abort(req.signal.reason)
+    void (cancelResponse?.(req.signal.reason) ?? closeMcp()).catch((error: unknown) => {
+      console.error('Failed to cancel response:', error)
+    })
+  }
+  const cleanup = async (): Promise<void> => {
+    req.signal.removeEventListener('abort', onRequestAbort)
+    await closeMcp()
+  }
+  req.signal.addEventListener('abort', onRequestAbort, {once: true})
 
   try {
-    const [mcpClientResult, agentConfig, initialContext] = await Promise.all([
-      createMCPClient({
-        transport: {
-          type: 'http',
-          url: process.env.SANITY_CONTEXT_MCP_URL,
-          headers: {
-            Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`,
-          },
+    req.signal.throwIfAborted()
+    mcpPromise = createMCPClient({
+      initializationOptions: {signal: abort.signal},
+      transport: {
+        type: 'http',
+        url: process.env.SANITY_CONTEXT_MCP_URL,
+        headers: {
+          Authorization: `Bearer ${process.env.SANITY_ORGANIZATION_TOKEN}`,
         },
-      }),
+      },
+    })
+    const [mcpClient, agentConfig, initialContext] = await Promise.all([
+      mcpPromise,
       client.fetch<{systemPrompt: string | null} | null>(
         `*[_type == "agent.config" && slug.current == $slug][0] { systemPrompt }`,
         {slug: process.env.AGENT_CONFIG_SLUG || 'default'},
+        {signal: abort.signal},
       ),
-      fetchInitialContext(),
+      fetchInitialContext(abort.signal),
     ])
 
-    mcpClient = mcpClientResult
+    abort.signal.throwIfAborted()
 
     if (!agentConfig?.systemPrompt) {
-      await mcpClient?.close()
+      await cleanup()
       return Response.json(
         {error: 'Agent config not found or missing system prompt. Create one in Sanity Studio.'},
         {status: 500},
@@ -183,10 +216,13 @@ export async function POST(req: Request) {
       process.env.SANITY_CONTEXT_ENDPOINT_NAME ??
       new URL(process.env.SANITY_CONTEXT_MCP_URL).pathname.split('/').filter(Boolean).pop()
 
+    const modelMessages = await convertToModelMessages(messages)
+    abort.signal.throwIfAborted()
     const result = streamText({
+      abortSignal: abort.signal,
       model: anthropic(modelId),
       instructions: systemPrompt,
-      messages: await convertToModelMessages(messages),
+      messages: modelMessages,
       experimental_download: downloadDataUrls,
       tools,
       stopWhen: stepCountIs(MAX_STEPS),
@@ -204,16 +240,69 @@ export async function POST(req: Request) {
           }),
         ],
       },
-      onEnd: async () => {
-        await mcpClient?.close()
-      },
+      onEnd: closeMcp,
+      onAbort: closeMcp,
+      onError: closeMcp,
     })
 
-    return createUIMessageStreamResponse({
+    const response = createUIMessageStreamResponse({
       stream: toUIMessageStream({stream: result.stream, tools, originalMessages: messages}),
     })
+    if (!response.body) {
+      await cleanup()
+      return response
+    }
+
+    const reader = response.body.getReader()
+    let cancelled = false
+    let released = false
+    const releaseReader = (): void => {
+      if (!released) {
+        reader.releaseLock()
+        released = true
+      }
+    }
+    let responseController: ReadableStreamDefaultController<Uint8Array> | undefined
+    cancelResponse = async (reason: unknown): Promise<void> => {
+      cancelled = true
+      abort.abort(reason)
+      responseController?.error(reason)
+      try {
+        if (!released) await reader.cancel(reason)
+      } finally {
+        releaseReader()
+        await cleanup()
+      }
+    }
+    return new Response(
+      new ReadableStream<Uint8Array>({
+        start(controller) {
+          responseController = controller
+        },
+        async pull(controller) {
+          try {
+            const {done, value} = await reader.read()
+            if (cancelled) return
+            if (done) {
+              releaseReader()
+              await cleanup()
+              if (!cancelled) controller.close()
+            } else {
+              controller.enqueue(value)
+            }
+          } catch (error) {
+            releaseReader()
+            await cleanup()
+            if (!cancelled) controller.error(error)
+          }
+        },
+        cancel: cancelResponse,
+      }),
+      {status: response.status, statusText: response.statusText, headers: response.headers},
+    )
   } catch (error) {
-    await mcpClient?.close()
+    abort.abort(error)
+    await cleanup()
     // Keep details in the server log; upstream errors can include internal response bodies
     console.error(error)
 
