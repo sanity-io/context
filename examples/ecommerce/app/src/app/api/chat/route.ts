@@ -11,6 +11,7 @@ import {
   type UIMessage,
 } from 'ai'
 
+import {authorizeChatRequest, conversationThreadId, isValidChatId} from '@/lib/chat-session'
 import {clientTools, type DocumentContext} from '@/lib/client-tools'
 import {client} from '@/sanity/lib/client'
 import {insightsClient} from '@/sanity/lib/insights-client'
@@ -116,7 +117,17 @@ const downloadDataUrls: Experimental_DownloadFunction = async (items) => {
 }
 
 export async function POST(req: Request) {
-  const {messages, documentContext, id: chatId}: ChatRequest = await req.json()
+  const session = authorizeChatRequest(req)
+  if (session instanceof Response) return session
+  let payload: ChatRequest
+  try {
+    payload = await req.json()
+  } catch {
+    return Response.json({error: 'Invalid chat request'}, {status: 400})
+  }
+  if (!payload || !isValidChatId(payload.id))
+    return Response.json({error: 'Invalid chat identifier'}, {status: 400})
+  const {messages, documentContext, id: chatId} = payload
 
   if (!process.env.SANITY_CONTEXT_MCP_URL) {
     throw new Error('SANITY_CONTEXT_MCP_URL is not set')
@@ -134,6 +145,7 @@ export async function POST(req: Request) {
     throw new Error('SANITY_ORGANIZATION_ID is not set')
   }
 
+  const threadId = conversationThreadId(session, process.env.SANITY_ORGANIZATION_ID, chatId)
   const abort = new AbortController()
   let mcpPromise: Promise<MCPClient> | undefined
   let closePromise: Promise<void> | undefined
@@ -230,7 +242,7 @@ export async function POST(req: Request) {
         integrations: [
           sanityInsightsIntegration({
             client: insightsClient,
-            threadId: chatId,
+            threadId,
             metadata: {
               // Well-known key: groups conversations by MCP endpoint in Insights
               mcpEndpoints: mcpEndpointName ?? [],
