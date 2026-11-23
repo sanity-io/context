@@ -2,14 +2,16 @@ import {existsSync, readFileSync} from 'node:fs'
 import {join} from 'node:path'
 
 import {type Framework} from './frameworks'
-import {modelRequests, run, toolResults} from './run'
+import {modelRequests, run, systemText, toolResults} from './run'
 
 /**
- * What each package decides per scenario: the run throws with `threw`, or completes and the model
- * sees `saw` (default: every tool result the stub sent, intact). Faults the framework handles
- * itself aren't checked.
+ * What each package decides per scenario. The run throws with `threw`, or completes and the model
+ * sees `saw` (default: every tool result the stub sent, intact). The first system prompt includes
+ * `system` and leaves out `notSystem`. Faults the framework handles itself aren't checked.
  */
-const EXPECTED: Record<Framework, Record<string, {threw?: string; saw?: string}>> = {
+type Expected = {threw?: string; saw?: string; system?: string; notSystem?: string}
+
+const EXPECTED: Record<Framework, Record<string, Expected>> = {
   langchain: {
     'happy': {},
     '400': {
@@ -23,7 +25,11 @@ const EXPECTED: Record<Framework, Record<string, {threw?: string; saw?: string}>
     'bad-token': {threw: 'Sanity Context rejected the token (HTTP 401: Invalid token).'},
   },
   eve: {
-    'happy': {},
+    'happy': {
+      system: '## Stub Shop: Context & Schema',
+      notSystem: "load it first: find the connection's `initial_context` tool",
+    },
+    'ic-fails': {system: "load it first: find the connection's `initial_context` tool"},
     'bad-token': {saw: 'Error: "sanity-context__sanity" requires authorization'},
   },
 }
@@ -49,6 +55,16 @@ export async function check(only?: Framework): Promise<boolean> {
       const seen = toolResults(modelRequests(result.dir)).map((r) => r.text)
       const problem = problemOf()
       function problemOf() {
+        const requests = modelRequests(result.dir)
+        const system = systemText(requests[0] ?? {messages: []})
+        if (expected.system && !system.includes(expected.system))
+          return `expected the system prompt to include "${expected.system}"`
+        if (expected.notSystem && system.includes(expected.notSystem))
+          return `expected the system prompt to leave out "${expected.notSystem}"`
+        // eve offers connection tools through eve__search, so only LangChain lists them directly.
+        if (framework === 'langchain' && requests.length && !result.error)
+          if (!requests.at(-1)!.tools?.some((t) => t.name === 'initial_context'))
+            return 'expected the initial_context tool to stay available'
         if (expected.threw)
           return result.error?.startsWith(expected.threw)
             ? undefined
