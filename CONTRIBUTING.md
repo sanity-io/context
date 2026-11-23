@@ -22,11 +22,9 @@ This repo uses [Release Please](https://github.com/googleapis/release-please) wi
 
 2. **Release Please opens/updates a release PR** — this PR accumulates changes and updates the changelog
 
-3. **Prettier workflow may open a formatting PR** — if the release PR has unformatted files (e.g., changelog), a `chore(prettier)` PR targeting the release branch will be opened automatically. Merge it first.
+3. **Merge the release PR** — this triggers the npm publish
 
-4. **Merge the release PR** — this triggers the npm publish
-
-5. **Changelog draft is created automatically** — after publish, the workflow generates a changelog draft using the GitHub release and PR descriptions, and sends a Slack notification to review and publish the release in Studio.
+4. **Changelog draft is created automatically** — after publish, the workflow generates a changelog draft using the GitHub release and PR descriptions, and sends a Slack notification to review and publish the release in Studio.
 
 ### Changelog CLI
 
