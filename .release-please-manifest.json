@@ -1,5 +1,5 @@
 {
   "packages/context": "3.0.1",
-  "packages/langchain": "0.1.0",
-  "packages/eve": "0.1.0"
+  "packages/langchain": "0.2.0",
+  "packages/eve": "0.2.0"
 }
