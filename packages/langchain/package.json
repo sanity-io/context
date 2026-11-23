@@ -46,6 +46,9 @@
     "test:unit:coverage": "vitest run --coverage"
   },
   "browserslist": "extends @sanity/browserslist-config",
+  "dependencies": {
+    "zod": "catalog:"
+  },
   "devDependencies": {
     "@langchain/core": "^1.4.0",
     "@langchain/mcp-adapters": "^2.0.3",
