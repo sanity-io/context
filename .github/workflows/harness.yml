@@ -6,6 +6,7 @@ on:
       - "packages/eve/**"
       - "packages/langchain/**"
       - "packages/@repo/harness/**"
+      - ".github/workflows/harness.yml"
       - "pnpm-lock.yaml"
 
 permissions:

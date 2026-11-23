@@ -1,5 +1,5 @@
 import {execFileSync} from 'node:child_process'
-import {appendFileSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync} from 'node:fs'
+import {appendFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync} from 'node:fs'
 import {createServer, type IncomingMessage, type Server, type ServerResponse} from 'node:http'
 import {createServer as createTlsServer} from 'node:https'
 import {tmpdir} from 'node:os'
@@ -38,9 +38,16 @@ export const listen = (server: Server, scheme = 'http') =>
     }),
   )
 
-/** A throwaway certificate for 127.0.0.1. The packages refuse plain http URLs. */
-export function createCertificate() {
+let certificate: {key: Buffer; cert: Buffer; certFile: string} | undefined
+
+/**
+ * A throwaway certificate for 127.0.0.1, one per process: LangChain runs trust it process-wide. The
+ * packages refuse plain http URLs.
+ */
+export function getCertificate() {
+  if (certificate) return certificate
   const dir = mkdtempSync(join(tmpdir(), 'harness-tls-'))
+  process.on('exit', () => rmSync(dir, {recursive: true, force: true}))
   const keyFile = join(dir, 'key.pem')
   const certFile = join(dir, 'cert.pem')
   execFileSync(
@@ -64,7 +71,8 @@ export function createCertificate() {
     ],
     {stdio: 'ignore'},
   )
-  return {key: readFileSync(keyFile), cert: readFileSync(certFile), certFile}
+  certificate = {key: readFileSync(keyFile), cert: readFileSync(certFile), certFile}
+  return certificate
 }
 
 function toolResultCount(body: AnthropicRequest) {

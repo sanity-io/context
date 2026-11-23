@@ -4,7 +4,7 @@ import {join} from 'node:path'
 import {type Agent, EVE_TOOL_PREFIX, type Framework, frameworks} from './frameworks'
 import {
   type AnthropicRequest,
-  createCertificate,
+  getCertificate,
   type Fault,
   startFakeAnthropic,
   startMcpProxy,
@@ -81,7 +81,7 @@ export async function run(options: RunOptions): Promise<RunResult> {
   rmSync(dir, {recursive: true, force: true})
   mkdirSync(dir, {recursive: true})
 
-  const certificate = createCertificate()
+  const certificate = getCertificate()
   const stub = live ? undefined : await startStub()
   const proxy = await startMcpProxy({
     upstream: live?.url ?? stub!.url,
