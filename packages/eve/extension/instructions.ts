@@ -1,5 +1,6 @@
 import {defineDynamic, defineInstructions} from 'eve/instructions'
 
+import pkg from '../package.json' with {type: 'json'}
 import extension from './extension'
 
 const LOAD_INITIAL_CONTEXT =
@@ -12,7 +13,10 @@ export default defineDynamic(async (ctx) => {
     endpoint.pathname = `${endpoint.pathname.replace(/\/$/, '')}/initial-context`
     try {
       const res = await fetch(endpoint, {
-        headers: {Authorization: `Bearer ${token}`},
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'User-Agent': `sanity-context-eve/${pkg.version}`,
+        },
         signal: AbortSignal.any([abortSignal, AbortSignal.timeout(10_000)]),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
