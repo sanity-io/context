@@ -1,6 +1,7 @@
 packages:
   - packages/**/*
   - examples/**/*
+  - '!packages/@repo/harness/captures/**'
 
 catalog:
   '@ai-sdk/anthropic': ^3.0.58

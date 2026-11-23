@@ -1,0 +1,42 @@
+name: Harness
+
+on:
+  pull_request:
+    paths:
+      - "packages/eve/**"
+      - "packages/langchain/**"
+      - "packages/@repo/harness/**"
+      - ".github/workflows/harness.yml"
+      - "pnpm-lock.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    timeout-minutes: 15
+    # eve needs Node 24, so the harness runs in its own workflow rather than in Validate.
+    name: Check framework packages
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm turbo run build --filter=@repo/harness^...
+
+      - name: Typecheck
+        run: pnpm --filter @repo/harness typecheck
+
+      - name: Run scenarios
+        run: pnpm --filter @repo/harness harness check
