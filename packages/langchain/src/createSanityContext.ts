@@ -1,6 +1,8 @@
 import {MCPAdapter, ToolException} from '@langchain/mcp-adapters'
 import {type AgentMiddleware, createMiddleware, ToolMessage} from 'langchain'
+import {z} from 'zod'
 
+import {version} from '../package.json' with {type: 'json'}
 import {connectionError, describeError, httpError} from './describeError'
 import {type SanityContextOptions, validateOptions} from './options'
 
@@ -8,9 +10,9 @@ import {type SanityContextOptions, validateOptions} from './options'
 export interface SanityContextLangChain {
   /**
    * Pass to `createAgent({middleware: [...]})` as the first entry, so other middleware sees the
-   * Sanity tools. Before every model call it lists the endpoint's current tools and adds its initial
-   * context to the system prompt, two requests to the endpoint per step. The call fails if the tools
-   * can't be listed. The `initial_context` tool stays available as a safety net.
+   * Sanity tools. It loads the endpoint's initial context once per run and adds it to the system
+   * prompt, and lists the endpoint's current tools before every model call. The call fails if the
+   * tools can't be listed. The `initial_context` tool stays available as a safety net.
    *
    * Errors from the Sanity tools go to the model. Like any middleware that wraps tool calls, it
    * makes LangChain rethrow errors from the agent's own tools; add LangChain's
@@ -65,11 +67,14 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
   const initialContextUrl = new URL(url)
   initialContextUrl.pathname = `${initialContextUrl.pathname.replace(/\/$/, '')}/initial-context`
   let warnedInitialContext = false
-  const fetchInitialContext = async () => {
+  const fetchInitialContext = async (signal: AbortSignal | undefined) => {
     try {
       const res = await fetch(initialContextUrl, {
-        headers: {Authorization: `Bearer ${token}`},
-        signal: AbortSignal.timeout(10_000),
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'User-Agent': `sanity-context-langchain/${version}`,
+        },
+        signal: AbortSignal.any([AbortSignal.timeout(10_000), ...(signal ? [signal] : [])]),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const text = await res.text()
@@ -77,6 +82,7 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
       warnedInitialContext = false
       return text
     } catch (error) {
+      if (signal?.aborted) throw error
       if (!warnedInitialContext) {
         warnedInitialContext = true
         console.warn(
@@ -91,11 +97,16 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
 
   const middleware = createMiddleware({
     name: 'SanityContext',
+    // Private, so it stays out of the agent's input and output.
+    stateSchema: z.object({_sanityInitialContext: z.string().nullable().optional()}),
+    beforeAgent: async (_state, runtime) => ({
+      _sanityInitialContext: await fetchInitialContext(runtime.signal),
+    }),
     wrapModelCall: async (request, handler) => {
       // LangChain rejects a middleware tool that shares a name with one of the agent's own tools.
       const taken = new Set(request.tools.map((t) => t.name))
-      const [listed, initialContext] = await Promise.all([listTools(), fetchInitialContext()])
-      const tools = listed.filter((tool) => {
+      const initialContext = request.state._sanityInitialContext
+      const tools = (await listTools()).filter((tool) => {
         if (!taken.has(tool.name)) return true
         if (!warnedCollisions.has(tool.name)) {
           warnedCollisions.add(tool.name)
