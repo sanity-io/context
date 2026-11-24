@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/sanity-io/context/compare/context-langchain-v0.2.0...context-langchain-v0.2.1) (2026-11-24)
+
+
+### Bug Fixes
+
+* identify the packages on every endpoint request ([#310](https://github.com/sanity-io/context/issues/310)) ([de230f1](https://github.com/sanity-io/context/commit/de230f180eb99da2b3bd1c1abca601013e38ed11))
+
 ## [0.2.0](https://github.com/sanity-io/context/compare/context-langchain-v0.1.0...context-langchain-v0.2.0) (2026-11-23)
 
 
