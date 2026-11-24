@@ -200,7 +200,15 @@ export async function startMcpProxy(options: {
     const fault = options.faults.find(
       (f) => f.target === '*' || (f.target === key && (f.nth ?? nth) === nth),
     )
-    const entry = {method: req.method, path, rpc: message?.method, tool, nth, fault: fault?.kind}
+    const entry = {
+      method: req.method,
+      path,
+      rpc: message?.method,
+      tool,
+      nth,
+      fault: fault?.kind,
+      ua: req.headers['user-agent'],
+    }
 
     if (fault) {
       appendFileSync(log, `${JSON.stringify({...entry, request: message})}\n`)

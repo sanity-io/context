@@ -32,13 +32,14 @@ export interface SanityContextLangChain {
 export function createSanityContext(options: SanityContextOptions): SanityContextLangChain {
   validateOptions(options)
   const {url, token} = options
+  const userAgent = `sanity-context-langchain/${version}`
   const client = new MCPAdapter({
     prefixToolNameWithServerName: false,
     servers: {
       sanity: {
         transport: 'http',
         url,
-        headers: {Authorization: `Bearer ${token}`},
+        headers: {'Authorization': `Bearer ${token}`, 'User-Agent': userAgent},
         // The endpoint speaks the initialize handshake over streamable HTTP. Probing for newer
         // protocols and falling back to SSE costs requests and hides a 404 behind the SSE error.
         mode: 'legacy',
@@ -72,7 +73,7 @@ export function createSanityContext(options: SanityContextOptions): SanityContex
       const res = await fetch(initialContextUrl, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'User-Agent': `sanity-context-langchain/${version}`,
+          'User-Agent': userAgent,
         },
         signal: AbortSignal.any([AbortSignal.timeout(10_000), ...(signal ? [signal] : [])]),
       })
