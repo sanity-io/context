@@ -7,7 +7,8 @@ import {modelRequests, run, systemText, toolResults} from './run'
 /**
  * What each package decides per scenario. The run throws with `threw`, or completes and the model
  * sees `saw` (default: every tool result the stub sent, intact). The first system prompt includes
- * `system` and leaves out `notSystem`. Faults the framework handles itself aren't checked.
+ * `system` and leaves out `notSystem`. Every endpoint request names the package in its User-Agent.
+ * Faults the framework handles itself aren't checked.
  */
 type Expected = {threw?: string; saw?: string; system?: string; notSystem?: string}
 
@@ -57,6 +58,16 @@ export async function check(only?: Framework): Promise<boolean> {
       const problem = problemOf()
       function problemOf() {
         const requests = modelRequests(result.dir)
+        const log = join(result.dir, 'mcp.jsonl')
+        const entries = existsSync(log)
+          ? readFileSync(log, 'utf8')
+              .split('\n')
+              .filter(Boolean)
+              .map((line) => JSON.parse(line))
+          : []
+        const anonymous = entries.find((e) => !e.ua?.startsWith(`sanity-context-${framework}/`))
+        if (anonymous)
+          return `expected every endpoint request to name the package, ${anonymous.rpc ?? anonymous.path} sent ${JSON.stringify(anonymous.ua)}`
         const system = systemText(requests[0] ?? {messages: []})
         if (expected.system && !system.includes(expected.system))
           return `expected the system prompt to include "${expected.system}"`
@@ -75,12 +86,8 @@ export async function check(only?: Framework): Promise<boolean> {
           return seen.some((s) => s.startsWith(expected.saw!))
             ? undefined
             : `expected the model to see "${expected.saw}", it saw ${JSON.stringify(seen.at(-1))}`
-        const log = join(result.dir, 'mcp.jsonl')
-        if (!existsSync(log)) return 'no request reached the endpoint'
-        const sent = readFileSync(log, 'utf8')
-          .trim()
-          .split('\n')
-          .map((line) => JSON.parse(line))
+        if (!entries.length) return 'no request reached the endpoint'
+        const sent = entries
           .filter((e) => e.rpc === 'tools/call' && e.response)
           .map((e) => JSON.parse(e.response).result.content[0].text as string)
         // eve prefixes error results with `Error: `, so a result only has to contain what was sent.
