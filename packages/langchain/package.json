@@ -1,6 +1,6 @@
 {
   "name": "@sanity/context-langchain",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Sanity Context for LangChain agents",
   "keywords": [
     "sanity",
