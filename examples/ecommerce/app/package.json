@@ -9,6 +9,7 @@
     "check:types": "tsc --noEmit",
     "dev": "next dev",
     "start": "next start",
+    "test:unit": "node --conditions=react-server --import=tsx --test test/chat-session.test.ts test/chat-session-fetch.test.ts",
     "typegen": "sanity typegen generate"
   },
   "prettier": "@sanity/prettier-config",

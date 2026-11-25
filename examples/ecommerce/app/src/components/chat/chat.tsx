@@ -12,6 +12,7 @@ import {
   getDocumentContext,
   getPageContent,
 } from '@/lib/capture-context'
+import {chatSessionFetch} from '@/lib/chat-session-fetch'
 import {CLIENT_TOOL_NAMES, type ProductFiltersInput, productFiltersSchema} from '@/lib/client-tools'
 
 import {ChatInput} from './chat-input'
@@ -67,6 +68,7 @@ export function Chat({onClose}: ChatProps) {
 
   const {messages, sendMessage, status, addToolOutput, error, regenerate} = useChat({
     transport: new DefaultChatTransport({
+      fetch: chatSessionFetch,
       body: () => ({documentContext: getDocumentContext()}),
     }),
     // Auto-continue for regular tools, but skip when screenshot is pending
