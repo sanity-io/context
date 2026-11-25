@@ -1,6 +1,8 @@
 packages:
   - packages/**/*
   - examples/**/*
+  - '!examples/eve-support'
+  - '!examples/eve-support/**'
   - '!packages/@repo/harness/captures/**'
 
 catalog:

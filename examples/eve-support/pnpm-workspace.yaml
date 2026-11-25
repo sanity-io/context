@@ -1,0 +1,15 @@
+allowBuilds:
+  better-sqlite3: true
+  esbuild: true
+minimumReleaseAgeExclude:
+  - '@ai-sdk/*'
+  - '@vercel/*'
+  - '@workflow/*'
+  - ai
+  - eve
+  - workflow
+  - '@sanity/context-eve@0.2.1'
+
+ignoredOptionalDependencies:
+  - '@mongodb-js/zstd'
+  - 'node-liblzma'

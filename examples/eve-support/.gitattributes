@@ -1,0 +1,10 @@
+# eve Web Chat files copied unchanged from eve's component registry.
+# GitHub collapses these in diffs; the template's own code is in agent/,
+# evals/ and apps/web/app/.
+apps/web/components/ai-elements/** linguist-generated
+apps/web/components/ui/** linguist-generated
+apps/web/app/globals.css linguist-generated
+apps/web/css.d.ts linguist-generated
+apps/web/lib/utils.ts linguist-generated
+apps/web/postcss.config.mjs linguist-generated
+pnpm-lock.yaml linguist-generated

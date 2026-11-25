@@ -60,3 +60,35 @@ jobs:
 
       - name: Build
         run: pnpm --filter @sanity/context-eve build
+
+  build-eve-support:
+    timeout-minutes: 15
+    # The eve-support example is a standalone Vercel template with its own
+    # lockfile and pnpm version, so it installs and builds on its own.
+    name: Build eve-support example
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examples/eve-support
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: pnpm/action-setup@v5
+        with:
+          package_json_file: examples/eve-support/package.json
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: "pnpm"
+          cache-dependency-path: examples/eve-support/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
