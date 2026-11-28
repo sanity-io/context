@@ -14,7 +14,7 @@
     "@modelcontextprotocol/sdk": "^1.32.2",
     "@sanity/context-eve": "workspace:*",
     "@sanity/context-langchain": "workspace:*",
-    "eve": "1.0.0",
+    "eve": "1.5.0",
     "langchain": "^1.6.5",
     "zod": "catalog:"
   },
